@@ -1,0 +1,60 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+.envrc
+
+# =========================
+# Flask
+# =========================
+instance/
+.webassets-cache/
+
+# =========================
+# Secrets / Config
+# =========================
+#config.py
+*.env
+
+# =========================
+# Data files
+# =========================
+*.xlsx
+*.xls
+*.csv
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# OS / Editor junk
+# =========================
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# PyCharm / IntelliJ
+.idea/
+
+# =========================
+# Docker
+# =========================
+.dockerignore
+docker-compose.override.yml
+
+# =========================
+# Certificates
+# =========================
+*.pem
+*.crt
+*.key
