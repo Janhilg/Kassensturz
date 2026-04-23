@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function (elementId) {
         const calcInput = document.getElementById("calc_input");
         const addButton = document.getElementById("add_button");
         const subtractButton = document.getElementById("subtract_button");
@@ -47,7 +47,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 clear_history: "Clear Calculation History",
                 session_history: "Calculation History",
                 no_history: "No calculations yet.",
+                timestamp: "Timestamp",
                 language: "Language:"
+
             },
             de: {
                 html_lang: "de",
@@ -69,6 +71,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 clear_history: "Berechnungsverlauf löschen",
                 session_history: "Berechnungsverlauf",
                 no_history: "Noch keine Berechnungen.",
+                timestamp: "Zeitstempel",
                 language: "Sprache:"
             }
         };
@@ -103,7 +106,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
 
-        function applyTranslations() {
+        function applyTranslations(elementId) {
             const lang = getCurrentLanguage();
             document.documentElement.lang = translations[lang].html_lang;
 
@@ -124,6 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("clear_button").textContent = t("clear_history");
             document.getElementById("history_title").textContent = t("session_history");
             document.getElementById("language_label").textContent = t("language");
+            document.getElementById("submitted_timestamp_label").textContent = t("timestamp") + ":";
 
             textInput.placeholder = t("event_name_placeholder");
             numberInput.placeholder = t("cash_sum_placeholder");

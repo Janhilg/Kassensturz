@@ -1,18 +1,22 @@
 import os
+import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
 
 import requests
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, flash, redirect, render_template, request, url_for
 from openpyxl import Workbook, load_workbook
 
 from config import Config
 
 app = Flask(__name__)
-app.secret_key = "change-this-to-a-random-secret-key"
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
-EXCEL_FILE = Path("kassensturz_data.xlsx")
+EXCEL_HEADERS = ["Date", "Timestamp", "Event name", "Cash sum", "Comment"]
+LOCAL_EXCEL_FILE = Path("data/kassensturz_data.xlsx")
+BACKUP_DIR = Path("data/backups")
 
 NEXTCLOUD_BASE_URL = Config.NEXTCLOUD_BASE_URL.rstrip("/")
 NEXTCLOUD_USERNAME = Config.NEXTCLOUD_USERNAME
@@ -21,21 +25,15 @@ NEXTCLOUD_REMOTE_DIR = Config.NEXTCLOUD_REMOTE_DIR
 NEXTCLOUD_REMOTE_FILE = Config.NEXTCLOUD_REMOTE_FILE
 
 
-def ensure_excel_file():
-    if not EXCEL_FILE.exists():
-        workbook = Workbook()
-        sheet = workbook.active
-        sheet.title = "Kassensturz"
-        sheet.append(["Date", "Event name", "Cash sum", "Comment"])
-        workbook.save(EXCEL_FILE)
+def get_verify_setting():
+    if getattr(Config, "NEXTCLOUD_VERIFY", "true").lower() == "false":
+        return False
 
+    ca_cert_path = getattr(Config, "NEXTCLOUD_CA_CERT_PATH", "")
+    if ca_cert_path:
+        return ca_cert_path
 
-def append_to_excel(date_value, event_name, cash_sum, comment):
-    ensure_excel_file()
-    workbook = load_workbook(EXCEL_FILE)
-    sheet = workbook.active
-    sheet.append([date_value, event_name, cash_sum, comment])
-    workbook.save(EXCEL_FILE)
+    return True
 
 
 def nextcloud_configured():
@@ -54,6 +52,27 @@ def build_webdav_url(path: str) -> str:
     )
 
 
+def ensure_local_excel_file():
+    LOCAL_EXCEL_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    if not LOCAL_EXCEL_FILE.exists():
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Kassensturz"
+        sheet.append(EXCEL_HEADERS)
+        workbook.save(LOCAL_EXCEL_FILE)
+
+
+def create_empty_excel_file(file_path: Path):
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Kassensturz"
+    sheet.append(EXCEL_HEADERS)
+    workbook.save(file_path)
+
+
 def ensure_nextcloud_folder():
     if not nextcloud_configured():
         return
@@ -64,7 +83,7 @@ def ensure_nextcloud_folder():
         url,
         auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_APP_PASSWORD),
         timeout=30,
-        verify=False  # replace with your proper cert config if needed
+        verify=get_verify_setting(),
     )
 
     if response.status_code not in (201, 405):
@@ -74,7 +93,173 @@ def ensure_nextcloud_folder():
         )
 
 
-def upload_excel_to_nextcloud():
+def normalize_row_length(row, target_length):
+    row = list(row)
+    if len(row) < target_length:
+        row.extend([""] * (target_length - len(row)))
+    return tuple(row[:target_length])
+
+
+def upgrade_file_format(file_path: Path):
+    workbook = load_workbook(file_path)
+    sheet = workbook.active
+
+    rows = list(sheet.iter_rows(values_only=True))
+    if not rows:
+        sheet.append(EXCEL_HEADERS)
+        workbook.save(file_path)
+        return
+
+    header = [str(cell) if cell is not None else "" for cell in rows[0]]
+
+    if header == EXCEL_HEADERS:
+        return
+
+    existing_data = rows[1:] if rows else []
+
+    # Old format: Date, Event name, Cash sum, Comment
+    if header[:4] == ["Date", "Event name", "Cash sum", "Comment"]:
+        sheet.delete_rows(1, sheet.max_row)
+        sheet.append(EXCEL_HEADERS)
+
+        for row in existing_data:
+            row = list(row)
+            date_value = row[0] if len(row) > 0 else ""
+            event_name = row[1] if len(row) > 1 else ""
+            cash_sum = row[2] if len(row) > 2 else ""
+            comment = row[3] if len(row) > 3 else ""
+            sheet.append([date_value, "", event_name, cash_sum, comment])
+
+        workbook.save(file_path)
+        return
+
+    # Unknown format: rewrite header only if file was empty-ish
+    if sheet.max_row == 1:
+        sheet.delete_rows(1, sheet.max_row)
+        sheet.append(EXCEL_HEADERS)
+        workbook.save(file_path)
+
+
+def append_to_excel_file(
+    file_path: Path,
+    date_value: str,
+    timestamp_value: str,
+    event_name: str,
+    cash_sum: float,
+    comment: str,
+):
+    upgrade_file_format(file_path)
+
+    workbook = load_workbook(file_path)
+    sheet = workbook.active
+    sheet.append([date_value, timestamp_value, event_name, cash_sum, comment])
+    workbook.save(file_path)
+
+
+def read_rows(file_path: Path):
+    upgrade_file_format(file_path)
+
+    workbook = load_workbook(file_path, data_only=True)
+    sheet = workbook.active
+    rows = [tuple(row) for row in sheet.iter_rows(values_only=True)]
+
+    if not rows:
+        return []
+
+    data_rows = rows[1:]
+    return [normalize_row_length(row, len(EXCEL_HEADERS)) for row in data_rows]
+
+
+def parse_timestamp_for_sort(row):
+    timestamp_value = row[1] if len(row) > 1 else ""
+    if timestamp_value:
+        try:
+            return datetime.strptime(str(timestamp_value), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            pass
+
+    date_value = row[0] if len(row) > 0 else ""
+    if date_value:
+        try:
+            return datetime.strptime(str(date_value), "%Y-%m-%d")
+        except ValueError:
+            pass
+
+    return datetime.min
+
+
+def rewrite_excel_file(file_path: Path, data_rows):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Kassensturz"
+    sheet.append(EXCEL_HEADERS)
+
+    for row in data_rows:
+        normalized = normalize_row_length(row, len(EXCEL_HEADERS))
+        sheet.append(list(normalized))
+
+    workbook.save(file_path)
+
+
+def merge_remote_into_local(remote_file: Path, local_file: Path):
+    remote_rows = read_rows(remote_file)
+    local_rows = read_rows(local_file)
+
+    combined = []
+    seen = set()
+
+    for row in local_rows + remote_rows:
+        normalized = normalize_row_length(row, len(EXCEL_HEADERS))
+        if normalized not in seen:
+            seen.add(normalized)
+            combined.append(normalized)
+
+    combined.sort(key=parse_timestamp_for_sort)
+    rewrite_excel_file(local_file, combined)
+
+
+def download_remote_to_temp(temp_path: Path):
+    if not nextcloud_configured():
+        return False
+
+    remote_path = f"{NEXTCLOUD_REMOTE_DIR}/{NEXTCLOUD_REMOTE_FILE}"
+    url = build_webdav_url(remote_path)
+
+    response = requests.get(
+        url,
+        auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_APP_PASSWORD),
+        timeout=60,
+        verify=get_verify_setting(),
+    )
+
+    if response.status_code == 200:
+        temp_path.parent.mkdir(parents=True, exist_ok=True)
+        with temp_path.open("wb") as f:
+            f.write(response.content)
+        return True
+
+    if response.status_code == 404:
+        return False
+
+    raise RuntimeError(
+        f"Failed to download Excel file from Nextcloud: "
+        f"{response.status_code} {response.text}"
+    )
+
+
+def create_backup():
+    ensure_local_excel_file()
+    upgrade_file_format(LOCAL_EXCEL_FILE)
+
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_file = BACKUP_DIR / f"kassensturz_backup_{timestamp}.xlsx"
+    shutil.copy2(LOCAL_EXCEL_FILE, backup_file)
+    return backup_file
+
+
+def upload_excel_file_to_nextcloud(file_path: Path):
     if not nextcloud_configured():
         return
 
@@ -83,16 +268,19 @@ def upload_excel_to_nextcloud():
     remote_path = f"{NEXTCLOUD_REMOTE_DIR}/{NEXTCLOUD_REMOTE_FILE}"
     url = build_webdav_url(remote_path)
 
-    with EXCEL_FILE.open("rb") as file_handle:
+    with file_path.open("rb") as file_handle:
         response = requests.put(
             url,
             data=file_handle,
             auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_APP_PASSWORD),
             headers={
-                "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                "Content-Type": (
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                )
             },
             timeout=60,
-            verify=False  # replace with your proper cert config if needed
+            verify=get_verify_setting(),
         )
 
     if response.status_code not in (200, 201, 204):
@@ -100,6 +288,32 @@ def upload_excel_to_nextcloud():
             f"Failed to upload Excel file to Nextcloud: "
             f"{response.status_code} {response.text}"
         )
+
+
+def append_and_sync(date_value, timestamp_value, event_name, cash_sum, comment):
+    ensure_local_excel_file()
+
+    append_to_excel_file(
+        LOCAL_EXCEL_FILE,
+        date_value,
+        timestamp_value,
+        event_name,
+        cash_sum,
+        comment,
+    )
+
+    if not nextcloud_configured():
+        return
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        remote_file = Path(tmp_dir) / "remote.xlsx"
+        remote_exists = download_remote_to_temp(remote_file)
+
+        if remote_exists:
+            merge_remote_into_local(remote_file, LOCAL_EXCEL_FILE)
+
+    create_backup()
+    upload_excel_file_to_nextcloud(LOCAL_EXCEL_FILE)
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -111,21 +325,28 @@ def home():
 
         if submitted_text and submitted_number:
             try:
-                current_date = datetime.now().strftime("%Y-%m-%d")
-                append_to_excel(
+                now = datetime.now()
+                current_date = now.strftime("%Y-%m-%d")
+                current_timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+
+                append_and_sync(
                     current_date,
+                    current_timestamp,
                     submitted_text,
                     float(submitted_number),
                     submitted_comment,
                 )
-                upload_excel_to_nextcloud()
 
-                flash({
-                    "text": submitted_text,
-                    "number": submitted_number,
-                    "comment": submitted_comment,
-                    "date": current_date,
-                }, "submitted")
+                flash(
+                    {
+                        "date": current_date,
+                        "timestamp": current_timestamp,
+                        "text": submitted_text,
+                        "number": submitted_number,
+                        "comment": submitted_comment,
+                    },
+                    "submitted",
+                )
 
                 return redirect(url_for("home"))
 
@@ -137,5 +358,6 @@ def home():
 
 
 if __name__ == "__main__":
-    ensure_excel_file()
+    ensure_local_excel_file()
+    upgrade_file_format(LOCAL_EXCEL_FILE)
     app.run(host="0.0.0.0", port=5000, debug=True)
