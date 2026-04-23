@@ -123,6 +123,12 @@
                 <button type="button" class="lang-button" data-lang="en">English</button>
                 <button type="button" class="lang-button" data-lang="de">Deutsch</button>
             </div>
+            <br/>
+            <div class="theme-switcher">
+                <span id="theme_label">Theme:</span>
+                <button type="button" class="theme-button" data-theme="dark" id="theme_dark_button">Dark</button>
+                <button type="button" class="theme-button" data-theme="light" id="theme_light_button">Light</button>
+            </div>
         </footer>
     </div>
     <script src="{{ url_for('static', filename='app.js') }}"></script>
