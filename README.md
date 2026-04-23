@@ -10,6 +10,7 @@ It provides:
 - English/German language switching 
 
 ![Screenshot of Kassenstutz Webapp](/docu/Screenshot%202026-04-23.png)
+
 ## Features
 
 ### Form
