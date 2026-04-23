@@ -36,19 +36,3 @@ Submissions are stored in:
 ### Nextcloud upload
 After each successful submission, the Excel file can optionally be uploaded to Nextcloud using WebDAV.
 
-## Project structure
-
-```text
-Kassensturz/
-├── app.py
-├── config.py
-├── config.example.py
-├── requirements.txt
-├── README.md
-├── docker-compose.yml
-├── .gitignore
-├── static/
-│   └── style.css
-└── templates/
-    └── index.html
-
