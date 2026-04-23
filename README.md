@@ -9,6 +9,7 @@ It provides:
 - optional upload of the Excel file to Nextcloud via WebDAV
 - English/German language switching 
 
+![Screenshot of Kassenstutz Webapp](/docu/Screenshot%202026-04-23.png)
 ## Features
 
 ### Form
@@ -50,3 +51,4 @@ Kassensturz/
 │   └── style.css
 └── templates/
     └── index.html
+
