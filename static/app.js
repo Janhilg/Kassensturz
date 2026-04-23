@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", function () {
             sessionStorage.removeItem("kassensturz_current_total");
             sessionStorage.removeItem("kassensturz_history");
         }
+        prefillEventFromPretix();
 
         const translations = {
             en: {
@@ -72,6 +73,39 @@ document.addEventListener("DOMContentLoaded", function () {
                 language: "Sprache:"
             }
         };
+
+        async function fetchCurrentPretixEvent() {
+            const response = await fetch("/api/current-event", {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch current event");
+                }
+
+                return await response.json();
+        }
+
+        async function prefillEventFromPretix() {
+            const textInput = document.getElementById("text_input");
+
+            if (!textInput || textInput.value.trim() !== "") {
+                return;
+            }
+
+            try {
+                const data = await fetchCurrentPretixEvent();
+
+                if (data.ok && data.event && data.event.name) {
+                    textInput.value = data.event.name;
+                }
+            } catch (error) {
+                console.error("Pretix prefill failed:", error);
+            }
+        }
 
         function getCurrentLanguage() {
             return localStorage.getItem(STORAGE_LANGUAGE_KEY) || "en";
@@ -266,6 +300,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 setCurrentLanguage(button.dataset.lang);
             });
         });
+
 
         applyTranslations();
         updateLanguageButtons();

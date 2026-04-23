@@ -1,18 +1,26 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
 
 import requests
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    jsonify,
+)
 from openpyxl import Workbook, load_workbook
 
 from config import Config
 
 app = Flask(__name__)
-app.secret_key = "change-this-to-a-random-secret-key"
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
-EXCEL_FILE = Path("kassensturz_data.xlsx")
+EXCEL_FILE = Path("data/kassensturz_data.xlsx")
 
 NEXTCLOUD_BASE_URL = Config.NEXTCLOUD_BASE_URL.rstrip("/")
 NEXTCLOUD_USERNAME = Config.NEXTCLOUD_USERNAME
@@ -20,8 +28,23 @@ NEXTCLOUD_APP_PASSWORD = Config.NEXTCLOUD_APP_PASSWORD
 NEXTCLOUD_REMOTE_DIR = Config.NEXTCLOUD_REMOTE_DIR
 NEXTCLOUD_REMOTE_FILE = Config.NEXTCLOUD_REMOTE_FILE
 
+PRETIX_BASE_URL = Config.PRETIX_BASE_URL.rstrip("/")
+PRETIX_ORGANIZER = Config.PRETIX_ORGANIZER
+PRETIX_API_TOKEN = Config.PRETIX_API_TOKEN
+PRETIX_EVENT_SLUG = Config.PRETIX_EVENT_SLUG
+
+
+def get_verify_setting():
+    if Config.NEXTCLOUD_VERIFY.lower() == "false":
+        return False
+    if Config.NEXTCLOUD_CA_CERT_PATH:
+        return Config.NEXTCLOUD_CA_CERT_PATH
+    return True
+
 
 def ensure_excel_file():
+    EXCEL_FILE.parent.mkdir(parents=True, exist_ok=True)
+
     if not EXCEL_FILE.exists():
         workbook = Workbook()
         sheet = workbook.active
@@ -64,7 +87,7 @@ def ensure_nextcloud_folder():
         url,
         auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_APP_PASSWORD),
         timeout=30,
-        verify=False  # replace with your proper cert config if needed
+        verify=get_verify_setting(),
     )
 
     if response.status_code not in (201, 405):
@@ -92,7 +115,7 @@ def upload_excel_to_nextcloud():
                 "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             },
             timeout=60,
-            verify=False  # replace with your proper cert config if needed
+            verify=get_verify_setting(),
         )
 
     if response.status_code not in (200, 201, 204):
@@ -100,6 +123,116 @@ def upload_excel_to_nextcloud():
             f"Failed to upload Excel file to Nextcloud: "
             f"{response.status_code} {response.text}"
         )
+
+
+def pretix_configured():
+    return all([
+        PRETIX_BASE_URL,
+        PRETIX_ORGANIZER,
+        PRETIX_API_TOKEN,
+    ])
+
+
+def pretix_headers():
+    return {
+        "Authorization": f"Token {PRETIX_API_TOKEN}",
+        "Accept": "application/json",
+    }
+
+
+def parse_pretix_datetime(value):
+    if not value:
+        return None
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def get_pretix_event_name(event):
+    name = event.get("name")
+    if isinstance(name, dict):
+        return name.get("en") or next(iter(name.values()), "")
+    return name or ""
+
+
+def get_specific_pretix_event():
+    if not pretix_configured() or not PRETIX_EVENT_SLUG:
+        return None
+
+    url = (
+        f"{PRETIX_BASE_URL}/api/v1/organizers/"
+        f"{PRETIX_ORGANIZER}/events/{PRETIX_EVENT_SLUG}/"
+    )
+    response = requests.get(url, headers=pretix_headers(), timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_pretix_events():
+    if not pretix_configured():
+        return []
+
+    url = f"{PRETIX_BASE_URL}/api/v1/organizers/{PRETIX_ORGANIZER}/events/"
+    params = {
+        "is_future": "true",
+    }
+    response = requests.get(url, headers=pretix_headers(), params=params, timeout=30)
+    response.raise_for_status()
+
+    data = response.json()
+    return data.get("results", [])
+
+
+def get_current_pretix_event():
+    if PRETIX_EVENT_SLUG:
+        event = get_specific_pretix_event()
+        return {
+            "slug": event.get("slug"),
+            "name": get_pretix_event_name(event),
+            "date_from": event.get("date_from"),
+            "date_to": event.get("date_to"),
+            "public_url": event.get("public_url"),
+            "timezone": event.get("timezone"),
+            "live": event.get("live"),
+        }
+
+    now = datetime.now(timezone.utc)
+    events = get_pretix_events()
+
+    running_events = []
+    upcoming_events = []
+
+    for event in events:
+        date_from = parse_pretix_datetime(event.get("date_from"))
+        date_to = parse_pretix_datetime(event.get("date_to"))
+
+        if date_from and date_to:
+            if date_from <= now <= date_to:
+                running_events.append(event)
+            elif now < date_from:
+                upcoming_events.append(event)
+        elif date_from:
+            if date_from <= now:
+                running_events.append(event)
+            else:
+                upcoming_events.append(event)
+
+    if running_events:
+        running_events.sort(key=lambda e: parse_pretix_datetime(e.get("date_from")) or datetime.max.replace(tzinfo=timezone.utc))
+        chosen = running_events[0]
+    elif upcoming_events:
+        upcoming_events.sort(key=lambda e: parse_pretix_datetime(e.get("date_from")) or datetime.max.replace(tzinfo=timezone.utc))
+        chosen = upcoming_events[0]
+    else:
+        return None
+
+    return {
+        "slug": chosen.get("slug"),
+        "name": get_pretix_event_name(chosen),
+        "date_from": chosen.get("date_from"),
+        "date_to": chosen.get("date_to"),
+        "public_url": chosen.get("public_url"),
+        "timezone": chosen.get("timezone"),
+        "live": chosen.get("live"),
+    }
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -134,6 +267,21 @@ def home():
                 return redirect(url_for("home"))
 
     return render_template("index.html")
+
+
+@app.route("/api/current-event", methods=["GET"])
+def current_event():
+    try:
+        event = get_current_pretix_event()
+        return jsonify({
+            "ok": True,
+            "event": event,
+        })
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "error": str(exc),
+        }), 500
 
 
 if __name__ == "__main__":
