@@ -246,8 +246,8 @@ def download_remote_to_temp(temp_path: Path):
         f"{response.status_code} {response.text}"
     )
 
-
-def create_backup():
+# with 1 event a month and 2 entries per, this should back up one year of data as fallback
+def create_backup(max_backups: int = 25):
     ensure_local_excel_file()
     upgrade_file_format(LOCAL_EXCEL_FILE)
 
@@ -255,9 +255,23 @@ def create_backup():
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_file = BACKUP_DIR / f"kassensturz_backup_{timestamp}.xlsx"
-    shutil.copy2(LOCAL_EXCEL_FILE, backup_file)
-    return backup_file
 
+    shutil.copy2(LOCAL_EXCEL_FILE, backup_file)
+
+    # Cleanup old backups
+    backups = sorted(
+        BACKUP_DIR.glob("kassensturz_backup_*.xlsx"),
+        key=lambda f: f.stat().st_mtime,
+        reverse=True,  # newest first
+    )
+
+    for old_file in backups[max_backups:]:
+        try:
+            old_file.unlink()
+        except Exception:
+            pass  # don't crash if cleanup fails
+
+    return backup_file
 
 def upload_excel_file_to_nextcloud(file_path: Path):
     if not nextcloud_configured():
