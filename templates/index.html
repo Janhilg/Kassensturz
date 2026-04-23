@@ -39,7 +39,20 @@
                             required
                         >
                     </div>
+                    <div>
+                        <span id="label_event_state">Event status</span>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="event_state" value="opening" checked required>
+                                <span id="event_state_opening_label">Opening</span>
+                            </label>
 
+                            <label class="radio-option">
+                                <input type="radio" name="event_state" value="closing">
+                                <span id="event_state_closing_label">Closing</span>
+                            </label>
+                        </div>
+                    </div>
                     <div>
                         <label for="comment_input" id="label_comment">Comment (optional)</label>
                         <input
@@ -62,6 +75,7 @@
                                 <p><strong id="submitted_timestamp_label">Timestamp:</strong> {{ message.timestamp }}</p>
                                 <p><strong id="submitted_event_name_label">Event name:</strong> {{ message.text }}</p>
                                 <p><strong id="submitted_cash_sum_label">Cash sum:</strong> {{ message.number }}</p>
+                                <p><strong id="submitted_event_state_label">Event status:</strong> {{ message.event_state }}</p>
                                 <p><strong id="submitted_comment_label">Comment:</strong> {{ message.comment or "-" }}</p>
                             </div>
                         {% elif category == "error" %}

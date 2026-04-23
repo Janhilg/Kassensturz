@@ -250,6 +250,25 @@ button {
     color: white;
     border-color: var(--input-focus);
 }
+.radio-group {
+    display: flex;
+    gap: 18px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
+    margin-bottom: 0;
+}
+
+.radio-option input[type="radio"] {
+    width: auto;
+    margin: 0;
+}
 
 @media (max-width: 800px) {
     .layout {

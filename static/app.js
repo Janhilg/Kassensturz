@@ -45,14 +45,17 @@ document.addEventListener("DOMContentLoaded", function () {
             language: "Language:",
             theme: "Theme:",
             theme_dark: "Dark",
+            event_state: "Event status",
+            event_state_opening: "Opening",
+            event_state_closing: "Closing",
             theme_light: "Light"
         },
         de: {
             html_lang: "de",
             form_title: "Eingabeformular",
             date_prefix: "Datum: ",
-            event_name: "Ereignisname",
-            event_name_placeholder: "Ereignisname eingeben",
+            event_name: "Veranstaltungsname",
+            event_name_placeholder: "Veranstaltungsname eingeben",
             cash_sum: "Bargeldsumme",
             cash_sum_placeholder: "Bargeldbetrag eingeben",
             comment: "Kommentar (optional)",
@@ -72,6 +75,9 @@ document.addEventListener("DOMContentLoaded", function () {
             language: "Sprache:",
             theme: "Design:",
             theme_dark: "Dunkel",
+            event_state: "Veranstaltungsstatus",
+            event_state_opening: "Öffnung",
+            event_state_closing: "Schließung",
             theme_light: "Hell"
         }
     };
@@ -136,6 +142,11 @@ document.addEventListener("DOMContentLoaded", function () {
         setText("label_cash_sum", t("cash_sum"));
         setText("label_comment", t("comment"));
         setText("confirm_button", t("confirm"));
+        setText("label_event_state", t("event_state"));
+        setText("event_state_opening_label", t("event_state_opening"));
+        setText("event_state_closing_label", t("event_state_closing"));
+        setText("submitted_event_state_label", t("event_state") + ":");
+
 
         setText("submitted_values_title", t("submitted_values"));
         setText("submitted_date_label", t("submitted_date") + ":");

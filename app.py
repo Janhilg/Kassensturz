@@ -14,7 +14,7 @@ from config import Config
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
-EXCEL_HEADERS = ["Date", "Timestamp", "Event name", "Cash sum", "Comment"]
+EXCEL_HEADERS = ["Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"]
 LOCAL_EXCEL_FILE = Path("data/kassensturz_data.xlsx")
 BACKUP_DIR = Path("data/backups")
 
@@ -128,12 +128,28 @@ def upgrade_file_format(file_path: Path):
             event_name = row[1] if len(row) > 1 else ""
             cash_sum = row[2] if len(row) > 2 else ""
             comment = row[3] if len(row) > 3 else ""
-            sheet.append([date_value, "", event_name, cash_sum, comment])
+            sheet.append([date_value, "", event_name, cash_sum, "", comment])
 
         workbook.save(file_path)
         return
 
-    # Unknown format: rewrite header only if file was empty-ish
+    # Previous format: Date, Timestamp, Event name, Cash sum, Comment
+    if header[:5] == ["Date", "Timestamp", "Event name", "Cash sum", "Comment"]:
+        sheet.delete_rows(1, sheet.max_row)
+        sheet.append(EXCEL_HEADERS)
+
+        for row in existing_data:
+            row = list(row)
+            date_value = row[0] if len(row) > 0 else ""
+            timestamp_value = row[1] if len(row) > 1 else ""
+            event_name = row[2] if len(row) > 2 else ""
+            cash_sum = row[3] if len(row) > 3 else ""
+            comment = row[4] if len(row) > 4 else ""
+            sheet.append([date_value, timestamp_value, event_name, cash_sum, "", comment])
+
+        workbook.save(file_path)
+        return
+
     if sheet.max_row == 1:
         sheet.delete_rows(1, sheet.max_row)
         sheet.append(EXCEL_HEADERS)
@@ -146,13 +162,14 @@ def append_to_excel_file(
     timestamp_value: str,
     event_name: str,
     cash_sum: float,
+    event_state: str,
     comment: str,
 ):
     upgrade_file_format(file_path)
 
     workbook = load_workbook(file_path)
     sheet = workbook.active
-    sheet.append([date_value, timestamp_value, event_name, cash_sum, comment])
+    sheet.append([date_value, timestamp_value, event_name, cash_sum, event_state, comment])
     workbook.save(file_path)
 
 
@@ -246,7 +263,7 @@ def download_remote_to_temp(temp_path: Path):
         f"{response.status_code} {response.text}"
     )
 
-# with 1 event a month and 2 entries per, this should back up one year of data as fallback
+
 def create_backup(max_backups: int = 25):
     ensure_local_excel_file()
     upgrade_file_format(LOCAL_EXCEL_FILE)
@@ -255,23 +272,22 @@ def create_backup(max_backups: int = 25):
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_file = BACKUP_DIR / f"kassensturz_backup_{timestamp}.xlsx"
-
     shutil.copy2(LOCAL_EXCEL_FILE, backup_file)
 
-    # Cleanup old backups
     backups = sorted(
         BACKUP_DIR.glob("kassensturz_backup_*.xlsx"),
         key=lambda f: f.stat().st_mtime,
-        reverse=True,  # newest first
+        reverse=True,
     )
 
     for old_file in backups[max_backups:]:
         try:
             old_file.unlink()
         except Exception:
-            pass  # don't crash if cleanup fails
+            pass
 
     return backup_file
+
 
 def upload_excel_file_to_nextcloud(file_path: Path):
     if not nextcloud_configured():
@@ -304,7 +320,7 @@ def upload_excel_file_to_nextcloud(file_path: Path):
         )
 
 
-def append_and_sync(date_value, timestamp_value, event_name, cash_sum, comment):
+def append_and_sync(date_value, timestamp_value, event_name, cash_sum, event_state, comment):
     ensure_local_excel_file()
 
     append_to_excel_file(
@@ -313,6 +329,7 @@ def append_and_sync(date_value, timestamp_value, event_name, cash_sum, comment):
         timestamp_value,
         event_name,
         cash_sum,
+        event_state,
         comment,
     )
 
@@ -335,9 +352,10 @@ def home():
     if request.method == "POST":
         submitted_text = request.form.get("text_input", "").strip()
         submitted_number = request.form.get("number_input", "").strip()
+        submitted_event_state = request.form.get("event_state", "").strip()
         submitted_comment = request.form.get("comment_input", "").strip()
 
-        if submitted_text and submitted_number:
+        if submitted_text and submitted_number and submitted_event_state:
             try:
                 now = datetime.now()
                 current_date = now.strftime("%Y-%m-%d")
@@ -348,6 +366,7 @@ def home():
                     current_timestamp,
                     submitted_text,
                     float(submitted_number),
+                    submitted_event_state,
                     submitted_comment,
                 )
 
@@ -357,6 +376,7 @@ def home():
                         "timestamp": current_timestamp,
                         "text": submitted_text,
                         "number": submitted_number,
+                        "event_state": submitted_event_state,
                         "comment": submitted_comment,
                     },
                     "submitted",
