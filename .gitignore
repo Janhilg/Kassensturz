@@ -23,8 +23,9 @@ config.py
 *.env
 
 # =========================
-# Data files
+# Data files (app runtime)
 # =========================
+data/
 *.xlsx
 *.xls
 *.csv
@@ -47,14 +48,25 @@ Thumbs.db
 .idea/
 
 # =========================
-# Docker
-# =========================
-.dockerignore
-docker-compose.override.yml
-
-# =========================
 # Certificates
 # =========================
 *.pem
 *.crt
 *.key
+
+# =========================
+# PyInstaller / Build artifacts
+# =========================
+build/
+dist/
+*.spec
+
+# If you want to KEEP your spec file, remove the line above
+# and instead ignore only generated ones:
+# !Kassensturz.spec
+
+# =========================
+# Docker
+# =========================
+.dockerignore
+docker-compose.override.yml
