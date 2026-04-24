@@ -1,6 +1,9 @@
 import os
 import shutil
+import sys
 import tempfile
+import threading
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
@@ -11,12 +14,36 @@ from openpyxl import Workbook, load_workbook
 
 from config import Config
 
-app = Flask(__name__)
+
+def resource_path(relative_path: str) -> str:
+    """
+    Return the absolute path to bundled resources.
+    Works in development and in PyInstaller one-file mode.
+    """
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
+
+def user_data_dir() -> Path:
+    """
+    Store writable files in the user's home directory.
+    This works much better for frozen executables than writing next to the exe.
+    """
+    return Path.home() / "Kassensturz"
+
+
+template_dir = resource_path("templates")
+static_dir = resource_path("static")
+
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
 EXCEL_HEADERS = ["Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"]
-LOCAL_EXCEL_FILE = Path("data/kassensturz_data.xlsx")
-BACKUP_DIR = Path("data/backups")
+
+BASE_DATA_DIR = user_data_dir()
+LOCAL_EXCEL_FILE = BASE_DATA_DIR / "kassensturz_data.xlsx"
+BACKUP_DIR = BASE_DATA_DIR / "backups"
 
 NEXTCLOUD_BASE_URL = Config.NEXTCLOUD_BASE_URL.rstrip("/")
 NEXTCLOUD_USERNAME = Config.NEXTCLOUD_USERNAME
@@ -117,7 +144,6 @@ def upgrade_file_format(file_path: Path):
 
     existing_data = rows[1:] if rows else []
 
-    # Old format: Date, Event name, Cash sum, Comment
     if header[:4] == ["Date", "Event name", "Cash sum", "Comment"]:
         sheet.delete_rows(1, sheet.max_row)
         sheet.append(EXCEL_HEADERS)
@@ -133,7 +159,6 @@ def upgrade_file_format(file_path: Path):
         workbook.save(file_path)
         return
 
-    # Previous format: Date, Timestamp, Event name, Cash sum, Comment
     if header[:5] == ["Date", "Timestamp", "Event name", "Cash sum", "Comment"]:
         sheet.delete_rows(1, sheet.max_row)
         sheet.append(EXCEL_HEADERS)
@@ -391,7 +416,13 @@ def home():
     return render_template("index.html")
 
 
+def open_browser():
+    webbrowser.open("http://127.0.0.1:5000")
+
+
 if __name__ == "__main__":
     ensure_local_excel_file()
     upgrade_file_format(LOCAL_EXCEL_FILE)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+
+    threading.Timer(1.0, open_browser).start()
+    app.run(host="127.0.0.1", port=5000, debug=False)
