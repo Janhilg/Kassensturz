@@ -17,20 +17,23 @@ from config import Config
 
 def resource_path(relative_path: str) -> str:
     """
-    Return the absolute path to bundled resources.
-    Works in development and in PyInstaller one-file mode.
+    Path to bundled read-only resources like templates/ and static/.
+    In PyInstaller one-file mode these live in the temp extraction dir.
     """
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
 
-def user_data_dir() -> Path:
+def portable_base_dir() -> Path:
     """
-    Store writable files in the user's home directory.
-    This works much better for frozen executables than writing next to the exe.
+    Writable app directory for portable mode.
+    In a frozen app, use the folder containing the executable.
+    In development, use the project directory.
     """
-    return Path.home() / "Kassensturz"
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
 
 
 template_dir = resource_path("templates")
@@ -41,9 +44,9 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
 EXCEL_HEADERS = ["Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"]
 
-BASE_DATA_DIR = user_data_dir()
-LOCAL_EXCEL_FILE = BASE_DATA_DIR / "kassensturz_data.xlsx"
-BACKUP_DIR = BASE_DATA_DIR / "backups"
+BASE_DIR = portable_base_dir()
+LOCAL_EXCEL_FILE = BASE_DIR / "data" / "kassensturz_data.xlsx"
+BACKUP_DIR = BASE_DIR / "data" / "backups"
 
 NEXTCLOUD_BASE_URL = Config.NEXTCLOUD_BASE_URL.rstrip("/")
 NEXTCLOUD_USERNAME = Config.NEXTCLOUD_USERNAME
@@ -58,7 +61,10 @@ def get_verify_setting():
 
     ca_cert_path = getattr(Config, "NEXTCLOUD_CA_CERT_PATH", "")
     if ca_cert_path:
-        return ca_cert_path
+        ca_path = Path(ca_cert_path)
+        if not ca_path.is_absolute():
+            ca_path = BASE_DIR / ca_path
+        return str(ca_path)
 
     return True
 

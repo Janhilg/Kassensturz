@@ -60,6 +60,7 @@ Thumbs.db
 build/
 dist/
 *.spec
+!Kassensturz.spec
 
 # If you want to KEEP your spec file, remove the line above
 # and instead ignore only generated ones:
