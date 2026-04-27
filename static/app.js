@@ -20,6 +20,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const STORAGE_LANGUAGE_KEY = "kassensturz_language";
     const STORAGE_THEME_KEY = "kassensturz_theme";
 
+    const successMessageEl = document.getElementById("success_message");
+    if (successMessageEl) {
+        const key = successMessageEl.dataset.i18nKey;
+        if (key && translations[getCurrentLanguage()][key]) {
+            successMessageEl.textContent = t(key);
+        }
+    }
+
     const translations = {
         en: {
             html_lang: "en",
@@ -91,6 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
             upload_success: "Upload zu Nextcloud erfolgreich",
             debug_mode: "DEBUG-MODUS"
         }
+
     };
 
     function getCurrentLanguage() {

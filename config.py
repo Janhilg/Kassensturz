@@ -15,7 +15,7 @@ class Config:
         NEXTCLOUD_REMOTE_FILE = "kassensturz_data.xlsx"
         MODE = "production"
     else:
-        NEXTCLOUD_REMOTE_DIR = "Kassensturz_Test"
+        NEXTCLOUD_REMOTE_DIR = "Apps/Kassensturz/Debug"
         NEXTCLOUD_REMOTE_FILE = "kassensturz_data.xlsx"
         MODE = "debug"
 

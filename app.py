@@ -347,6 +347,9 @@ def upload_excel_file_to_nextcloud(file_path: Path):
     remote_path = f"{NEXTCLOUD_REMOTE_DIR}/{NEXTCLOUD_REMOTE_FILE}"
     url = build_webdav_url(remote_path)
 
+    print(f"[Kassensturz] Uploading to: {remote_path}")
+    print(f"[Kassensturz] WebDAV URL: {url}")
+
     with file_path.open("rb") as file_handle:
         response = requests.put(
             url,
@@ -361,6 +364,9 @@ def upload_excel_file_to_nextcloud(file_path: Path):
             timeout=60,
             verify=get_verify_setting(),
         )
+
+    print(f"[Kassensturz] Upload response: {response.status_code}")
+    print(f"[Kassensturz] Upload response body: {response.text[:500]}")
 
     if response.status_code not in (200, 201, 204):
         raise RuntimeError(
@@ -384,7 +390,7 @@ def append_and_sync(date_value, timestamp_value, event_name, counted_by, cash_su
     )
 
     if nextcloud_configured():
-        flash("upload_success", "success")
+        flash("upload_success" f"{NEXTCLOUD_REMOTE_DIR}/{NEXTCLOUD_REMOTE_FILE}", "success")
 
     if not nextcloud_configured():
         return
