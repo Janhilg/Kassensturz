@@ -26,6 +26,7 @@ config.py
 # Data files (app runtime)
 # =========================
 data/
+data_debug/
 *.xlsx
 *.xls
 *.csv

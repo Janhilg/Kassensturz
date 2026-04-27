@@ -26,6 +26,8 @@ def portable_base_dir() -> Path:
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent
 
+def is_debug_mode():
+    return getattr(Config, "MODE", "production").lower() == "debug"
 
 template_dir = resource_path("templates")
 static_dir = resource_path("static")
@@ -44,8 +46,13 @@ EXCEL_HEADERS = [
 ]
 
 BASE_DIR = portable_base_dir()
-LOCAL_EXCEL_FILE = BASE_DIR / "data" / "kassensturz_data.xlsx"
-BACKUP_DIR = BASE_DIR / "data" / "backups"
+
+if  is_debug_mode():
+    LOCAL_EXCEL_FILE = BASE_DIR / "data_debug" / "kassensturz_data.xlsx"
+    BACKUP_DIR = BASE_DIR / "data_debug" / "backups"
+else:
+    LOCAL_EXCEL_FILE = BASE_DIR / "data" / "kassensturz_data.xlsx"
+    BACKUP_DIR = BASE_DIR / "data" / "backups"
 
 NEXTCLOUD_BASE_URL = Config.NEXTCLOUD_BASE_URL.rstrip("/")
 NEXTCLOUD_USERNAME = Config.NEXTCLOUD_USERNAME
@@ -131,7 +138,6 @@ def ensure_nextcloud_folder():
                 f"{response.status_code} {response.text}"
             )
 
-
 def normalize_row_length(row, target_length):
     row = list(row)
     if len(row) < target_length:
@@ -139,6 +145,7 @@ def normalize_row_length(row, target_length):
     return tuple(row[:target_length])
 
 
+# Migration for older Excel file columns.
 def upgrade_file_format(file_path: Path):
     workbook = load_workbook(file_path)
     sheet = workbook.active
@@ -156,37 +163,7 @@ def upgrade_file_format(file_path: Path):
 
     existing_data = rows[1:] if rows else []
 
-    if header[:4] == ["Date", "Event name", "Cash sum", "Comment"]:
-        sheet.delete_rows(1, sheet.max_row)
-        sheet.append(EXCEL_HEADERS)
-
-        for row in existing_data:
-            row = list(row)
-            date_value = row[0] if len(row) > 0 else ""
-            event_name = row[1] if len(row) > 1 else ""
-            cash_sum = row[2] if len(row) > 2 else ""
-            comment = row[3] if len(row) > 3 else ""
-            sheet.append([date_value, "", event_name, "", cash_sum, "", comment])
-
-        workbook.save(file_path)
-        return
-
-    if header[:5] == ["Date", "Timestamp", "Event name", "Cash sum", "Comment"]:
-        sheet.delete_rows(1, sheet.max_row)
-        sheet.append(EXCEL_HEADERS)
-
-        for row in existing_data:
-            row = list(row)
-            date_value = row[0] if len(row) > 0 else ""
-            timestamp_value = row[1] if len(row) > 1 else ""
-            event_name = row[2] if len(row) > 2 else ""
-            cash_sum = row[3] if len(row) > 3 else ""
-            comment = row[4] if len(row) > 4 else ""
-            sheet.append([date_value, timestamp_value, event_name, "", cash_sum, "", comment])
-
-        workbook.save(file_path)
-        return
-
+    # Previous format: Date, Timestamp, Event name, Cash sum, Event status, Comment
     if header[:6] == ["Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"]:
         sheet.delete_rows(1, sheet.max_row)
         sheet.append(EXCEL_HEADERS)
@@ -199,15 +176,22 @@ def upgrade_file_format(file_path: Path):
             cash_sum = row[3] if len(row) > 3 else ""
             event_state = row[4] if len(row) > 4 else ""
             comment = row[5] if len(row) > 5 else ""
-            sheet.append([date_value, timestamp_value, event_name, "", cash_sum, event_state, comment])
+            sheet.append([
+                date_value,
+                timestamp_value,
+                event_name,
+                "",
+                cash_sum,
+                event_state,
+                comment,
+            ])
 
         workbook.save(file_path)
         return
 
-    if sheet.max_row == 1:
-        sheet.delete_rows(1, sheet.max_row)
-        sheet.append(EXCEL_HEADERS)
-        workbook.save(file_path)
+    raise RuntimeError(
+        "Unsupported Excel format. Expected current format or previous format without 'Counted by'."
+    )
 
 
 def append_to_excel_file(
@@ -400,6 +384,16 @@ def append_and_sync(date_value, timestamp_value, event_name, counted_by, cash_su
     if not nextcloud_configured():
         return
 
+    # Debug mode:
+    # keep local file and upload directly to the debug Nextcloud path
+    # without merging remote content back in.
+    if is_debug_mode():
+        create_backup()
+        upload_excel_file_to_nextcloud(LOCAL_EXCEL_FILE)
+        return
+
+    # Production mode:
+    # merge local + remote, then upload
     with tempfile.TemporaryDirectory() as tmp_dir:
         remote_file = Path(tmp_dir) / "remote.xlsx"
         remote_exists = download_remote_to_temp(remote_file)
@@ -467,8 +461,5 @@ if __name__ == "__main__":
     upgrade_file_format(LOCAL_EXCEL_FILE)
 
     threading.Timer(1.0, open_browser).start()
-    if Config.PRODUCTION_MODE == "True":
-        isProd = True
-    else:
-        isProd = False
-    app.run(host="127.0.0.1", port=5000, debug= not isProd)
+
+    app.run(host="127.0.0.1", port=5000, debug= is_debug_mode())
