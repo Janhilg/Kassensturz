@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const currentDateElement = document.getElementById("current_date");
 
     const textInput = document.getElementById("text_input");
+    const countedByInput = document.getElementById("counted_by_input");
     const numberInput = document.getElementById("number_input");
     const commentInput = document.getElementById("comment_input");
 
@@ -26,8 +27,13 @@ document.addEventListener("DOMContentLoaded", function () {
             date_prefix: "Date: ",
             event_name: "Event name",
             event_name_placeholder: "Enter event name",
+            counted_by: "Counted by",
+            counted_by_placeholder: "Enter name of person counting",
             cash_sum: "Cash sum",
             cash_sum_placeholder: "Enter cash amount",
+            event_state: "Event status",
+            event_state_opening: "Opening",
+            event_state_closing: "Closing",
             comment: "Comment (optional)",
             comment_placeholder: "Enter comment (optional)",
             confirm: "Confirm",
@@ -45,19 +51,22 @@ document.addEventListener("DOMContentLoaded", function () {
             language: "Language:",
             theme: "Theme:",
             theme_dark: "Dark",
-            event_state: "Event status",
-            event_state_opening: "Opening",
-            event_state_closing: "Closing",
-            theme_light: "Light"
+            theme_light: "Light",
+            debug_mode: "DEBUG MODE"
         },
         de: {
             html_lang: "de",
             form_title: "Eingabeformular",
             date_prefix: "Datum: ",
-            event_name: "Veranstaltungsname",
-            event_name_placeholder: "Veranstaltungsname eingeben",
+            event_name: "Ereignisname",
+            event_name_placeholder: "Ereignisname eingeben",
+            counted_by: "Gezählt von",
+            counted_by_placeholder: "Name der zählenden Person eingeben",
             cash_sum: "Bargeldsumme",
             cash_sum_placeholder: "Bargeldbetrag eingeben",
+            event_state: "Ereignisstatus",
+            event_state_opening: "Öffnung",
+            event_state_closing: "Schließung",
             comment: "Kommentar (optional)",
             comment_placeholder: "Kommentar eingeben (optional)",
             confirm: "Bestätigen",
@@ -75,10 +84,8 @@ document.addEventListener("DOMContentLoaded", function () {
             language: "Sprache:",
             theme: "Design:",
             theme_dark: "Dunkel",
-            event_state: "Veranstaltungsstatus",
-            event_state_opening: "Öffnung",
-            event_state_closing: "Schließung",
-            theme_light: "Hell"
+            theme_light: "Hell",
+            debug_mode: "DEBUG-MODUS"
         }
     };
 
@@ -139,20 +146,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
         setText("form_title", t("form_title"));
         setText("label_event_name", t("event_name"));
+        setText("label_counted_by", t("counted_by"));
         setText("label_cash_sum", t("cash_sum"));
-        setText("label_comment", t("comment"));
-        setText("confirm_button", t("confirm"));
         setText("label_event_state", t("event_state"));
         setText("event_state_opening_label", t("event_state_opening"));
         setText("event_state_closing_label", t("event_state_closing"));
-        setText("submitted_event_state_label", t("event_state") + ":");
-
+        setText("label_comment", t("comment"));
+        setText("confirm_button", t("confirm"));
 
         setText("submitted_values_title", t("submitted_values"));
         setText("submitted_date_label", t("submitted_date") + ":");
         setText("submitted_timestamp_label", t("timestamp") + ":");
         setText("submitted_event_name_label", t("event_name") + ":");
+        setText("submitted_counted_by_label", t("counted_by") + ":");
         setText("submitted_cash_sum_label", t("cash_sum") + ":");
+        setText("submitted_event_state_label", t("event_state") + ":");
         setText("submitted_comment_label", t("comment").replace(" (optional)", "") + ":");
 
         setText("calc_title", t("live_calculation"));
@@ -165,9 +173,14 @@ document.addEventListener("DOMContentLoaded", function () {
         setText("theme_label", t("theme"));
         setText("theme_dark_button", t("theme_dark"));
         setText("theme_light_button", t("theme_light"));
+        setText("debug_banner", t("debug_mode"));
 
         if (textInput) {
             textInput.placeholder = t("event_name_placeholder");
+        }
+
+        if (countedByInput) {
+            countedByInput.placeholder = t("counted_by_placeholder");
         }
 
         if (numberInput) {
