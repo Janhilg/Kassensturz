@@ -21,16 +21,8 @@ This creates a **portable folder** containing the executable and all required fi
 ### Windows
 
 ```bash
-pyinstaller --onedir --name Kassensturz ^
-  --add-data "templates;templates" ^
-  --add-data "static;static" ^
-  app.py
-```
-
-### Linux / macOS
-
-```bash
 pyinstaller --onedir --name Kassensturz \
+  --icon=assets/cash.ico \
   --add-data "templates:templates" \
   --add-data "static:static" \
   app.py
