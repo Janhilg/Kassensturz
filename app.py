@@ -109,20 +109,27 @@ def ensure_nextcloud_folder():
     if not nextcloud_configured():
         return
 
-    url = build_webdav_url(NEXTCLOUD_REMOTE_DIR)
-    response = requests.request(
-        "MKCOL",
-        url,
-        auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_APP_PASSWORD),
-        timeout=30,
-        verify=get_verify_setting(),
-    )
+    parts = [part for part in NEXTCLOUD_REMOTE_DIR.strip("/").split("/") if part]
+    current_path = ""
 
-    if response.status_code not in (201, 405):
-        raise RuntimeError(
-            f"Failed to create Nextcloud folder: "
-            f"{response.status_code} {response.text}"
+    for part in parts:
+        current_path = f"{current_path}/{part}" if current_path else part
+        url = build_webdav_url(current_path)
+
+        response = requests.request(
+            "MKCOL",
+            url,
+            auth=(NEXTCLOUD_USERNAME, NEXTCLOUD_APP_PASSWORD),
+            timeout=30,
+            verify=get_verify_setting(),
         )
+
+        # 201 = created, 405 = already exists
+        if response.status_code not in (201, 405):
+            raise RuntimeError(
+                f"Failed to create Nextcloud folder '{current_path}': "
+                f"{response.status_code} {response.text}"
+            )
 
 
 def normalize_row_length(row, target_length):
@@ -460,4 +467,8 @@ if __name__ == "__main__":
     upgrade_file_format(LOCAL_EXCEL_FILE)
 
     threading.Timer(1.0, open_browser).start()
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    if Config.PRODUCTION_MODE == "True":
+        isProd = True
+    else:
+        isProd = False
+    app.run(host="127.0.0.1", port=5000, debug= not isProd)

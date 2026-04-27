@@ -3,22 +3,20 @@ class Config:
     # App Mode
     # =========================
     # "production" or "debug"
-    PRODUCTION_MODE = "False"
+    PRODUCTION_MODE = "false"
 
     # Nextcloud settings (fallback defaults)
     NEXTCLOUD_BASE_URL = "https://nx94183.your-storageshare.de/"
     NEXTCLOUD_USERNAME = "jan.hilgenfeld@hotmail.com"
     NEXTCLOUD_APP_PASSWORD = ";926nkxEHy#?XG!a"
 
-
-
-    if PRODUCTION_MODE == "True":
-        NEXTCLOUD_REMOTE_DIR = "Kassensturz"
-        NEXTCLOUD_REMOTE_FILE = "kassensturz_data_test.xlsx"
+    if PRODUCTION_MODE == "true":
+        NEXTCLOUD_REMOTE_DIR = "Apps/Kassensturz"
+        NEXTCLOUD_REMOTE_FILE = "kassensturz_data.xlsx"
         MODE = "production"
     else:
-        NEXTCLOUD_REMOTE_DIR = "App/Kassensturz"
-        NEXTCLOUD_REMOTE_FILE = "kassensturz_data.xlsx"
+        NEXTCLOUD_REMOTE_DIR = "Kassensturz"
+        NEXTCLOUD_REMOTE_FILE = "kassensturz_data_test.xlsx"
         MODE = "debug"
 
 
