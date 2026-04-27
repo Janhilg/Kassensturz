@@ -12,6 +12,7 @@ import {
     updateThemeButtons
 } from "./theme.js";
 
+
 document.addEventListener("DOMContentLoaded", function () {
     const calculator = initCalculator({
         calcInput: document.getElementById("calc_input"),
@@ -34,6 +35,37 @@ document.addEventListener("DOMContentLoaded", function () {
             saveErrorBox.style.display = "none";
         }
     }
+
+    function syncCashCounterToHiddenInputs() {
+    const ids = [
+        "100", "50", "20", "10", "5",
+        "2", "1", "050", "020", "010"
+    ];
+
+    ids.forEach((suffix) => {
+        const source = document.getElementById(`denom_${suffix}`);
+        const target = document.getElementById(`hidden_denom_${suffix}`);
+
+        if (!source || !target) return;
+
+        const value = source.value;
+
+        if (value === "") {
+            target.value = "";
+        } else {
+            target.value = value; // includes "0"
+        }
+    });
+}
+
+const form = document.querySelector("form");
+
+if (form) {
+    form.addEventListener("submit", function () {
+        syncCashCounterToHiddenInputs();
+    });
+}
+
 
     applyTheme();
     applyTranslations();

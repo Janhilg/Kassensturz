@@ -20,6 +20,7 @@ mimetypes.add_type("application/javascript", ".js")
 print(f"[Kassensturz] MODE = {Config.MODE}")
 print(f"[Kassensturz] FROZEN = {getattr(sys, 'frozen', False)}")
 
+
 def resource_path(relative_path: str) -> str:
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative_path)
@@ -31,8 +32,10 @@ def portable_base_dir() -> Path:
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent
 
+
 def is_debug_mode():
     return Config.MODE == "debug" and not Config.IS_FROZEN
+
 
 template_dir = resource_path("templates")
 static_dir = resource_path("static")
@@ -48,11 +51,47 @@ EXCEL_HEADERS = [
     "Cash sum",
     "Event status",
     "Comment",
+    "100 €",
+    "50 €",
+    "20 €",
+    "10 €",
+    "5 €",
+    "2 €",
+    "1 €",
+    "0.50 €",
+    "0.20 €",
+    "0.10 €",
 ]
+
+DENOMINATION_FORM_KEYS = [
+    "denom_100",
+    "denom_50",
+    "denom_20",
+    "denom_10",
+    "denom_5",
+    "denom_2",
+    "denom_1",
+    "denom_050",
+    "denom_020",
+    "denom_010",
+]
+
+DENOMINATION_HEADERS = {
+    "denom_100": "100 €",
+    "denom_50": "50 €",
+    "denom_20": "20 €",
+    "denom_10": "10 €",
+    "denom_5": "5 €",
+    "denom_2": "2 €",
+    "denom_1": "1 €",
+    "denom_050": "0.50 €",
+    "denom_020": "0.20 €",
+    "denom_010": "0.10 €",
+}
 
 BASE_DIR = portable_base_dir()
 
-if  is_debug_mode():
+if is_debug_mode():
     LOCAL_EXCEL_FILE = BASE_DIR / "data_debug" / "kassensturz_data.xlsx"
     BACKUP_DIR = BASE_DIR / "data_debug" / "backups"
 else:
@@ -136,12 +175,12 @@ def ensure_nextcloud_folder():
             verify=get_verify_setting(),
         )
 
-        # 201 = created, 405 = already exists
         if response.status_code not in (201, 405):
             raise RuntimeError(
                 f"Failed to create Nextcloud folder '{current_path}': "
                 f"{response.status_code} {response.text}"
             )
+
 
 def normalize_row_length(row, target_length):
     row = list(row)
@@ -150,7 +189,25 @@ def normalize_row_length(row, target_length):
     return tuple(row[:target_length])
 
 
-# Migration for older Excel file columns.
+def get_denomination_values_from_form(form):
+    values = {}
+
+    for key in DENOMINATION_FORM_KEYS:
+        raw_value = str(form.get(key, "")).strip()
+
+        if raw_value == "":
+            values[key] = ""
+            continue
+
+        try:
+            parsed_value = int(raw_value)
+            values[key] = parsed_value if parsed_value >= 0 else ""
+        except (ValueError, TypeError):
+            values[key] = ""
+
+    return values
+
+
 def upgrade_file_format(file_path: Path):
     workbook = load_workbook(file_path)
     sheet = workbook.active
@@ -162,40 +219,134 @@ def upgrade_file_format(file_path: Path):
         return
 
     header = [str(cell) if cell is not None else "" for cell in rows[0]]
+    existing_data = rows[1:] if len(rows) > 1 else []
 
     if header == EXCEL_HEADERS:
         return
 
-    existing_data = rows[1:] if rows else []
-
-    # Previous format: Date, Timestamp, Event name, Cash sum, Event status, Comment
+    # Very old format:
+    # Date, Timestamp, Event name, Cash sum, Event status, Comment
     if header[:6] == ["Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"]:
+        rebuilt_rows = []
+        for row in existing_data:
+            row = list(row)
+            rebuilt_rows.append([
+                row[0] if len(row) > 0 else "",
+                row[1] if len(row) > 1 else "",
+                row[2] if len(row) > 2 else "",
+                "",
+                row[3] if len(row) > 3 else "",
+                row[4] if len(row) > 4 else "",
+                row[5] if len(row) > 5 else "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ])
+
         sheet.delete_rows(1, sheet.max_row)
         sheet.append(EXCEL_HEADERS)
+        for rebuilt_row in rebuilt_rows:
+            sheet.append(rebuilt_row)
+
+        workbook.save(file_path)
+        return
+
+    # Previous current format without denominations:
+    # Date, Timestamp, Event name, Counted by, Cash sum, Event status, Comment
+    if header[:7] == [
+        "Date",
+        "Timestamp",
+        "Event name",
+        "Counted by",
+        "Cash sum",
+        "Event status",
+        "Comment",
+    ]:
+        rebuilt_rows = []
+        for row in existing_data:
+            row = list(row)
+            rebuilt_rows.append([
+                row[0] if len(row) > 0 else "",
+                row[1] if len(row) > 1 else "",
+                row[2] if len(row) > 2 else "",
+                row[3] if len(row) > 3 else "",
+                row[4] if len(row) > 4 else "",
+                row[5] if len(row) > 5 else "",
+                row[6] if len(row) > 6 else "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ])
+
+        sheet.delete_rows(1, sheet.max_row)
+        sheet.append(EXCEL_HEADERS)
+        for rebuilt_row in rebuilt_rows:
+            sheet.append(rebuilt_row)
+
+        workbook.save(file_path)
+        return
+
+    # Generic partial upgrade path
+    if all(required in header for required in [
+        "Date", "Timestamp", "Event name", "Counted by", "Cash sum", "Event status", "Comment"
+    ]):
+        header_index = {name: idx for idx, name in enumerate(header)}
+        rebuilt_rows = []
 
         for row in existing_data:
             row = list(row)
-            date_value = row[0] if len(row) > 0 else ""
-            timestamp_value = row[1] if len(row) > 1 else ""
-            event_name = row[2] if len(row) > 2 else ""
-            cash_sum = row[3] if len(row) > 3 else ""
-            event_state = row[4] if len(row) > 4 else ""
-            comment = row[5] if len(row) > 5 else ""
-            sheet.append([
-                date_value,
-                timestamp_value,
-                event_name,
-                "",
-                cash_sum,
-                event_state,
-                comment,
+
+            def value_for(col_name, default=""):
+                idx = header_index.get(col_name)
+                if idx is None or idx >= len(row):
+                    return default
+                value = row[idx]
+                return default if value is None else value
+
+            rebuilt_rows.append([
+                value_for("Date", ""),
+                value_for("Timestamp", ""),
+                value_for("Event name", ""),
+                value_for("Counted by", ""),
+                value_for("Cash sum", ""),
+                value_for("Event status", ""),
+                value_for("Comment", ""),
+                value_for("100 €", ""),
+                value_for("50 €", ""),
+                value_for("20 €", ""),
+                value_for("10 €", ""),
+                value_for("5 €", ""),
+                value_for("2 €", ""),
+                value_for("1 €", ""),
+                value_for("0.50 €", ""),
+                value_for("0.20 €", ""),
+                value_for("0.10 €", ""),
             ])
+
+        sheet.delete_rows(1, sheet.max_row)
+        sheet.append(EXCEL_HEADERS)
+        for rebuilt_row in rebuilt_rows:
+            sheet.append(rebuilt_row)
 
         workbook.save(file_path)
         return
 
     raise RuntimeError(
-        "Unsupported Excel format. Expected current format or previous format without 'Counted by'."
+        "Unsupported Excel format. Expected current format or an older supported format."
     )
 
 
@@ -208,6 +359,7 @@ def append_to_excel_file(
     cash_sum: float,
     event_state: str,
     comment: str,
+    denominations: dict,
 ):
     upgrade_file_format(file_path)
 
@@ -221,6 +373,16 @@ def append_to_excel_file(
         cash_sum,
         event_state,
         comment,
+        denominations.get("denom_100", ""),
+        denominations.get("denom_50", ""),
+        denominations.get("denom_20", ""),
+        denominations.get("denom_10", ""),
+        denominations.get("denom_5", ""),
+        denominations.get("denom_2", ""),
+        denominations.get("denom_1", ""),
+        denominations.get("denom_050", ""),
+        denominations.get("denom_020", ""),
+        denominations.get("denom_010", ""),
     ])
     workbook.save(file_path)
 
@@ -378,7 +540,16 @@ def upload_excel_file_to_nextcloud(file_path: Path):
         )
 
 
-def append_and_sync(date_value, timestamp_value, event_name, counted_by, cash_sum, event_state, comment):
+def append_and_sync(
+    date_value,
+    timestamp_value,
+    event_name,
+    counted_by,
+    cash_sum,
+    event_state,
+    comment,
+    denominations,
+):
     ensure_local_excel_file()
 
     append_to_excel_file(
@@ -390,24 +561,20 @@ def append_and_sync(date_value, timestamp_value, event_name, counted_by, cash_su
         cash_sum,
         event_state,
         comment,
+        denominations,
     )
 
     if nextcloud_configured():
-        flash("upload_success" f"{NEXTCLOUD_REMOTE_DIR}/{NEXTCLOUD_REMOTE_FILE}", "success")
+        flash("upload_success", "success")
 
     if not nextcloud_configured():
         return
 
-    # Debug mode:
-    # keep local file and upload directly to the debug Nextcloud path
-    # without merging remote content back in.
     if is_debug_mode():
         create_backup()
         upload_excel_file_to_nextcloud(LOCAL_EXCEL_FILE)
         return
 
-    # Production mode:
-    # merge local + remote, then upload
     with tempfile.TemporaryDirectory() as tmp_dir:
         remote_file = Path(tmp_dir) / "remote.xlsx"
         remote_exists = download_remote_to_temp(remote_file)
@@ -427,6 +594,7 @@ def home():
         submitted_number = request.form.get("number_input", "").strip()
         submitted_event_state = request.form.get("event_state", "").strip()
         submitted_comment = request.form.get("comment_input", "").strip()
+        denominations = get_denomination_values_from_form(request.form)
 
         if submitted_text and submitted_counted_by and submitted_number and submitted_event_state:
             try:
@@ -442,6 +610,7 @@ def home():
                     float(submitted_number),
                     submitted_event_state,
                     submitted_comment,
+                    denominations,
                 )
 
                 flash(
@@ -453,6 +622,7 @@ def home():
                         "number": submitted_number,
                         "event_state": submitted_event_state,
                         "comment": submitted_comment,
+                        "denominations": denominations,
                     },
                     "submitted",
                 )
@@ -476,4 +646,4 @@ if __name__ == "__main__":
 
     threading.Timer(1.0, open_browser).start()
 
-    app.run(host="127.0.0.1", port=5000, debug= is_debug_mode())
+    app.run(host="127.0.0.1", port=5000, debug=is_debug_mode())
