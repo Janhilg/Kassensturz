@@ -53,6 +53,9 @@ const translations = {
         cash_counter_total: "Cash counter total",
         clear_cash_counter: "Clear cash counter",
 
+        apply_cash_counter_to_form: "Apply result to form",
+        apply_cash_counter_to_calculator: "Send total to calculator",
+
         bills: "Bills",
         coins: "Coins"
     },
@@ -109,6 +112,9 @@ const translations = {
         cash_counter_title: "Bargeldzähler",
         cash_counter_total: "Gesamtsumme",
         clear_cash_counter: "Zähler leeren",
+
+        apply_cash_counter_to_form: "Ergebnis übernehmen",
+        apply_cash_counter_to_calculator: "Summe an Rechner senden",
 
         bills: "Scheine",
         coins: "Münzen"
@@ -196,6 +202,9 @@ export function applyTranslations() {
     setText("cash_counter_title", t("cash_counter_title"));
     setText("cash_counter_total_label", t("cash_counter_total"));
     setText("clear_cash_counter_button", t("clear_cash_counter"));
+
+    setText("apply_cash_counter_to_form_button", t("apply_cash_counter_to_form"));
+    setText("apply_cash_counter_to_calculator_button", t("apply_cash_counter_to_calculator"));
 
     setText("bills_label", t("bills"));
     setText("coins_label", t("coins"));
