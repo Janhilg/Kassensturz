@@ -422,6 +422,7 @@ button {
     box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.25);
 }
 
+
 @media (max-width: 800px) {
     .cash-counter-grid {
         grid-template-columns: 1fr;

@@ -33,7 +33,7 @@ const translations = {
         current_total: "Current total",
 
         apply_result: "Apply result to form",
-        clear_history: "Clear Session History",
+        clear_calculator: "Clear calculator",
         session_history: "Session History",
         no_history: "No calculations yet.",
 
@@ -90,7 +90,7 @@ const translations = {
         current_total: "Gesamtsumme",
 
         apply_result: "Ergebnis übernehmen",
-        clear_history: "Verlauf löschen",
+        clear_calculator: "Rechner zurücksetzen",
         session_history: "Verlauf",
         no_history: "Noch keine Berechnungen.",
 
@@ -183,7 +183,7 @@ export function applyTranslations() {
     setText("label_calc_input", t("calc_input"));
     setText("current_total_label", t("current_total"));
     setText("apply_to_form_button", t("apply_result"));
-    setText("clear_button", t("clear_history"));
+    setText("clear_button", t("clear_calculator"));
     setText("history_title", t("session_history"));
     setText("language_label", t("language"));
     setText("theme_label", t("theme"));
