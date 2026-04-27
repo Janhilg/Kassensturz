@@ -29,6 +29,11 @@ pyinstaller --onedir --name Kassensturz \
   app.py
 ```
 
+as one line:
+```bash
+pyinstaller --onedir --name Kassensturz  --icon=assets/cash.ico --add-data "templates:templates" --add-data "static:static" --noconsole app.py
+```
+
 Output will be in:
 
 ```text
