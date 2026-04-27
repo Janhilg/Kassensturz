@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    {% if app_mode == "debug" %}
+    <div class="debug-banner" id="debug_banner">DEBUG MODE</div>
+    {% endif %}
     <div class="page">
         <h1 id="app_title">Kassensturz</h1>
 
@@ -39,6 +42,7 @@
                             required
                         >
                     </div>
+
                     <div>
                         <label id="label_event_state">Event status</label>
                         <div class="radio-group">
@@ -53,6 +57,7 @@
                             </label>
                         </div>
                     </div>
+                    
                     <div>
                         <label for="comment_input" id="label_comment">Comment (optional)</label>
                         <input

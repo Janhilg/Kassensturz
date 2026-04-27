@@ -1,6 +1,9 @@
 import os
 import shutil
+import sys
 import tempfile
+import threading
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
@@ -11,12 +14,42 @@ from openpyxl import Workbook, load_workbook
 
 from config import Config
 
-app = Flask(__name__)
+
+def resource_path(relative_path: str) -> str:
+    """
+    Path to bundled read-only resources like templates/ and static/.
+    In PyInstaller one-file mode these live in the temp extraction dir.
+    """
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
+
+def portable_base_dir() -> Path:
+    """
+    Writable app directory for portable mode.
+    In a frozen app, use the folder containing the executable.
+    In development, use the project directory.
+    """
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
+
+template_dir = resource_path("templates")
+static_dir = resource_path("static")
+
+print(f"[Kassensturz] Running in {Config.MODE} mode")
+print(f"[Kassensturz] Nextcloud path: {Config.NEXTCLOUD_REMOTE_DIR}")
+
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
 EXCEL_HEADERS = ["Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"]
-LOCAL_EXCEL_FILE = Path("data/kassensturz_data.xlsx")
-BACKUP_DIR = Path("data/backups")
+
+BASE_DIR = portable_base_dir()
+LOCAL_EXCEL_FILE = BASE_DIR / "data" / "kassensturz_data.xlsx"
+BACKUP_DIR = BASE_DIR / "data" / "backups"
 
 NEXTCLOUD_BASE_URL = Config.NEXTCLOUD_BASE_URL.rstrip("/")
 NEXTCLOUD_USERNAME = Config.NEXTCLOUD_USERNAME
@@ -31,7 +64,10 @@ def get_verify_setting():
 
     ca_cert_path = getattr(Config, "NEXTCLOUD_CA_CERT_PATH", "")
     if ca_cert_path:
-        return ca_cert_path
+        ca_path = Path(ca_cert_path)
+        if not ca_path.is_absolute():
+            ca_path = BASE_DIR / ca_path
+        return str(ca_path)
 
     return True
 
@@ -117,7 +153,6 @@ def upgrade_file_format(file_path: Path):
 
     existing_data = rows[1:] if rows else []
 
-    # Old format: Date, Event name, Cash sum, Comment
     if header[:4] == ["Date", "Event name", "Cash sum", "Comment"]:
         sheet.delete_rows(1, sheet.max_row)
         sheet.append(EXCEL_HEADERS)
@@ -133,7 +168,6 @@ def upgrade_file_format(file_path: Path):
         workbook.save(file_path)
         return
 
-    # Previous format: Date, Timestamp, Event name, Cash sum, Comment
     if header[:5] == ["Date", "Timestamp", "Event name", "Cash sum", "Comment"]:
         sheet.delete_rows(1, sheet.max_row)
         sheet.append(EXCEL_HEADERS)
@@ -388,10 +422,16 @@ def home():
                 flash(str(exc), "error")
                 return redirect(url_for("home"))
 
-    return render_template("index.html")
+    return render_template("index.html", app_mode=Config.MODE)
+
+
+def open_browser():
+    webbrowser.open("http://127.0.0.1:5000")
 
 
 if __name__ == "__main__":
     ensure_local_excel_file()
     upgrade_file_format(LOCAL_EXCEL_FILE)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+
+    threading.Timer(1.0, open_browser).start()
+    app.run(host="127.0.0.1", port=5000, debug=False)
