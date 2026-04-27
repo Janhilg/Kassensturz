@@ -25,6 +25,7 @@ pyinstaller --onedir --name Kassensturz \
   --icon=assets/cash.ico \
   --add-data "templates:templates" \
   --add-data "static:static" \
+  --noconsole \ 
   app.py
 ```
 
@@ -37,8 +38,7 @@ dist/Kassensturz/
 You can copy this entire folder to another machine or USB stick and run:
 
 ```text
-Kassensturz.exe   (Windows)
-./Kassensturz     (Linux/macOS)
+Kassensturz.exe
 ```
 
 ## Features
