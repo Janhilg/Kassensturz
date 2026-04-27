@@ -14,6 +14,8 @@ from openpyxl import Workbook, load_workbook
 
 from config import Config
 
+print(f"[Kassensturz] MODE = {Config.MODE}")
+print(f"[Kassensturz] FROZEN = {getattr(sys, 'frozen', False)}")
 
 def resource_path(relative_path: str) -> str:
     if hasattr(sys, "_MEIPASS"):
@@ -27,7 +29,7 @@ def portable_base_dir() -> Path:
     return Path(__file__).resolve().parent
 
 def is_debug_mode():
-    return getattr(Config, "MODE", "production").lower() == "debug"
+    return Config.MODE == "debug" and not Config.IS_FROZEN
 
 template_dir = resource_path("templates")
 static_dir = resource_path("static")

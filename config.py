@@ -1,15 +1,15 @@
+import sys
+
 class Config:
     # =========================
-    # App Mode
+    # Detect PyInstaller build
     # =========================
-    # "production" or "debug"
+    IS_FROZEN = getattr(sys, "frozen", False)
+
+    # =========================
+    # App Mode / Mode-based path
+    # =========================
     PRODUCTION_MODE = "false"
-
-    # Nextcloud settings
-    NEXTCLOUD_BASE_URL = "https://nx94183.your-storageshare.de/"
-    NEXTCLOUD_USERNAME = "jan.hilgenfeld@hotmail.com"
-    NEXTCLOUD_APP_PASSWORD = ";926nkxEHy#?XG!a"
-
     if PRODUCTION_MODE == "true":
         NEXTCLOUD_REMOTE_DIR = "Apps/Kassensturz"
         NEXTCLOUD_REMOTE_FILE = "kassensturz_data.xlsx"
@@ -19,7 +19,22 @@ class Config:
         NEXTCLOUD_REMOTE_FILE = "kassensturz_data.xlsx"
         MODE = "debug"
 
+    # =========================
+    # App Mode PyInstaller build
+    # =========================
+    if IS_FROZEN:
+        MODE = "production"
 
-    # Path to a CA bundle or CA cert that signs your Nextcloud certificate
+    # =========================
+    # Nextcloud credentials
+    # =========================
+    NEXTCLOUD_BASE_URL = ""
+    NEXTCLOUD_USERNAME = ""
+    NEXTCLOUD_APP_PASSWORD = ""
+
+    # =========================
+    # SSL handling
+    # =========================
+    # unused - does require to get a valid cert
     NEXTCLOUD_CA_CERT_PATH = ""
     NEXTCLOUD_VERIFY = "false"
