@@ -206,7 +206,7 @@ export function initCalculator(options) {
 
     function clearCashCounter() {
         denominationInputs.forEach((input) => {
-            input.value = 0;
+            input.value = "";
         });
         calculateCashCounterTotal();
     }
