@@ -381,6 +381,9 @@ def append_and_sync(date_value, timestamp_value, event_name, counted_by, cash_su
         comment,
     )
 
+    if nextcloud_configured():
+        flash("upload_success", "success")
+
     if not nextcloud_configured():
         return
 

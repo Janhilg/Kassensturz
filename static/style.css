@@ -44,10 +44,16 @@ body[data-theme="light"] {
     --submitted-bg: #eef6ee;
     --submitted-border: #238636;
     --footer-border: #d0d7de;
+    .success-box {
+        background: #e6f4ea;
+        border-color: #2ea043;
+        color: #1a1a1a;
+    }
 }
 * {
     box-sizing: border-box;
 }
+
 
 body {
     font-family: Arial, sans-serif;
@@ -281,6 +287,14 @@ button {
     top: 0;
     z-index: 1000;
     border-bottom: 2px solid #cc9900;
+}
+.success-box {
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 8px;
+    background: #0f2419;
+    border: 1px solid #2ea043;
+    color: #e6edf3;
 }
 
 @media (max-width: 800px) {

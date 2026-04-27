@@ -52,6 +52,8 @@ document.addEventListener("DOMContentLoaded", function () {
             theme: "Theme:",
             theme_dark: "Dark",
             theme_light: "Light",
+            success: "Success",
+            upload_success: "Upload to Nextcloud successful",
             debug_mode: "DEBUG MODE"
         },
         de: {
@@ -85,6 +87,8 @@ document.addEventListener("DOMContentLoaded", function () {
             theme: "Design:",
             theme_dark: "Dunkel",
             theme_light: "Hell",
+            success: "Erfolg",
+            upload_success: "Upload zu Nextcloud erfolgreich",
             debug_mode: "DEBUG-MODUS"
         }
     };
@@ -174,6 +178,8 @@ document.addEventListener("DOMContentLoaded", function () {
         setText("theme_dark_button", t("theme_dark"));
         setText("theme_light_button", t("theme_light"));
         setText("debug_banner", t("debug_mode"));
+        setText("success_title", t("success"));
+        setText("success_message", t(document.getElementById("success_message")?.textContent));
 
         if (textInput) {
             textInput.placeholder = t("event_name_placeholder");
