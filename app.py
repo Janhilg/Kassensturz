@@ -16,21 +16,12 @@ from config import Config
 
 
 def resource_path(relative_path: str) -> str:
-    """
-    Path to bundled read-only resources like templates/ and static/.
-    In PyInstaller one-file mode these live in the temp extraction dir.
-    """
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
 
 def portable_base_dir() -> Path:
-    """
-    Writable app directory for portable mode.
-    In a frozen app, use the folder containing the executable.
-    In development, use the project directory.
-    """
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent
@@ -39,13 +30,18 @@ def portable_base_dir() -> Path:
 template_dir = resource_path("templates")
 static_dir = resource_path("static")
 
-print(f"[Kassensturz] Running in {Config.MODE} mode")
-print(f"[Kassensturz] Nextcloud path: {Config.NEXTCLOUD_REMOTE_DIR}")
-
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
-EXCEL_HEADERS = ["Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"]
+EXCEL_HEADERS = [
+    "Date",
+    "Timestamp",
+    "Event name",
+    "Counted by",
+    "Cash sum",
+    "Event status",
+    "Comment",
+]
 
 BASE_DIR = portable_base_dir()
 LOCAL_EXCEL_FILE = BASE_DIR / "data" / "kassensturz_data.xlsx"
@@ -163,7 +159,7 @@ def upgrade_file_format(file_path: Path):
             event_name = row[1] if len(row) > 1 else ""
             cash_sum = row[2] if len(row) > 2 else ""
             comment = row[3] if len(row) > 3 else ""
-            sheet.append([date_value, "", event_name, cash_sum, "", comment])
+            sheet.append([date_value, "", event_name, "", cash_sum, "", comment])
 
         workbook.save(file_path)
         return
@@ -179,7 +175,24 @@ def upgrade_file_format(file_path: Path):
             event_name = row[2] if len(row) > 2 else ""
             cash_sum = row[3] if len(row) > 3 else ""
             comment = row[4] if len(row) > 4 else ""
-            sheet.append([date_value, timestamp_value, event_name, cash_sum, "", comment])
+            sheet.append([date_value, timestamp_value, event_name, "", cash_sum, "", comment])
+
+        workbook.save(file_path)
+        return
+
+    if header[:6] == ["Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"]:
+        sheet.delete_rows(1, sheet.max_row)
+        sheet.append(EXCEL_HEADERS)
+
+        for row in existing_data:
+            row = list(row)
+            date_value = row[0] if len(row) > 0 else ""
+            timestamp_value = row[1] if len(row) > 1 else ""
+            event_name = row[2] if len(row) > 2 else ""
+            cash_sum = row[3] if len(row) > 3 else ""
+            event_state = row[4] if len(row) > 4 else ""
+            comment = row[5] if len(row) > 5 else ""
+            sheet.append([date_value, timestamp_value, event_name, "", cash_sum, event_state, comment])
 
         workbook.save(file_path)
         return
@@ -195,6 +208,7 @@ def append_to_excel_file(
     date_value: str,
     timestamp_value: str,
     event_name: str,
+    counted_by: str,
     cash_sum: float,
     event_state: str,
     comment: str,
@@ -203,7 +217,15 @@ def append_to_excel_file(
 
     workbook = load_workbook(file_path)
     sheet = workbook.active
-    sheet.append([date_value, timestamp_value, event_name, cash_sum, event_state, comment])
+    sheet.append([
+        date_value,
+        timestamp_value,
+        event_name,
+        counted_by,
+        cash_sum,
+        event_state,
+        comment,
+    ])
     workbook.save(file_path)
 
 
@@ -354,7 +376,7 @@ def upload_excel_file_to_nextcloud(file_path: Path):
         )
 
 
-def append_and_sync(date_value, timestamp_value, event_name, cash_sum, event_state, comment):
+def append_and_sync(date_value, timestamp_value, event_name, counted_by, cash_sum, event_state, comment):
     ensure_local_excel_file()
 
     append_to_excel_file(
@@ -362,6 +384,7 @@ def append_and_sync(date_value, timestamp_value, event_name, cash_sum, event_sta
         date_value,
         timestamp_value,
         event_name,
+        counted_by,
         cash_sum,
         event_state,
         comment,
@@ -385,11 +408,12 @@ def append_and_sync(date_value, timestamp_value, event_name, cash_sum, event_sta
 def home():
     if request.method == "POST":
         submitted_text = request.form.get("text_input", "").strip()
+        submitted_counted_by = request.form.get("counted_by_input", "").strip()
         submitted_number = request.form.get("number_input", "").strip()
         submitted_event_state = request.form.get("event_state", "").strip()
         submitted_comment = request.form.get("comment_input", "").strip()
 
-        if submitted_text and submitted_number and submitted_event_state:
+        if submitted_text and submitted_counted_by and submitted_number and submitted_event_state:
             try:
                 now = datetime.now()
                 current_date = now.strftime("%Y-%m-%d")
@@ -399,6 +423,7 @@ def home():
                     current_date,
                     current_timestamp,
                     submitted_text,
+                    submitted_counted_by,
                     float(submitted_number),
                     submitted_event_state,
                     submitted_comment,
@@ -409,6 +434,7 @@ def home():
                         "date": current_date,
                         "timestamp": current_timestamp,
                         "text": submitted_text,
+                        "counted_by": submitted_counted_by,
                         "number": submitted_number,
                         "event_state": submitted_event_state,
                         "comment": submitted_comment,

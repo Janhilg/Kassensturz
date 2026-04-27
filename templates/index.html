@@ -57,7 +57,16 @@
                             </label>
                         </div>
                     </div>
-                    
+                    <div>
+                        <label for="counted_by_input" id="label_counted_by">Counted by</label>
+                        <input
+                            id="counted_by_input"
+                            type="text"
+                            name="counted_by_input"
+                            placeholder="Enter name of person counting"
+                            required
+                        >
+                    </div>
                     <div>
                         <label for="comment_input" id="label_comment">Comment (optional)</label>
                         <input
@@ -80,6 +89,7 @@
                                 <p><strong id="submitted_timestamp_label">Timestamp:</strong> {{ message.timestamp }}</p>
                                 <p><strong id="submitted_event_name_label">Event name:</strong> {{ message.text }}</p>
                                 <p><strong id="submitted_cash_sum_label">Cash sum:</strong> {{ message.number }}</p>
+                                <p><strong id="submitted_counted_by_label">Counted by:</strong> {{ message.counted_by }}</p>
                                 <p><strong id="submitted_event_state_label">Event status:</strong> {{ message.event_state }}</p>
                                 <p><strong id="submitted_comment_label">Comment:</strong> {{ message.comment or "-" }}</p>
                             </div>
