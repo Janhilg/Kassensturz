@@ -135,14 +135,34 @@ export function initCalculator(options) {
         if (!calcInput) {
             return;
         }
-
-        calcInput.value = formatNumber(value);
+        // switch first so UI feels correct
         switchMode("calculator");
 
+        // perform addition immediately
+        let total = loadTotal();
+        const history = loadHistory();
+        const previousTotal = total;
+
+        total += value;
+
+        const historyEntry =
+            `${formatNumber(previousTotal)} + ${formatNumber(value)} = ${formatNumber(total)}`;
+
+        history.unshift(historyEntry);
+
+        saveTotal(total);
+        saveHistory(history);
+
+        render();
+
+        // visual feedback
+        calcInput.value = formatNumber(value);
         calcInput.style.border = "2px solid #28a745";
         calcInput.focus();
+
         setTimeout(() => {
             calcInput.style.border = "";
+            calcInput.value = ""; // optional: clear after adding
         }, 600);
     }
 
