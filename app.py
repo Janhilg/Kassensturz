@@ -39,6 +39,9 @@ def portable_base_dir() -> Path:
 template_dir = resource_path("templates")
 static_dir = resource_path("static")
 
+print(f"[Kassensturz] Running in {Config.MODE} mode")
+print(f"[Kassensturz] Nextcloud path: {Config.NEXTCLOUD_REMOTE_DIR}")
+
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
@@ -419,7 +422,7 @@ def home():
                 flash(str(exc), "error")
                 return redirect(url_for("home"))
 
-    return render_template("index.html")
+    return render_template("index.html", app_mode=Config.MODE)
 
 
 def open_browser():
