@@ -347,6 +347,80 @@ button {
     color: var(--accent);
     font-size: 15px;
 }
+.cash-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.denom-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--calc-btn-bg);
+    color: var(--text);
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.denom-btn:hover {
+    background: var(--calc-btn-hover);
+}
+
+.denom-btn:active {
+    transform: scale(0.96);
+}
+
+.cash-row input.denomination-input {
+    width: 70px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.denomination-input::-webkit-inner-spin-button,
+.denomination-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.denomination-input {
+    -moz-appearance: textfield;
+}
+
+.mode-switcher {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.mode-button {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.mode-button:hover {
+    background: var(--calc-btn-hover);
+}
+
+.mode-button.active {
+    background: var(--input-focus);
+    color: white;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.25);
+}
 
 @media (max-width: 800px) {
     .cash-counter-grid {

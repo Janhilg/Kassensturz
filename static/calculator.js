@@ -189,6 +189,20 @@ export function initCalculator(options) {
         return total;
     }
 
+    function changeDenominationValue(inputId, delta) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        let value = parseInt(input.value || "0", 10);
+        if (isNaN(value)) value = 0;
+
+        value += delta;
+        if (value < 0) value = 0;
+
+        input.value = value;
+        calculateCashCounterTotal();
+    }
+
     function clearCashCounter() {
         denominationInputs.forEach((input) => {
             input.value = 0;
@@ -265,7 +279,21 @@ export function initCalculator(options) {
                 clearCashCounter();
             });
         }
+
     }
+    // + buttons
+    document.querySelectorAll(".plus-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            changeDenominationValue(btn.dataset.target, 1);
+        });
+    });
+
+    // - buttons
+    document.querySelectorAll(".minus-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            changeDenominationValue(btn.dataset.target, -1);
+        });
+    });
 
     clearOnReloadIfNeeded();
     bindEvents();
