@@ -14,6 +14,9 @@ from openpyxl import Workbook, load_workbook
 
 from config import Config
 
+import mimetypes
+mimetypes.add_type("application/javascript", ".js")
+
 print(f"[Kassensturz] MODE = {Config.MODE}")
 print(f"[Kassensturz] FROZEN = {getattr(sys, 'frozen', False)}")
 
