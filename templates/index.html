@@ -10,6 +10,7 @@
     {% if app_mode == "debug" %}
     <div class="debug-banner" id="debug_banner">DEBUG MODE</div>
     {% endif %}
+
     <div class="page">
         <h1 id="app_title">Kassensturz</h1>
 
@@ -27,6 +28,17 @@
                             type="text"
                             name="text_input"
                             placeholder="Enter event name"
+                            required
+                        >
+                    </div>
+
+                    <div>
+                        <label for="counted_by_input" id="label_counted_by">Counted by</label>
+                        <input
+                            id="counted_by_input"
+                            type="text"
+                            name="counted_by_input"
+                            placeholder="Enter name of person counting"
                             required
                         >
                     </div>
@@ -57,16 +69,7 @@
                             </label>
                         </div>
                     </div>
-                    <div>
-                        <label for="counted_by_input" id="label_counted_by">Counted by</label>
-                        <input
-                            id="counted_by_input"
-                            type="text"
-                            name="counted_by_input"
-                            placeholder="Enter name of person counting"
-                            required
-                        >
-                    </div>
+
                     <div>
                         <label for="comment_input" id="label_comment">Comment (optional)</label>
                         <input
@@ -88,67 +91,147 @@
                                 <p><strong id="submitted_date_label">Date:</strong> {{ message.date }}</p>
                                 <p><strong id="submitted_timestamp_label">Timestamp:</strong> {{ message.timestamp }}</p>
                                 <p><strong id="submitted_event_name_label">Event name:</strong> {{ message.text }}</p>
-                                <p><strong id="submitted_cash_sum_label">Cash sum:</strong> {{ message.number }}</p>
                                 <p><strong id="submitted_counted_by_label">Counted by:</strong> {{ message.counted_by }}</p>
+                                <p><strong id="submitted_cash_sum_label">Cash sum:</strong> {{ message.number }}</p>
                                 <p><strong id="submitted_event_state_label">Event status:</strong> {{ message.event_state }}</p>
                                 <p><strong id="submitted_comment_label">Comment:</strong> {{ message.comment or "-" }}</p>
                             </div>
                         {% elif category == "error" %}
-                            <div class="submitted-values" style="border: 1px solid #da3633; background: #2d1117;">
-                                <h3>Error saving to Nextcloud</h3>
-                                <p>{{ message }}</p>
+                            <div class="submitted-values" id="save_error_box" style="border: 1px solid #da3633; background: #2d1117;">
+                                <h3>Save error</h3>
+                                <p id="save_error_message">{{ message }}</p>
                             </div>
-                        {% endif %}
-                        {% if category == "success" %}
+                        {% elif category == "success" %}
                             <div class="success-box" id="success_box">
                                 <h3 id="success_title">Success</h3>
-                                <p id="success_message">{{ message }}</p>
+                                <p id="success_message" data-i18n-key="{{ message }}"></p>
                             </div>
                         {% endif %}
                     {% endfor %}
                 {% endwith %}
-
             </div>
 
             <div class="card">
                 <h2 id="calc_title">Live Calculation</h2>
 
-                <div>
-                    <label for="calc_input" id="label_calc_input">Number for calculation</label>
-                    <input
-                        id="calc_input"
-                        type="number"
-                        step="any"
-                        placeholder="Enter number to add or subtract"
-                    >
+                <div class="mode-switcher">
+                    <button type="button" class="mode-button active" id="mode_calculator_button" data-mode="calculator">Calculator</button>
+                    <button type="button" class="mode-button" id="mode_cash_counter_button" data-mode="cash_counter">Cash counter</button>
                 </div>
 
-                <div class="calc-controls">
-                    <div></div>
-                    <button type="button" class="calc-button" id="add_button">+</button>
-                    <button type="button" class="calc-button" id="subtract_button">-</button>
-                </div>
+                <div id="calculator_mode">
+                    <div>
+                        <label for="calc_input" id="label_calc_input">Number for calculation</label>
+                        <input
+                            id="calc_input"
+                            type="number"
+                            step="any"
+                            placeholder="Enter number to add or subtract"
+                        >
+                    </div>
 
-                <div class="result-box">
-                    <div id="current_total_label">Current total</div>
-                    <div class="current-total" id="current_total">0</div>
+                    <div class="calc-controls">
+                        <div></div>
+                        <button type="button" class="calc-button" id="add_button">+</button>
+                        <button type="button" class="calc-button" id="subtract_button">-</button>
+                    </div>
 
-                    <button type="button" class="primary-button" id="apply_to_form_button" style="margin-top:12px;">
-                        Apply result to form
+                    <div class="result-box">
+                        <div id="current_total_label">Current total</div>
+                        <div class="current-total" id="current_total">0</div>
+
+                        <button type="button" class="primary-button" id="apply_to_form_button" style="margin-top:12px;">
+                            Apply result to form
+                        </button>
+                    </div>
+
+                    <button type="button" class="clear-button" id="clear_button">
+                        Clear Session History
                     </button>
 
-                </div>
-
-                <button type="button" class="clear-button" id="clear_button">
-                    Clear Session History
-                </button>
-
-                <div class="history">
-                    <h3 id="history_title">Session History</h3>
-                    <div id="empty_history" class="empty-history">
-                        No calculations yet.
+                    <div class="history">
+                        <h3 id="history_title">Session History</h3>
+                        <div id="empty_history" class="empty-history">
+                            No calculations yet.
+                        </div>
+                        <ul id="history_list" class="history-list"></ul>
                     </div>
-                    <ul id="history_list" class="history-list"></ul>
+                </div>
+                <div id="cash_counter_mode" style="display: none;">
+                    <h3 id="cash_counter_title">Euro cash counter</h3>
+                    <div class="cash-section-title" id="bills_label">Bills</div>
+                    <div class="cash-counter-grid">
+                        <div class="cash-row">
+                            <label for="denom_100">100 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_100" data-value="100">
+                        </div>
+
+                        <div class="cash-row">
+                            <label for="denom_50">50 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_50" data-value="50">
+                        </div>
+
+                        <div class="cash-row">
+                            <label for="denom_20">20 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_20" data-value="20">
+                        </div>
+
+                        <div class="cash-row">
+                            <label for="denom_10">10 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_10" data-value="10">
+                        </div>
+
+                        <div class="cash-row">
+                            <label for="denom_5">5 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_5" data-value="5">
+                        </div>
+                    </div>
+                    <div class="cash-section-title" id="coins_label">Coins</div>
+                    <div class="cash-counter-grid">
+                        <div class="cash-row">
+                            <label for="denom_2">2 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_2" data-value="2">
+                        </div>
+
+                        <div class="cash-row">
+                            <label for="denom_1">1 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_1" data-value="1">
+                        </div>
+
+                        <div class="cash-row">
+                            <label for="denom_050">0.50 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_050" data-value="0.5">
+                        </div>
+
+                        <div class="cash-row">
+                            <label for="denom_020">0.20 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_020" data-value="0.2">
+                        </div>
+
+                        <div class="cash-row">
+                            <label for="denom_010">0.10 €</label>
+                            <input type="number" min="0" step="1" value="0" class="denomination-input" id="denom_010" data-value="0.1">
+                        </div>
+                    </div>
+
+                    <div class="result-box">
+                        <div id="cash_counter_total_label">Cash counter total</div>
+                        <div class="current-total" id="cash_counter_total">0</div>
+
+                        <div class="cash-counter-actions">
+                            <button type="button" class="primary-button" id="apply_cash_counter_to_form_button" style="margin-top:12px;">
+                                Apply result to form
+                            </button>
+
+                            <button type="button" class="calc-button" id="apply_cash_counter_to_calculator_button" style="margin-top:12px;">
+                                Send total to calculator
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="button" class="clear-button" id="clear_cash_counter_button">
+                        Clear cash counter
+                    </button>
                 </div>
             </div>
         </div>
@@ -159,7 +242,7 @@
                 <button type="button" class="lang-button" data-lang="en">English</button>
                 <button type="button" class="lang-button" data-lang="de">Deutsch</button>
             </div>
-            <br/>
+
             <div class="theme-switcher">
                 <span id="theme_label">Theme:</span>
                 <button type="button" class="theme-button" data-theme="dark" id="theme_dark_button">Dark</button>
@@ -167,6 +250,7 @@
             </div>
         </footer>
     </div>
+
     <script type="module" src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

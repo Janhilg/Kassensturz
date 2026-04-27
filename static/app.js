@@ -5,7 +5,7 @@ import {
     setCurrentDate,
     t,
     updateLanguageButtons
-} from "./i18n.js";
+} from "./languageswitching.js";
 import {
     applyTheme,
     bindThemeEvents,

@@ -15,6 +15,17 @@ export function initCalculator(options) {
     const STORAGE_TOTAL_KEY = "kassensturz_current_total";
     const STORAGE_HISTORY_KEY = "kassensturz_history";
 
+    const modeCalculatorButton = document.getElementById("mode_calculator_button");
+    const modeCashCounterButton = document.getElementById("mode_cash_counter_button");
+    const calculatorMode = document.getElementById("calculator_mode");
+    const cashCounterMode = document.getElementById("cash_counter_mode");
+
+    const denominationInputs = document.querySelectorAll(".denomination-input");
+    const cashCounterTotalElement = document.getElementById("cash_counter_total");
+    const applyCashCounterToFormButton = document.getElementById("apply_cash_counter_to_form_button");
+    const applyCashCounterToCalculatorButton = document.getElementById("apply_cash_counter_to_calculator_button");
+    const clearCashCounterButton = document.getElementById("clear_cash_counter_button");
+
     function loadTotal() {
         const stored = sessionStorage.getItem(STORAGE_TOTAL_KEY);
         return stored ? parseFloat(stored) : 0;
@@ -34,10 +45,7 @@ export function initCalculator(options) {
     }
 
     function formatNumber(value) {
-        if (Number.isInteger(value)) {
-            return value.toString();
-        }
-        return value.toFixed(2).replace(/\.00$/, "");
+        return Number(value).toFixed(2).replace(/\.00$/, "");
     }
 
     function render() {
@@ -110,17 +118,31 @@ export function initCalculator(options) {
         render();
     }
 
-    function applyResultToForm() {
+    function applyResultToForm(value) {
         if (!leftNumberInput) {
             return;
         }
 
-        const total = loadTotal();
-        leftNumberInput.value = total;
+        leftNumberInput.value = formatNumber(value);
 
         leftNumberInput.style.border = "2px solid #28a745";
         setTimeout(() => {
             leftNumberInput.style.border = "";
+        }, 600);
+    }
+
+    function applyResultToCalculator(value) {
+        if (!calcInput) {
+            return;
+        }
+
+        calcInput.value = formatNumber(value);
+        switchMode("calculator");
+
+        calcInput.style.border = "2px solid #28a745";
+        calcInput.focus();
+        setTimeout(() => {
+            calcInput.style.border = "";
         }, 600);
     }
 
@@ -132,6 +154,46 @@ export function initCalculator(options) {
             sessionStorage.removeItem(STORAGE_TOTAL_KEY);
             sessionStorage.removeItem(STORAGE_HISTORY_KEY);
         }
+    }
+
+    function switchMode(mode) {
+        if (mode === "calculator") {
+            if (calculatorMode) calculatorMode.style.display = "block";
+            if (cashCounterMode) cashCounterMode.style.display = "none";
+            if (modeCalculatorButton) modeCalculatorButton.classList.add("active");
+            if (modeCashCounterButton) modeCashCounterButton.classList.remove("active");
+        } else {
+            if (calculatorMode) calculatorMode.style.display = "none";
+            if (cashCounterMode) cashCounterMode.style.display = "block";
+            if (modeCalculatorButton) modeCalculatorButton.classList.remove("active");
+            if (modeCashCounterButton) modeCashCounterButton.classList.add("active");
+        }
+    }
+
+    function calculateCashCounterTotal() {
+        let total = 0;
+
+        denominationInputs.forEach((input) => {
+            const quantity = parseInt(input.value || "0", 10);
+            const denominationValue = parseFloat(input.dataset.value || "0");
+
+            if (!isNaN(quantity) && !isNaN(denominationValue)) {
+                total += quantity * denominationValue;
+            }
+        });
+
+        if (cashCounterTotalElement) {
+            cashCounterTotalElement.textContent = formatNumber(total);
+        }
+
+        return total;
+    }
+
+    function clearCashCounter() {
+        denominationInputs.forEach((input) => {
+            input.value = 0;
+        });
+        calculateCashCounterTotal();
     }
 
     function bindEvents() {
@@ -155,7 +217,7 @@ export function initCalculator(options) {
 
         if (applyToFormButton) {
             applyToFormButton.addEventListener("click", function () {
-                applyResultToForm();
+                applyResultToForm(loadTotal());
             });
         }
 
@@ -167,11 +229,49 @@ export function initCalculator(options) {
                 }
             });
         }
+
+        if (modeCalculatorButton) {
+            modeCalculatorButton.addEventListener("click", function () {
+                switchMode("calculator");
+            });
+        }
+
+        if (modeCashCounterButton) {
+            modeCashCounterButton.addEventListener("click", function () {
+                switchMode("cash_counter");
+            });
+        }
+
+        denominationInputs.forEach((input) => {
+            input.addEventListener("input", function () {
+                calculateCashCounterTotal();
+            });
+        });
+
+        if (applyCashCounterToFormButton) {
+            applyCashCounterToFormButton.addEventListener("click", function () {
+                applyResultToForm(calculateCashCounterTotal());
+            });
+        }
+
+        if (applyCashCounterToCalculatorButton) {
+            applyCashCounterToCalculatorButton.addEventListener("click", function () {
+                applyResultToCalculator(calculateCashCounterTotal());
+            });
+        }
+
+        if (clearCashCounterButton) {
+            clearCashCounterButton.addEventListener("click", function () {
+                clearCashCounter();
+            });
+        }
     }
 
     clearOnReloadIfNeeded();
     bindEvents();
     render();
+    calculateCashCounterTotal();
+    switchMode("calculator");
 
     return {
         render

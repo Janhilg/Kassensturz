@@ -5,71 +5,113 @@ const translations = {
         html_lang: "en",
         form_title: "Input Form",
         date_prefix: "Date: ",
-        event_name: "Event name",
+        event_name: "Event",
         event_name_placeholder: "Enter event name",
+
         counted_by: "Counted by",
         counted_by_placeholder: "Enter name of person counting",
+
         cash_sum: "Cash sum",
         cash_sum_placeholder: "Enter cash amount",
+
         event_state: "Event status",
         event_state_opening: "Opening",
         event_state_closing: "Closing",
+
         comment: "Comment (optional)",
         comment_placeholder: "Enter comment (optional)",
+
         confirm: "Confirm",
+
         submitted_values: "Submitted values",
         submitted_date: "Date",
         timestamp: "Timestamp",
+
         live_calculation: "Live Calculation",
         calc_input: "Number for calculation",
         calc_input_placeholder: "Enter number to add or subtract",
         current_total: "Current total",
+
         apply_result: "Apply result to form",
         clear_history: "Clear Session History",
         session_history: "Session History",
         no_history: "No calculations yet.",
+
         language: "Language:",
         theme: "Theme:",
         theme_dark: "Dark",
         theme_light: "Light",
+
         debug_mode: "DEBUG MODE",
+
         success: "Success",
-        upload_success: "Upload to Nextcloud successful"
+        upload_success: "Upload to Nextcloud successful",
+
+        calculator_mode: "Calculator",
+        cash_counter_mode: "Cash counter",
+        cash_counter_title: "Euro cash counter",
+        cash_counter_total: "Cash counter total",
+        clear_cash_counter: "Clear cash counter",
+
+        bills: "Bills",
+        coins: "Coins"
     },
+
     de: {
         html_lang: "de",
         form_title: "Eingabeformular",
         date_prefix: "Datum: ",
-        event_name: "Ereignisname",
-        event_name_placeholder: "Ereignisname eingeben",
+
+        event_name: "Veranstaltung",
+        event_name_placeholder: "Veranstaltung eingeben",
+
         counted_by: "Gezählt von",
         counted_by_placeholder: "Name der zählenden Person eingeben",
+
         cash_sum: "Bargeldsumme",
         cash_sum_placeholder: "Bargeldbetrag eingeben",
-        event_state: "Ereignisstatus",
+
+        event_state: "Status",
         event_state_opening: "Öffnung",
         event_state_closing: "Schließung",
+
         comment: "Kommentar (optional)",
         comment_placeholder: "Kommentar eingeben (optional)",
+
         confirm: "Bestätigen",
+
         submitted_values: "Übermittelte Werte",
         submitted_date: "Datum",
         timestamp: "Zeitstempel",
-        live_calculation: "Live-Berechnung",
-        calc_input: "Zahl für die Berechnung",
-        calc_input_placeholder: "Zahl zum Addieren oder Subtrahieren eingeben",
-        current_total: "Aktueller Gesamtbetrag",
-        apply_result: "Ergebnis ins Formular übernehmen",
-        clear_history: "Sitzungsverlauf löschen",
-        session_history: "Sitzungsverlauf",
+
+        live_calculation: "Berechnung",
+        calc_input: "Zahl",
+        calc_input_placeholder: "Zahl eingeben",
+        current_total: "Gesamtsumme",
+
+        apply_result: "Ergebnis übernehmen",
+        clear_history: "Verlauf löschen",
+        session_history: "Verlauf",
         no_history: "Noch keine Berechnungen.",
+
         language: "Sprache:",
         theme: "Design:",
         theme_dark: "Dunkel",
         theme_light: "Hell",
+
         debug_mode: "DEBUG-MODUS",
+
         success: "Erfolg",
-        upload_success: "Upload zu Nextcloud erfolgreich"
+        upload_success: "Upload zu Nextcloud erfolgreich",
+
+        calculator_mode: "Rechner",
+        cash_counter_mode: "Geldzähler",
+        cash_counter_title: "Bargeldzähler",
+        cash_counter_total: "Gesamtsumme",
+        clear_cash_counter: "Zähler leeren",
+
+        bills: "Scheine",
+        coins: "Münzen"
     }
 };
 
@@ -99,24 +141,18 @@ export function formatDate(date) {
 }
 
 export function setCurrentDate() {
-    const currentDateElement = document.getElementById("current_date");
-    if (!currentDateElement) {
-        return;
-    }
+    const el = document.getElementById("current_date");
+    if (!el) return;
 
-    currentDateElement.textContent = t("date_prefix") + formatDate(new Date());
+    el.textContent = t("date_prefix") + formatDate(new Date());
 }
 
 export function updateLanguageButtons() {
-    const langButtons = document.querySelectorAll(".lang-button");
+    const buttons = document.querySelectorAll(".lang-button");
     const currentLang = getCurrentLanguage();
 
-    langButtons.forEach((button) => {
-        if (button.dataset.lang === currentLang) {
-            button.classList.add("active");
-        } else {
-            button.classList.remove("active");
-        }
+    buttons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.lang === currentLang);
     });
 }
 
@@ -154,58 +190,39 @@ export function applyTranslations() {
     setText("theme_dark_button", t("theme_dark"));
     setText("theme_light_button", t("theme_light"));
     setText("debug_banner", t("debug_mode"));
-    setText("success_title", t("success"));
 
-    const successMessageEl = document.getElementById("success_message");
-    if (successMessageEl) {
-        const key = successMessageEl.dataset.i18nKey;
-        if (key) {
-            successMessageEl.textContent = t(key);
-        }
-    }
+    setText("mode_calculator_button", t("calculator_mode"));
+    setText("mode_cash_counter_button", t("cash_counter_mode"));
+    setText("cash_counter_title", t("cash_counter_title"));
+    setText("cash_counter_total_label", t("cash_counter_total"));
+    setText("clear_cash_counter_button", t("clear_cash_counter"));
+
+    setText("bills_label", t("bills"));
+    setText("coins_label", t("coins"));
 
     const textInput = document.getElementById("text_input");
     const countedByInput = document.getElementById("counted_by_input");
     const numberInput = document.getElementById("number_input");
     const commentInput = document.getElementById("comment_input");
-    const calcInput = document.getElementById("calc_input");
 
-    if (textInput) {
-        textInput.placeholder = t("event_name_placeholder");
-    }
-
-    if (countedByInput) {
-        countedByInput.placeholder = t("counted_by_placeholder");
-    }
-
-    if (numberInput) {
-        numberInput.placeholder = t("cash_sum_placeholder");
-    }
-
-    if (commentInput) {
-        commentInput.placeholder = t("comment_placeholder");
-    }
-
-    if (calcInput) {
-        calcInput.placeholder = t("calc_input_placeholder");
-    }
+    if (textInput) textInput.placeholder = t("event_name_placeholder");
+    if (countedByInput) countedByInput.placeholder = t("counted_by_placeholder");
+    if (numberInput) numberInput.placeholder = t("cash_sum_placeholder");
+    if (commentInput) commentInput.placeholder = t("comment_placeholder");
 }
 
-export function setCurrentLanguage(lang, onLanguageChanged) {
+export function setCurrentLanguage(lang, callback) {
     localStorage.setItem(STORAGE_LANGUAGE_KEY, lang);
     applyTranslations();
     setCurrentDate();
     updateLanguageButtons();
-
-    if (onLanguageChanged) {
-        onLanguageChanged();
-    }
+    if (callback) callback();
 }
 
-export function bindLanguageEvents(onLanguageChanged) {
+export function bindLanguageEvents(callback) {
     document.querySelectorAll(".lang-button").forEach((button) => {
         button.addEventListener("click", function () {
-            setCurrentLanguage(button.dataset.lang, onLanguageChanged);
+            setCurrentLanguage(button.dataset.lang, callback);
         });
     });
 }
