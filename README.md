@@ -38,3 +38,39 @@ Submissions are stored in:
 ### Nextcloud upload
 After each successful submission, the Excel file can optionally be uploaded to Nextcloud using WebDAV.
 
+## Build (recommended: portable folder / onedir)
+
+This creates a **portable folder** containing the executable and all required files.
+
+### Windows
+
+```bash
+pyinstaller --onedir --name Kassensturz ^
+  --add-data "templates;templates" ^
+  --add-data "static;static" ^
+  app.py
+```
+
+### Linux / macOS
+
+```bash
+pyinstaller --onedir --name Kassensturz \
+  --add-data "templates:templates" \
+  --add-data "static:static" \
+  app.py
+```
+
+Output will be in:
+
+```text
+dist/Kassensturz/
+```
+
+You can copy this entire folder to another machine or USB stick and run:
+
+```text
+Kassensturz.exe   (Windows)
+./Kassensturz     (Linux/macOS)
+```
+
+
