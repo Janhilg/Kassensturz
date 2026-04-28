@@ -3,6 +3,9 @@ import sqlite3
 import uuid
 from datetime import datetime
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 DENOM_FIELDS = [
     "denom_100",

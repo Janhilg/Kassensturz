@@ -2,6 +2,9 @@ from pathlib import Path
 from urllib.parse import quote
 
 import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_verify_setting(config, base_dir: Path):
@@ -100,8 +103,8 @@ def upload_file_to_nextcloud(
     remote_path = f"{config.NEXTCLOUD_REMOTE_DIR}/{remote_filename}"
     url = build_webdav_url(config.NEXTCLOUD_BASE_URL, config.NEXTCLOUD_USERNAME, remote_path)
 
-    print(f"[Kassensturz] Uploading to: {remote_path}")
-    print(f"[Kassensturz] WebDAV URL: {url}")
+    logger.info(f"Uploading to: {remote_path}")
+    logger.info(f"WebDAV URL: {url}")
 
     with file_path.open("rb") as file_handle:
         response = requests.put(
@@ -113,10 +116,11 @@ def upload_file_to_nextcloud(
             verify=get_verify_setting(config, base_dir),
         )
 
-    print(f"[Kassensturz] Upload response: {response.status_code}")
-    print(f"[Kassensturz] Upload response body: {response.text[:500]}")
+    logger.debug(f"Upload response: {response.status_code}")
+    logger.debug(f"Upload response body: {response.text[:500]}")
 
     if response.status_code not in (200, 201, 204):
+        logger.error(f"Failed to upload file to Nextcloud {response.status_code} {response.text}")
         raise RuntimeError(
             f"Failed to upload file to Nextcloud: "
             f"{response.status_code} {response.text}"

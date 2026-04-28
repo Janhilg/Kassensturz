@@ -6,38 +6,23 @@ import threading
 import webbrowser
 from datetime import datetime
 from pathlib import Path
-
 from flask import Flask, flash, redirect, render_template, request, url_for
 
 from config import Config
-
 from core.storage import (
-    create_backup,
     ensure_db_file,
     get_denomination_values_from_form,
-    insert_entry,
-    merge_imported_entries_append_only,
     new_entry_id,
 )
-
-from core.export_utils import (
-    export_entries_to_excel,
-    export_entries_to_text,
-    import_entries_from_excel,
-)
-
-from core.nextcloud_sync import (
-    download_remote_excel_to_temp,
-    nextcloud_configured,
-    upload_excel_file_to_nextcloud,
-    upload_text_file_to_nextcloud,
-)
 from core.service import append_and_sync
+import logging
+from core.logging_config import setup_logging
 
 mimetypes.add_type("application/javascript", ".js")
 
-print(f"[Kassensturz] MODE = {Config.MODE}")
-print(f"[Kassensturz] FROZEN = {getattr(sys, 'frozen', False)}")
+logger = logging.getLogger(__name__)
+logger.info(f"MODE = {Config.MODE}")
+logger.info(f"FROZEN = {getattr(sys, 'frozen', False)}")
 
 
 def resource_path(relative_path: str) -> str:
@@ -146,6 +131,7 @@ def open_browser():
 
 
 if __name__ == "__main__":
+    setup_logging(BASE_DIR, is_debug_mode())
     ensure_db_file(LOCAL_DB_FILE)
     threading.Timer(1.0, open_browser).start()
     app.run(

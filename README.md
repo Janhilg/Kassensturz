@@ -25,7 +25,6 @@ pyinstaller --onedir --name Kassensturz \
   --icon=assets/cash.ico \
   --add-data "templates:templates" \
   --add-data "static:static" \
-  --noconsole \ 
   --noconfirm \
   app.py
 ```
