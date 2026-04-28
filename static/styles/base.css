@@ -161,3 +161,56 @@ button:active {
     color: var(--accent);
     letter-spacing: 0.4px;
 }
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.admin-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.admin-login-state {
+    margin-top: 8px;
+}
+
+.admin-login-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(46, 160, 67, 0.14);
+    border: 1px solid rgba(46, 160, 67, 0.35);
+    color: #7ee787;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.admin-logout-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    margin-top: 0;
+    padding: 10px 14px;
+}
+
+@media (max-width: 800px) {
+    .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .admin-header-actions {
+        width: 100%;
+    }
+}

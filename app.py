@@ -165,6 +165,7 @@ def admin():
         "admin.html",
         app_mode=Config.MODE,
         status=status,
+        admin_logged_in=is_admin_authenticated(),
     )
 
 @app.route("/admin/restore-backup", methods=["POST"])
@@ -261,9 +262,14 @@ def admin_sync_now():
 
     return redirect(url_for("admin"))
 
+@app.context_processor
+def inject_admin_state():
+    return {
+        "admin_logged_in": is_admin_authenticated(),
+    }
+
 def open_browser():
     webbrowser.open("http://127.0.0.1:5000")
-
 
 if __name__ == "__main__":
     setup_logging(BASE_DIR, is_debug_mode())

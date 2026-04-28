@@ -9,13 +9,26 @@
 
 <div class="page">
     <div class="admin-header">
-        <h1>Admin</h1>
-        <a class="calc-button admin-back-link" href="{{ url_for('home') }}">
-            Back to app
-        </a>
-        <a class="calc-button admin-back-link" href="{{ url_for('admin_logout') }}">
-            Logout
-        </a>
+        <div>
+            <h1>Admin</h1>
+            {% if admin_logged_in %}
+                <div class="admin-login-state">
+                    <span class="admin-login-badge">Admin access active</span>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="admin-header-actions">
+            <a class="calc-button admin-back-link" href="{{ url_for('home') }}">
+                Back to app
+            </a>
+
+            {% if admin_logged_in %}
+                <a class="clear-button admin-logout-link" href="{{ url_for('admin_logout') }}">
+                    Logout
+                </a>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Flash messages -->

@@ -105,6 +105,7 @@
     background: #2d1117;
 }
 
+
 @media (max-width: 800px) {
     .admin-status-grid {
         grid-template-columns: 1fr;
