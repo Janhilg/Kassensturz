@@ -1,8 +1,12 @@
+import hashlib
+import mimetypes
 import os
 import shutil
+import sqlite3
 import sys
 import tempfile
 import threading
+import uuid
 import webbrowser
 from datetime import datetime
 from pathlib import Path
@@ -14,7 +18,6 @@ from openpyxl import Workbook, load_workbook
 
 from config import Config
 
-import mimetypes
 mimetypes.add_type("application/javascript", ".js")
 
 print(f"[Kassensturz] MODE = {Config.MODE}")
@@ -44,6 +47,7 @@ app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
 EXCEL_HEADERS = [
+    "ID",
     "Date",
     "Timestamp",
     "Event name",
@@ -63,7 +67,15 @@ EXCEL_HEADERS = [
     "0.10 €",
 ]
 
-DENOMINATION_FORM_KEYS = [
+DB_COLUMNS = [
+    "id",
+    "date",
+    "timestamp",
+    "event_name",
+    "counted_by",
+    "cash_sum",
+    "event_status",
+    "comment",
     "denom_100",
     "denom_50",
     "denom_20",
@@ -76,26 +88,13 @@ DENOMINATION_FORM_KEYS = [
     "denom_010",
 ]
 
-DENOMINATION_HEADERS = {
-    "denom_100": "100 €",
-    "denom_50": "50 €",
-    "denom_20": "20 €",
-    "denom_10": "10 €",
-    "denom_5": "5 €",
-    "denom_2": "2 €",
-    "denom_1": "1 €",
-    "denom_050": "0.50 €",
-    "denom_020": "0.20 €",
-    "denom_010": "0.10 €",
-}
-
 BASE_DIR = portable_base_dir()
 
 if is_debug_mode():
-    LOCAL_EXCEL_FILE = BASE_DIR / "data_debug" / "kassensturz_data.xlsx"
+    LOCAL_DB_FILE = BASE_DIR / "data_debug" / "kassensturz.db"
     BACKUP_DIR = BASE_DIR / "data_debug" / "backups"
 else:
-    LOCAL_EXCEL_FILE = BASE_DIR / "data" / "kassensturz_data.xlsx"
+    LOCAL_DB_FILE = BASE_DIR / "data" / "kassensturz.db"
     BACKUP_DIR = BASE_DIR / "data" / "backups"
 
 NEXTCLOUD_BASE_URL = Config.NEXTCLOUD_BASE_URL.rstrip("/")
@@ -135,27 +134,6 @@ def build_webdav_url(path: str) -> str:
     )
 
 
-def ensure_local_excel_file():
-    LOCAL_EXCEL_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    if not LOCAL_EXCEL_FILE.exists():
-        workbook = Workbook()
-        sheet = workbook.active
-        sheet.title = "Kassensturz"
-        sheet.append(EXCEL_HEADERS)
-        workbook.save(LOCAL_EXCEL_FILE)
-
-
-def create_empty_excel_file(file_path: Path):
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Kassensturz"
-    sheet.append(EXCEL_HEADERS)
-    workbook.save(file_path)
-
-
 def ensure_nextcloud_folder():
     if not nextcloud_configured():
         return
@@ -182,271 +160,328 @@ def ensure_nextcloud_folder():
             )
 
 
-def normalize_row_length(row, target_length):
-    row = list(row)
-    if len(row) < target_length:
-        row.extend([""] * (target_length - len(row)))
-    return tuple(row[:target_length])
+def get_connection(db_path: Path):
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def ensure_local_db_file():
+    with get_connection(LOCAL_DB_FILE) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS entries (
+                id TEXT PRIMARY KEY,
+                date TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                event_name TEXT NOT NULL,
+                counted_by TEXT NOT NULL,
+                cash_sum REAL NOT NULL,
+                event_status TEXT NOT NULL,
+                comment TEXT DEFAULT '',
+                denom_100 INTEGER,
+                denom_50 INTEGER,
+                denom_20 INTEGER,
+                denom_10 INTEGER,
+                denom_5 INTEGER,
+                denom_2 INTEGER,
+                denom_1 INTEGER,
+                denom_050 INTEGER,
+                denom_020 INTEGER,
+                denom_010 INTEGER
+            )
+        """)
+        conn.commit()
+
+
+def new_entry_id():
+    return str(uuid.uuid4())
+
+
+def parse_optional_int(raw_value):
+    raw_value = str(raw_value).strip()
+    if raw_value == "":
+        return None
+    return int(raw_value)
 
 
 def get_denomination_values_from_form(form):
-    values = {}
-
-    for key in DENOMINATION_FORM_KEYS:
-        raw_value = str(form.get(key, "")).strip()
-
-        if raw_value == "":
-            values[key] = ""
-            continue
-
-        try:
-            parsed_value = int(raw_value)
-            values[key] = parsed_value if parsed_value >= 0 else ""
-        except (ValueError, TypeError):
-            values[key] = ""
-
-    return values
+    return {
+        "denom_100": parse_optional_int(form.get("denom_100", "")),
+        "denom_50": parse_optional_int(form.get("denom_50", "")),
+        "denom_20": parse_optional_int(form.get("denom_20", "")),
+        "denom_10": parse_optional_int(form.get("denom_10", "")),
+        "denom_5": parse_optional_int(form.get("denom_5", "")),
+        "denom_2": parse_optional_int(form.get("denom_2", "")),
+        "denom_1": parse_optional_int(form.get("denom_1", "")),
+        "denom_050": parse_optional_int(form.get("denom_050", "")),
+        "denom_020": parse_optional_int(form.get("denom_020", "")),
+        "denom_010": parse_optional_int(form.get("denom_010", "")),
+    }
 
 
-def upgrade_file_format(file_path: Path):
-    workbook = load_workbook(file_path)
-    sheet = workbook.active
+def insert_entry(entry: dict):
+    ensure_local_db_file()
 
-    rows = list(sheet.iter_rows(values_only=True))
-    if not rows:
-        sheet.append(EXCEL_HEADERS)
-        workbook.save(file_path)
-        return
+    values = [entry.get(column) for column in DB_COLUMNS]
+    placeholders = ", ".join("?" for _ in DB_COLUMNS)
+    columns_sql = ", ".join(DB_COLUMNS)
 
-    header = [str(cell) if cell is not None else "" for cell in rows[0]]
-    existing_data = rows[1:] if len(rows) > 1 else []
+    with get_connection(LOCAL_DB_FILE) as conn:
+        conn.execute(
+            f"INSERT INTO entries ({columns_sql}) VALUES ({placeholders})",
+            values,
+        )
+        conn.commit()
 
-    if header == EXCEL_HEADERS:
-        return
 
-    # Very old format:
-    # Date, Timestamp, Event name, Cash sum, Event status, Comment
-    if header[:6] == ["Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"]:
-        rebuilt_rows = []
-        for row in existing_data:
-            row = list(row)
-            rebuilt_rows.append([
-                row[0] if len(row) > 0 else "",
-                row[1] if len(row) > 1 else "",
-                row[2] if len(row) > 2 else "",
-                "",
-                row[3] if len(row) > 3 else "",
-                row[4] if len(row) > 4 else "",
-                row[5] if len(row) > 5 else "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-            ])
+def fetch_all_entries():
+    ensure_local_db_file()
 
-        sheet.delete_rows(1, sheet.max_row)
-        sheet.append(EXCEL_HEADERS)
-        for rebuilt_row in rebuilt_rows:
-            sheet.append(rebuilt_row)
+    with get_connection(LOCAL_DB_FILE) as conn:
+        rows = conn.execute(
+            "SELECT * FROM entries ORDER BY timestamp ASC, id ASC"
+        ).fetchall()
+        return [dict(row) for row in rows]
 
-        workbook.save(file_path)
-        return
 
-    # Previous current format without denominations:
-    # Date, Timestamp, Event name, Counted by, Cash sum, Event status, Comment
-    if header[:7] == [
-        "Date",
-        "Timestamp",
-        "Event name",
-        "Counted by",
-        "Cash sum",
-        "Event status",
-        "Comment",
-    ]:
-        rebuilt_rows = []
-        for row in existing_data:
-            row = list(row)
-            rebuilt_rows.append([
-                row[0] if len(row) > 0 else "",
-                row[1] if len(row) > 1 else "",
-                row[2] if len(row) > 2 else "",
-                row[3] if len(row) > 3 else "",
-                row[4] if len(row) > 4 else "",
-                row[5] if len(row) > 5 else "",
-                row[6] if len(row) > 6 else "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-            ])
+def merge_imported_entries_append_only(imported_entries):
+    ensure_local_db_file()
 
-        sheet.delete_rows(1, sheet.max_row)
-        sheet.append(EXCEL_HEADERS)
-        for rebuilt_row in rebuilt_rows:
-            sheet.append(rebuilt_row)
+    with get_connection(LOCAL_DB_FILE) as conn:
+        existing_ids = {
+            row["id"]
+            for row in conn.execute("SELECT id FROM entries").fetchall()
+        }
 
-        workbook.save(file_path)
-        return
+        for entry in imported_entries:
+            entry_id = str(entry.get("id", "")).strip()
+            if not entry_id or entry_id in existing_ids:
+                continue
 
-    # Generic partial upgrade path
-    if all(required in header for required in [
-        "Date", "Timestamp", "Event name", "Counted by", "Cash sum", "Event status", "Comment"
-    ]):
-        header_index = {name: idx for idx, name in enumerate(header)}
-        rebuilt_rows = []
+            values = [entry.get(column) for column in DB_COLUMNS]
+            placeholders = ", ".join("?" for _ in DB_COLUMNS)
+            columns_sql = ", ".join(DB_COLUMNS)
 
-        for row in existing_data:
-            row = list(row)
+            conn.execute(
+                f"INSERT INTO entries ({columns_sql}) VALUES ({placeholders})",
+                values,
+            )
+            existing_ids.add(entry_id)
 
-            def value_for(col_name, default=""):
-                idx = header_index.get(col_name)
-                if idx is None or idx >= len(row):
-                    return default
-                value = row[idx]
-                return default if value is None else value
+        conn.commit()
 
-            rebuilt_rows.append([
-                value_for("Date", ""),
-                value_for("Timestamp", ""),
-                value_for("Event name", ""),
-                value_for("Counted by", ""),
-                value_for("Cash sum", ""),
-                value_for("Event status", ""),
-                value_for("Comment", ""),
-                value_for("100 €", ""),
-                value_for("50 €", ""),
-                value_for("20 €", ""),
-                value_for("10 €", ""),
-                value_for("5 €", ""),
-                value_for("2 €", ""),
-                value_for("1 €", ""),
-                value_for("0.50 €", ""),
-                value_for("0.20 €", ""),
-                value_for("0.10 €", ""),
-            ])
 
-        sheet.delete_rows(1, sheet.max_row)
-        sheet.append(EXCEL_HEADERS)
-        for rebuilt_row in rebuilt_rows:
-            sheet.append(rebuilt_row)
+def create_backup(max_backups: int = 25):
+    ensure_local_db_file()
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
-        workbook.save(file_path)
-        return
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_file = BACKUP_DIR / f"kassensturz_backup_{timestamp}.db"
+    shutil.copy2(LOCAL_DB_FILE, backup_file)
 
-    raise RuntimeError(
-        "Unsupported Excel format. Expected current format or an older supported format."
+    backups = sorted(
+        BACKUP_DIR.glob("kassensturz_backup_*.db"),
+        key=lambda f: f.stat().st_mtime,
+        reverse=True,
     )
 
-
-def append_to_excel_file(
-    file_path: Path,
-    date_value: str,
-    timestamp_value: str,
-    event_name: str,
-    counted_by: str,
-    cash_sum: float,
-    event_state: str,
-    comment: str,
-    denominations: dict,
-):
-    upgrade_file_format(file_path)
-
-    workbook = load_workbook(file_path)
-    sheet = workbook.active
-    sheet.append([
-        date_value,
-        timestamp_value,
-        event_name,
-        counted_by,
-        cash_sum,
-        event_state,
-        comment,
-        denominations.get("denom_100", ""),
-        denominations.get("denom_50", ""),
-        denominations.get("denom_20", ""),
-        denominations.get("denom_10", ""),
-        denominations.get("denom_5", ""),
-        denominations.get("denom_2", ""),
-        denominations.get("denom_1", ""),
-        denominations.get("denom_050", ""),
-        denominations.get("denom_020", ""),
-        denominations.get("denom_010", ""),
-    ])
-    workbook.save(file_path)
-
-
-def read_rows(file_path: Path):
-    upgrade_file_format(file_path)
-
-    workbook = load_workbook(file_path, data_only=True)
-    sheet = workbook.active
-    rows = [tuple(row) for row in sheet.iter_rows(values_only=True)]
-
-    if not rows:
-        return []
-
-    data_rows = rows[1:]
-    return [normalize_row_length(row, len(EXCEL_HEADERS)) for row in data_rows]
-
-
-def parse_timestamp_for_sort(row):
-    timestamp_value = row[1] if len(row) > 1 else ""
-    if timestamp_value:
+    for old_file in backups[max_backups:]:
         try:
-            return datetime.strptime(str(timestamp_value), "%Y-%m-%d %H:%M:%S")
-        except ValueError:
+            old_file.unlink()
+        except Exception:
             pass
 
-    date_value = row[0] if len(row) > 0 else ""
-    if date_value:
-        try:
-            return datetime.strptime(str(date_value), "%Y-%m-%d")
-        except ValueError:
-            pass
-
-    return datetime.min
+    return backup_file
 
 
-def rewrite_excel_file(file_path: Path, data_rows):
+def excel_safe_value(value):
+    return "" if value is None else value
+
+
+def export_entries_to_excel(file_path: Path):
+    entries = fetch_all_entries()
+
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Kassensturz"
     sheet.append(EXCEL_HEADERS)
 
-    for row in data_rows:
-        normalized = normalize_row_length(row, len(EXCEL_HEADERS))
-        sheet.append(list(normalized))
+    for entry in entries:
+        sheet.append([
+            excel_safe_value(entry.get("id")),
+            excel_safe_value(entry.get("date")),
+            excel_safe_value(entry.get("timestamp")),
+            excel_safe_value(entry.get("event_name")),
+            excel_safe_value(entry.get("counted_by")),
+            excel_safe_value(entry.get("cash_sum")),
+            excel_safe_value(entry.get("event_status")),
+            excel_safe_value(entry.get("comment")),
+            excel_safe_value(entry.get("denom_100")),
+            excel_safe_value(entry.get("denom_50")),
+            excel_safe_value(entry.get("denom_20")),
+            excel_safe_value(entry.get("denom_10")),
+            excel_safe_value(entry.get("denom_5")),
+            excel_safe_value(entry.get("denom_2")),
+            excel_safe_value(entry.get("denom_1")),
+            excel_safe_value(entry.get("denom_050")),
+            excel_safe_value(entry.get("denom_020")),
+            excel_safe_value(entry.get("denom_010")),
+        ])
 
+    file_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(file_path)
 
 
-def merge_remote_into_local(remote_file: Path, local_file: Path):
-    remote_rows = read_rows(remote_file)
-    local_rows = read_rows(local_file)
+def legacy_row_id(values: list):
+    normalized = "|".join("" if value is None else str(value) for value in values)
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
-    combined = []
-    seen = set()
 
-    for row in local_rows + remote_rows:
-        normalized = normalize_row_length(row, len(EXCEL_HEADERS))
-        if normalized not in seen:
-            seen.add(normalized)
-            combined.append(normalized)
+def get_cell_value(row, index_map, column_name, default=""):
+    idx = index_map.get(column_name)
+    if idx is None or idx >= len(row):
+        return default
+    value = row[idx]
+    return default if value is None else value
 
-    combined.sort(key=parse_timestamp_for_sort)
-    rewrite_excel_file(local_file, combined)
+
+def import_entries_from_excel(file_path: Path):
+    workbook = load_workbook(file_path, data_only=True)
+    sheet = workbook.active
+
+    rows = list(sheet.iter_rows(values_only=True))
+    if not rows:
+        return []
+
+    header = [str(cell).strip() if cell is not None else "" for cell in rows[0]]
+    index_map = {name: idx for idx, name in enumerate(header)}
+
+    imported_entries = []
+
+    for row in rows[1:]:
+        row = list(row)
+
+        # Current format with ID
+        if "ID" in index_map:
+            entry_id = str(get_cell_value(row, index_map, "ID", "")).strip()
+            if not entry_id:
+                continue
+
+            imported_entries.append({
+                "id": entry_id,
+                "date": get_cell_value(row, index_map, "Date", ""),
+                "timestamp": get_cell_value(row, index_map, "Timestamp", ""),
+                "event_name": get_cell_value(row, index_map, "Event name", ""),
+                "counted_by": get_cell_value(row, index_map, "Counted by", ""),
+                "cash_sum": get_cell_value(row, index_map, "Cash sum", ""),
+                "event_status": get_cell_value(row, index_map, "Event status", ""),
+                "comment": get_cell_value(row, index_map, "Comment", ""),
+                "denom_100": get_cell_value(row, index_map, "100 €", None),
+                "denom_50": get_cell_value(row, index_map, "50 €", None),
+                "denom_20": get_cell_value(row, index_map, "20 €", None),
+                "denom_10": get_cell_value(row, index_map, "10 €", None),
+                "denom_5": get_cell_value(row, index_map, "5 €", None),
+                "denom_2": get_cell_value(row, index_map, "2 €", None),
+                "denom_1": get_cell_value(row, index_map, "1 €", None),
+                "denom_050": get_cell_value(row, index_map, "0.50 €", None),
+                "denom_020": get_cell_value(row, index_map, "0.20 €", None),
+                "denom_010": get_cell_value(row, index_map, "0.10 €", None),
+            })
+            continue
+
+        # Older format without ID but with "Counted by"
+        if all(col in index_map for col in [
+            "Date", "Timestamp", "Event name", "Counted by", "Cash sum", "Event status", "Comment"
+        ]):
+            legacy_values = [
+                get_cell_value(row, index_map, "Date", ""),
+                get_cell_value(row, index_map, "Timestamp", ""),
+                get_cell_value(row, index_map, "Event name", ""),
+                get_cell_value(row, index_map, "Counted by", ""),
+                get_cell_value(row, index_map, "Cash sum", ""),
+                get_cell_value(row, index_map, "Event status", ""),
+                get_cell_value(row, index_map, "Comment", ""),
+                get_cell_value(row, index_map, "100 €", ""),
+                get_cell_value(row, index_map, "50 €", ""),
+                get_cell_value(row, index_map, "20 €", ""),
+                get_cell_value(row, index_map, "10 €", ""),
+                get_cell_value(row, index_map, "5 €", ""),
+                get_cell_value(row, index_map, "2 €", ""),
+                get_cell_value(row, index_map, "1 €", ""),
+                get_cell_value(row, index_map, "0.50 €", ""),
+                get_cell_value(row, index_map, "0.20 €", ""),
+                get_cell_value(row, index_map, "0.10 €", ""),
+            ]
+
+            imported_entries.append({
+                "id": legacy_row_id(legacy_values),
+                "date": legacy_values[0],
+                "timestamp": legacy_values[1],
+                "event_name": legacy_values[2],
+                "counted_by": legacy_values[3],
+                "cash_sum": legacy_values[4],
+                "event_status": legacy_values[5],
+                "comment": legacy_values[6],
+                "denom_100": legacy_values[7] or None,
+                "denom_50": legacy_values[8] or None,
+                "denom_20": legacy_values[9] or None,
+                "denom_10": legacy_values[10] or None,
+                "denom_5": legacy_values[11] or None,
+                "denom_2": legacy_values[12] or None,
+                "denom_1": legacy_values[13] or None,
+                "denom_050": legacy_values[14] or None,
+                "denom_020": legacy_values[15] or None,
+                "denom_010": legacy_values[16] or None,
+            })
+            continue
+
+        # Very old format without "Counted by"
+        if all(col in index_map for col in [
+            "Date", "Timestamp", "Event name", "Cash sum", "Event status", "Comment"
+        ]):
+            legacy_values = [
+                get_cell_value(row, index_map, "Date", ""),
+                get_cell_value(row, index_map, "Timestamp", ""),
+                get_cell_value(row, index_map, "Event name", ""),
+                "",
+                get_cell_value(row, index_map, "Cash sum", ""),
+                get_cell_value(row, index_map, "Event status", ""),
+                get_cell_value(row, index_map, "Comment", ""),
+                get_cell_value(row, index_map, "100 €", ""),
+                get_cell_value(row, index_map, "50 €", ""),
+                get_cell_value(row, index_map, "20 €", ""),
+                get_cell_value(row, index_map, "10 €", ""),
+                get_cell_value(row, index_map, "5 €", ""),
+                get_cell_value(row, index_map, "2 €", ""),
+                get_cell_value(row, index_map, "1 €", ""),
+                get_cell_value(row, index_map, "0.50 €", ""),
+                get_cell_value(row, index_map, "0.20 €", ""),
+                get_cell_value(row, index_map, "0.10 €", ""),
+            ]
+
+            imported_entries.append({
+                "id": legacy_row_id(legacy_values),
+                "date": legacy_values[0],
+                "timestamp": legacy_values[1],
+                "event_name": legacy_values[2],
+                "counted_by": legacy_values[3],
+                "cash_sum": legacy_values[4],
+                "event_status": legacy_values[5],
+                "comment": legacy_values[6],
+                "denom_100": legacy_values[7] or None,
+                "denom_50": legacy_values[8] or None,
+                "denom_20": legacy_values[9] or None,
+                "denom_10": legacy_values[10] or None,
+                "denom_5": legacy_values[11] or None,
+                "denom_2": legacy_values[12] or None,
+                "denom_1": legacy_values[13] or None,
+                "denom_050": legacy_values[14] or None,
+                "denom_020": legacy_values[15] or None,
+                "denom_010": legacy_values[16] or None,
+            })
+
+    return imported_entries
 
 
 def download_remote_to_temp(temp_path: Path):
@@ -465,8 +500,8 @@ def download_remote_to_temp(temp_path: Path):
 
     if response.status_code == 200:
         temp_path.parent.mkdir(parents=True, exist_ok=True)
-        with temp_path.open("wb") as f:
-            f.write(response.content)
+        with temp_path.open("wb") as file_handle:
+            file_handle.write(response.content)
         return True
 
     if response.status_code == 404:
@@ -476,31 +511,6 @@ def download_remote_to_temp(temp_path: Path):
         f"Failed to download Excel file from Nextcloud: "
         f"{response.status_code} {response.text}"
     )
-
-
-def create_backup(max_backups: int = 25):
-    ensure_local_excel_file()
-    upgrade_file_format(LOCAL_EXCEL_FILE)
-
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_file = BACKUP_DIR / f"kassensturz_backup_{timestamp}.xlsx"
-    shutil.copy2(LOCAL_EXCEL_FILE, backup_file)
-
-    backups = sorted(
-        BACKUP_DIR.glob("kassensturz_backup_*.xlsx"),
-        key=lambda f: f.stat().st_mtime,
-        reverse=True,
-    )
-
-    for old_file in backups[max_backups:]:
-        try:
-            old_file.unlink()
-        except Exception:
-            pass
-
-    return backup_file
 
 
 def upload_excel_file_to_nextcloud(file_path: Path):
@@ -540,29 +550,9 @@ def upload_excel_file_to_nextcloud(file_path: Path):
         )
 
 
-def append_and_sync(
-    date_value,
-    timestamp_value,
-    event_name,
-    counted_by,
-    cash_sum,
-    event_state,
-    comment,
-    denominations,
-):
-    ensure_local_excel_file()
-
-    append_to_excel_file(
-        LOCAL_EXCEL_FILE,
-        date_value,
-        timestamp_value,
-        event_name,
-        counted_by,
-        cash_sum,
-        event_state,
-        comment,
-        denominations,
-    )
+def append_and_sync(entry: dict):
+    ensure_local_db_file()
+    insert_entry(entry)
 
     if nextcloud_configured():
         flash("upload_success", "success")
@@ -570,20 +560,23 @@ def append_and_sync(
     if not nextcloud_configured():
         return
 
-    if is_debug_mode():
-        create_backup()
-        upload_excel_file_to_nextcloud(LOCAL_EXCEL_FILE)
-        return
+    with tempfile.TemporaryDirectory() as tmp_dir_name:
+        tmp_dir = Path(tmp_dir_name)
+        remote_excel_file = tmp_dir / "remote.xlsx"
+        merged_export_file = tmp_dir / "kassensturz_data.xlsx"
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        remote_file = Path(tmp_dir) / "remote.xlsx"
-        remote_exists = download_remote_to_temp(remote_file)
+        remote_exists = False
+
+        if not is_debug_mode():
+            remote_exists = download_remote_to_temp(remote_excel_file)
 
         if remote_exists:
-            merge_remote_into_local(remote_file, LOCAL_EXCEL_FILE)
+            imported_entries = import_entries_from_excel(remote_excel_file)
+            merge_imported_entries_append_only(imported_entries)
 
-    create_backup()
-    upload_excel_file_to_nextcloud(LOCAL_EXCEL_FILE)
+        create_backup()
+        export_entries_to_excel(merged_export_file)
+        upload_excel_file_to_nextcloud(merged_export_file)
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -594,7 +587,12 @@ def home():
         submitted_number = request.form.get("number_input", "").strip()
         submitted_event_state = request.form.get("event_state", "").strip()
         submitted_comment = request.form.get("comment_input", "").strip()
-        denominations = get_denomination_values_from_form(request.form)
+
+        try:
+            denominations = get_denomination_values_from_form(request.form)
+        except Exception:
+            flash("Invalid denomination input.", "error")
+            return redirect(url_for("home"))
 
         if submitted_text and submitted_counted_by and submitted_number and submitted_event_state:
             try:
@@ -602,16 +600,28 @@ def home():
                 current_date = now.strftime("%Y-%m-%d")
                 current_timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
 
-                append_and_sync(
-                    current_date,
-                    current_timestamp,
-                    submitted_text,
-                    submitted_counted_by,
-                    float(submitted_number),
-                    submitted_event_state,
-                    submitted_comment,
-                    denominations,
-                )
+                entry = {
+                    "id": new_entry_id(),
+                    "date": current_date,
+                    "timestamp": current_timestamp,
+                    "event_name": submitted_text,
+                    "counted_by": submitted_counted_by,
+                    "cash_sum": float(submitted_number),
+                    "event_status": submitted_event_state,
+                    "comment": submitted_comment,
+                    "denom_100": denominations["denom_100"],
+                    "denom_50": denominations["denom_50"],
+                    "denom_20": denominations["denom_20"],
+                    "denom_10": denominations["denom_10"],
+                    "denom_5": denominations["denom_5"],
+                    "denom_2": denominations["denom_2"],
+                    "denom_1": denominations["denom_1"],
+                    "denom_050": denominations["denom_050"],
+                    "denom_020": denominations["denom_020"],
+                    "denom_010": denominations["denom_010"],
+                }
+
+                append_and_sync(entry)
 
                 flash(
                     {
@@ -641,9 +651,6 @@ def open_browser():
 
 
 if __name__ == "__main__":
-    ensure_local_excel_file()
-    upgrade_file_format(LOCAL_EXCEL_FILE)
-
+    ensure_local_db_file()
     threading.Timer(1.0, open_browser).start()
-
     app.run(host="127.0.0.1", port=5000, debug=is_debug_mode())

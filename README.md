@@ -26,12 +26,13 @@ pyinstaller --onedir --name Kassensturz \
   --add-data "templates:templates" \
   --add-data "static:static" \
   --noconsole \ 
+  --noconfirm \
   app.py
 ```
 
 as one line:
 ```bash
-pyinstaller --onedir --name Kassensturz  --icon=assets/cash.ico --add-data "templates:templates" --add-data "static:static" --noconsole app.py
+pyinstaller --onedir --name Kassensturz  --icon=assets/cash.ico --add-data "templates:templates" --add-data "static:static" --noconsole --noconfirm app.py
 ```
 
 Output will be in:
