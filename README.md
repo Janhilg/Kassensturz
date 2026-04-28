@@ -5,10 +5,10 @@ Kassensturz is a small Flask web application for recording cash events.
 It provides:
 - A web Interface to save cash box sum with essetial data, e.g. date, name and start or stop
 - a live calculator / cash counter
-- Local Excel export using `.xlsx`
-- Local data backup
-- optional upload of the Excel file to Nextcloud via WebDAV
-- Excel file merging
+- Local Excel export using `.xlsx` and `.txt`
+- Local data backup, SQLite
+- optional upload of the Excel and `.txt` file to Nextcloud via WebDAV
+- DB/Excel file merging to sync information. Remote as append only.
 - English/German language switching
 - Dark / Light mode
 
@@ -58,7 +58,9 @@ The form lets you submit:
 - Cash sum
 - Event Start/Stop
 - Comment (optional)
-
+  
+Optional:
+- Cash denominations
 Each confirmed submission is appended as a new row in the Excel file.
 
 ### Live calculator and cash counter
