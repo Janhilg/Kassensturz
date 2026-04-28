@@ -62,6 +62,8 @@ def append_and_sync(
         if nextcloud_configured(config) and not is_debug:
             remote_exists = download_remote_excel_to_temp(config, base_dir, remote_excel_file)
 
+        local_before = get_row_count(db_path)
+        remote_count = 0
         if remote_exists:
             imported_entries = import_entries_from_excel(remote_excel_file)
             remote_count = len(imported_entries)
@@ -92,11 +94,11 @@ def append_and_sync(
             entries_after,
             entries_after,
         )
-        if local_after != remote_count and remote_count != 0:
+        if remote_count != 0 and local_after < remote_count:
             logger.warning(
                 "Row count mismatch | local=%s remote=%s",
                 local_after,
-                remote_count
+                remote_count,
             )
 
         excel_size = excel_path.stat().st_size
@@ -121,7 +123,7 @@ def append_and_sync(
                 )
             except Exception:
                 logger.exception("Sync failed | id=%s", entry.get("id"))
-            raise
+                raise
 
 
 def human_size(num_bytes: int) -> str:
