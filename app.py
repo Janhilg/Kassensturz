@@ -231,7 +231,7 @@ def admin_login():
         else:
             flash("Invalid admin password.", "error")
 
-    return render_template("admin_login.html")
+    return render_template("admin_login.html", app_mode=Config.MODE)
 
 
 @app.route("/admin/logout")

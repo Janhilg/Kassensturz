@@ -57,7 +57,30 @@ const translations = {
         apply_cash_counter_to_calculator: "Send total to calculator",
 
         bills: "Bills",
-        coins: "Coins"
+        coins: "Coins",
+        admin_title: "Admin",
+
+        admin_back_to_app: "Back to app",
+        admin_access_active: "Admin access active",
+        admin_logout_button: "Logout",
+        admin_error_title: "Error",
+        admin_system_status_title: "System Status",
+        admin_database_label: "Database",
+        admin_rows_label: "Rows",
+        admin_rows_meta: "Entries in DB",
+        admin_excel_export_label: "Excel Export",
+        admin_text_export_label: "Text Export",
+        admin_backups_label: "Backups",
+        admin_nextcloud_label: "Nextcloud",
+        admin_actions_title: "Actions",
+        admin_password_label: "Admin password",
+        admin_rebuild_exports_button: "Rebuild exports now",
+        admin_sync_now_button: "Sync now",
+        admin_restore_backup_title: "Restore Backup",
+        admin_restore_button: "Restore",
+        admin_no_backups_text: "No backups available.",
+        admin_login_title: "Admin Login",
+        admin_login_button: "Login",
     },
 
     de: {
@@ -117,7 +140,30 @@ const translations = {
         apply_cash_counter_to_calculator: "Summe an Rechner senden",
 
         bills: "Scheine",
-        coins: "Münzen"
+        coins: "Münzen",
+
+        admin_title: "Admin",
+        admin_back_to_app: "Zur App",
+        admin_access_active: "Admin-Zugriff aktiv",
+        admin_logout_button: "Abmelden",
+        admin_error_title: "Fehler",
+        admin_system_status_title: "Systemstatus",
+        admin_database_label: "Datenbank",
+        admin_rows_label: "Zeilen",
+        admin_rows_meta: "Einträge in der DB",
+        admin_excel_export_label: "Excel-Export",
+        admin_text_export_label: "Text-Export",
+        admin_backups_label: "Backups",
+        admin_nextcloud_label: "Nextcloud",
+        admin_actions_title: "Aktionen",
+        admin_password_label: "Admin-Passwort",
+        admin_rebuild_exports_button: "Exporte neu erstellen",
+        admin_sync_now_button: "Jetzt synchronisieren",
+        admin_restore_backup_title: "Backup wiederherstellen",
+        admin_restore_button: "Wiederherstellen",
+        admin_no_backups_text: "Keine Backups verfügbar.",
+        admin_login_title: "Admin-Anmeldung",
+        admin_login_button: "Anmelden",
     }
 };
 
@@ -208,6 +254,37 @@ export function applyTranslations() {
 
     setText("bills_label", t("bills"));
     setText("coins_label", t("coins"));
+
+    setText("admin_title", t("admin_title"));
+    setText("admin_back_to_app", t("admin_back_to_app"));
+    setText("admin_access_active", t("admin_access_active"));
+    setText("admin_logout_button", t("admin_logout_button"));
+    setText("admin_error_title", t("admin_error_title"));
+    setText("admin_system_status_title", t("admin_system_status_title"));
+    setText("admin_database_label", t("admin_database_label"));
+    setText("admin_rows_label", t("admin_rows_label"));
+    setText("admin_rows_meta", t("admin_rows_meta"));
+    setText("admin_excel_export_label", t("admin_excel_export_label"));
+    setText("admin_text_export_label", t("admin_text_export_label"));
+    setText("admin_backups_label", t("admin_backups_label"));
+    setText("admin_nextcloud_label", t("admin_nextcloud_label"));
+    setText("admin_actions_title", t("admin_actions_title"));
+    setText("admin_password_label", t("admin_password_label"));
+    setText("admin_rebuild_exports_button", t("admin_rebuild_exports_button"));
+    setText("admin_sync_now_button", t("admin_sync_now_button"));
+    setText("admin_restore_backup_title", t("admin_restore_backup_title"));
+    setText("admin_restore_button", t("admin_restore_button"));
+    setText("admin_no_backups_text", t("admin_no_backups_text"));
+    setText("admin_login_title", t("admin_login_title"));
+    setText("admin_login_button", t("admin_login_button"));
+
+    const adminPasswordInput = document.getElementById("admin_password_shared");
+    const loginPasswordInput = document.getElementById("password");
+
+    if (adminPasswordInput) adminPasswordInput.placeholder = t("admin_password_label");
+    if (loginPasswordInput) loginPasswordInput.placeholder = t("admin_password_label");
+
+
 
     const textInput = document.getElementById("text_input");
     const countedByInput = document.getElementById("counted_by_input");

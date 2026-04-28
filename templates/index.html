@@ -38,12 +38,12 @@
         <div class="admin-header">
             {% if admin_logged_in %}
                 <div class="admin-login-state">
-                    <span class="admin-login-badge">Admin access active</span>
+                    <span class="admin-login-badge" id="admin_access_active">Admin access active</span>
                 </div>
             {% endif %}
             <div class="admin-header-actions">
                 {% if admin_logged_in %}
-                    <a class="clear-button admin-logout-link" href="{{ url_for('admin_logout') }}">
+                    <a class="clear-button admin-logout-link" href="{{ url_for('admin_logout') }}" id="admin_logout_button">
                         Logout
                     </a>
                 {% endif %}
