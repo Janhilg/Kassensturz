@@ -22,6 +22,7 @@ def test_append_and_sync_local_only(temp_paths, sample_entry):
         config=DummyConfig(),
         base_dir=temp_paths["base_dir"],
         is_debug=True,
+        sync_state_file=temp_paths["base_dir"] / "data" / "sync_state.json",
     )
 
     rows = fetch_all_entries(temp_paths["db_path"])
@@ -71,6 +72,7 @@ def test_append_and_sync_with_remote_merge(monkeypatch, temp_paths, sample_entry
         config=object(),
         base_dir=temp_paths["base_dir"],
         is_debug=False,
+        sync_state_file=temp_paths["sync_state_file"],
     )
 
     rows = fetch_all_entries(temp_paths["db_path"])

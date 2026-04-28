@@ -11,9 +11,9 @@ class DummyForm(dict):
 
 
 class DummyConfig:
-    NEXTCLOUD_BASE_URL = ""
-    NEXTCLOUD_USERNAME = ""
-    NEXTCLOUD_APP_PASSWORD = ""
+    NEXTCLOUD_BASE_URL = "https://example.test"
+    NEXTCLOUD_USERNAME = "user"
+    NEXTCLOUD_APP_PASSWORD = "pass"
     NEXTCLOUD_REMOTE_DIR = "Apps/Kassensturz/Kassensturz_data"
     NEXTCLOUD_REMOTE_FILE = "kassensturz_data.xlsx"
     NEXTCLOUD_VERIFY = "true"
@@ -28,6 +28,7 @@ def temp_paths(tmp_path: Path):
         "backup_dir": tmp_path / "data" / "backups",
         "excel_path": tmp_path / "data" / "kassensturz_data.xlsx",
         "text_path": tmp_path / "data" / "kassensturz_data.txt",
+        "sync_state_file": tmp_path / "data" / "sync_state.json",
     }
 
 
