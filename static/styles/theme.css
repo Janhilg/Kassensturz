@@ -1,0 +1,54 @@
+body[data-theme="light"] {
+    --bg: #f7f7f7;
+    --text: #222222;
+    --heading: #111111;
+    --card-bg: #ffffff;
+    --card-border: #d0d7de;
+    --input-bg: #ffffff;
+    --input-border: #cfcfcf;
+    --input-placeholder: #6b7280;
+    --input-focus: #1f6feb;
+    --primary-btn: #1f6feb;
+    --primary-btn-hover: #1857b6;
+    --calc-btn-bg: #e9ecef;
+    --calc-btn-hover: #d9dee3;
+    --danger-btn: #dc3545;
+    --danger-btn-hover: #bb2d3b;
+    --result-bg: #f1f5f9;
+    --accent: #1f6feb;
+    --muted: #666666;
+    --submitted-bg: #eef6ee;
+    --submitted-border: #238636;
+    --footer-border: #d0d7de;
+    --shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.08);
+    --shadow-focus: 0 0 0 3px rgba(31, 111, 235, 0.15);
+}
+
+body[data-theme="light"] .success-box {
+    background: #e6f4ea;
+    border-color: #2ea043;
+    color: #1a1a1a;
+}
+
+body[data-theme="light"] .debug-banner {
+    color: #111111;
+}
+
+body[data-theme="light"] .cash-row {
+    background: #ffffff;
+}
+
+body[data-theme="light"] .history-list {
+    background: #ffffff;
+}
+
+body[data-theme="light"] .card {
+    background: #ffffff;
+}
+body[data-theme="light"] .result-box {
+    background: linear-gradient(
+        180deg,
+        rgba(31, 111, 235, 0.06),
+        rgba(31, 111, 235, 0.025)
+    );
+}

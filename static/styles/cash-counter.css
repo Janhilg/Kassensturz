@@ -1,0 +1,137 @@
+.cash-section-title {
+    margin: 20px 0 10px 0;
+    font-weight: 800;
+    color: var(--accent);
+    font-size: 15px;
+    letter-spacing: 0.25px;
+    text-transform: uppercase;
+}
+
+.cash-counter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+    margin-top: 12px;
+}
+
+.cash-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    background: linear-gradient(
+        180deg,
+        rgba(255,255,255,0.025),
+        rgba(255,255,255,0.012)
+    );
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.cash-row label {
+    margin-bottom: 0;
+    font-weight: 700;
+    min-width: 72px;
+    color: var(--heading);
+}
+
+.cash-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.denom-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    background: var(--calc-btn-bg);
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.denom-btn:hover {
+    background: var(--calc-btn-hover);
+}
+
+.denom-btn:active {
+    transform: scale(0.97);
+}
+
+.cash-row input.denomination-input {
+    width: 74px;
+    max-width: 74px;
+    padding: 10px 8px;
+    text-align: center;
+    font-weight: 800;
+}
+
+.cash-row:focus-within {
+    border-color: var(--input-focus);
+    box-shadow: var(--shadow-focus);
+}
+.denomination-input::-webkit-inner-spin-button,
+.denomination-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.denomination-input {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.cash-counter-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.cash-counter-actions button {
+    flex: 1 1 220px;
+}
+.cash-counter-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.cash-counter-actions button {
+    flex: 1 1 220px;
+}
+
+@media (max-width: 800px) {
+    .cash-counter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cash-row {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .cash-row label {
+        width: 100%;
+    }
+
+    .cash-stepper {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .cash-row input.denomination-input {
+        flex: 1;
+        max-width: none;
+    }
+}

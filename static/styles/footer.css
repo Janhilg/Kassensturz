@@ -1,0 +1,24 @@
+.lang-button,
+.theme-button {
+    padding: 8px 13px;
+    font-size: 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    background: var(--card-bg);
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.lang-button:hover,
+.theme-button:hover {
+    background: var(--calc-btn-hover);
+}
+
+.lang-button.active,
+.theme-button.active {
+    background: var(--input-focus);
+    color: white;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.2);
+}

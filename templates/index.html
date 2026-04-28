@@ -4,9 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kassensturz</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='cash.ico') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='cash.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/form.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/calculator.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/cash-counter.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/footer.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/theme.css') }}">
+
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='resources/cash.ico') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='resources/cash.png') }}">
 </head>
 <body>
     {% if app_mode == "debug" %}
@@ -14,7 +21,21 @@
     {% endif %}
 
     <div class="page">
-        <h1 id="app_title">Kassensturz</h1>
+        <div class="app-title">
+        <div class="app-header">
+            <div class="app-title-wrap">
+                <img
+                    src="{{ url_for('static', filename='resources/cash.ico') }}"
+                    alt=""
+                    class="app-title-icon"
+                >
+                <div>
+                    <h1 id="app_title">Kassensturz</h1>
+                    <p class="app-subtitle">Cash counting and event balance logging</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
         <div class="layout">
             <div class="card">
@@ -375,6 +396,6 @@
         </footer>
     </div>
 
-    <script type="module" src="{{ url_for('static', filename='app.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='scripts/app.js') }}"></script>
 </body>
 </html>
