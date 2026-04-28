@@ -1,8 +1,7 @@
-from pathlib import Path
-from urllib.parse import quote
-
 import requests
 import logging
+from pathlib import Path
+from urllib.parse import quote
 
 logger = logging.getLogger(__name__)
 

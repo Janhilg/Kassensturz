@@ -1,10 +1,9 @@
 import hashlib
+import logging
 from pathlib import Path
-
 from openpyxl import Workbook, load_workbook
 
 from core.storage import DENOM_FIELDS, fetch_all_entries
-import logging
 
 logger = logging.getLogger(__name__)
 

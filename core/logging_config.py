@@ -2,7 +2,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-
 def setup_logging(base_dir: Path, debug: bool):
     log_dir = base_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)

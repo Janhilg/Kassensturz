@@ -1,7 +1,7 @@
 from pathlib import Path
 import tempfile
 import time
-
+import logging
 from core.storage import (
     ensure_db_file,
     insert_entry,
@@ -20,10 +20,8 @@ from core.nextcloud_sync import (
     upload_excel_file_to_nextcloud,
     upload_text_file_to_nextcloud,
 )
-import logging
 
 logger = logging.getLogger(__name__)
-
 
 # IMPORTANT:
 # Remote Excel is treated as append-only.

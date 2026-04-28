@@ -3,19 +3,19 @@ import os
 import sys
 import threading
 import webbrowser
+import logging
 from datetime import datetime
 from pathlib import Path
 from flask import Flask, flash, redirect, render_template, request, url_for
 
 from config import Config
+from core.service import append_and_sync
+from core.logging_config import setup_logging
 from core.storage import (
     ensure_db_file,
     get_denomination_values_from_form,
     new_entry_id,
 )
-from core.service import append_and_sync
-import logging
-from core.logging_config import setup_logging
 
 mimetypes.add_type("application/javascript", ".js")
 
