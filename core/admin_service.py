@@ -1,12 +1,12 @@
 from pathlib import Path
-
+from core.storage import ensure_db_file, fetch_all_entries, get_row_count
+from core.sync_state import load_sync_state, save_sync_state
 from core.export_utils import export_entries_to_excel, export_entries_to_text
 from core.nextcloud_sync import (
     nextcloud_configured,
     upload_excel_file_to_nextcloud,
     upload_text_file_to_nextcloud,
 )
-from core.storage import ensure_db_file, fetch_all_entries
 
 
 def list_backups(backup_dir: Path):
@@ -49,7 +49,10 @@ def get_status_snapshot(
 ):
     ensure_db_file(db_path)
 
-    row_count = len(fetch_all_entries(db_path))
+    entries = fetch_all_entries(db_path)
+    row_count = len(entries)
+    latest_entry = entries[-1] if entries else None
+
     backups = list_backups(backup_dir)
 
     return {
@@ -57,27 +60,30 @@ def get_status_snapshot(
         "db_path": db_path,
         "db_size": db_path.stat().st_size if db_path.exists() else 0,
         "db_size_human": human_size(db_path.stat().st_size) if db_path.exists() else "0 B",
+
         "excel_exists": excel_path.exists(),
         "excel_path": excel_path,
-        "excel_size": excel_path.stat().st_size if excel_path.exists() else 0,
         "excel_size_human": human_size(excel_path.stat().st_size) if excel_path.exists() else "0 B",
+
         "text_exists": text_path.exists(),
         "text_path": text_path,
-        "text_size": text_path.stat().st_size if text_path.exists() else 0,
         "text_size_human": human_size(text_path.stat().st_size) if text_path.exists() else "0 B",
+
         "backup_dir": backup_dir,
         "backup_count": len(backups),
         "row_count": row_count,
+
         "nextcloud_configured": nextcloud_configured(config),
         "remote_dir": getattr(config, "NEXTCLOUD_REMOTE_DIR", ""),
         "remote_file": getattr(config, "NEXTCLOUD_REMOTE_FILE", ""),
+
         "backups": [
-            {
-                **backup,
-                "size_human": human_size(backup["size"]),
-            }
+            {**backup, "size_human": human_size(backup["size"])}
             for backup in backups
         ],
+
+        # ✅ NEW
+        "latest_entry": latest_entry,
     }
 
 
@@ -99,16 +105,35 @@ def sync_exports_now(
     text_path: Path,
     config,
     base_dir: Path,
+    sync_state_file: Path,
 ):
+    ensure_db_file(db_path)
+
+    sync_state = load_sync_state(sync_state_file)
+    last_uploaded_row_count = int(sync_state.get("last_uploaded_row_count", 0))
+
     rebuild_exports(
         db_path=db_path,
         excel_path=excel_path,
         text_path=text_path,
     )
 
+    uploaded_total_rows = get_row_count(db_path)
+    new_rows_added_to_shared_dataset = max(0, uploaded_total_rows - last_uploaded_row_count)
+
     if nextcloud_configured(config):
         upload_excel_file_to_nextcloud(config, base_dir, excel_path)
         upload_text_file_to_nextcloud(config, base_dir, text_path)
+
+        save_sync_state(
+            sync_state_file,
+            last_uploaded_row_count=uploaded_total_rows,
+        )
+
+    return {
+        "uploaded_total_rows": uploaded_total_rows,
+        "new_rows_added_to_shared_dataset": new_rows_added_to_shared_dataset,
+    }
 
 
 def restore_backup(

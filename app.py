@@ -11,6 +11,7 @@ from flask import Flask, flash, redirect, render_template, request, url_for, ses
 from config import Config
 from core.service import append_and_sync
 from core.logging_config import setup_logging
+from core.nextcloud_sync import nextcloud_configured
 from core.admin_service import (
     get_status_snapshot,
     rebuild_exports,
@@ -71,6 +72,8 @@ def require_admin_login():
 BASE_DIR = portable_base_dir()
 DATA_DIR = BASE_DIR / ("data_debug" if is_debug_mode() else "data")
 
+SYNC_STATE_FILE = DATA_DIR / "sync_state.json"
+
 LOCAL_DB_FILE = DATA_DIR / "kassensturz.db"
 BACKUP_DIR = DATA_DIR / "backups"
 LOCAL_EXCEL_EXPORT_FILE = DATA_DIR / "kassensturz_data.xlsx"
@@ -115,7 +118,7 @@ def home():
                     **denominations,
                 }
 
-                append_and_sync(
+                sync_result = append_and_sync(
                     entry=entry,
                     db_path=LOCAL_DB_FILE,
                     backup_dir=BACKUP_DIR,
@@ -124,8 +127,8 @@ def home():
                     config=Config,
                     base_dir=BASE_DIR,
                     is_debug=is_debug_mode(),
+                    sync_state_file=SYNC_STATE_FILE,
                 )
-
                 flash(
                     {
                         "date": current_date,
@@ -139,6 +142,33 @@ def home():
                     },
                     "submitted",
                 )
+                if nextcloud_configured(Config):
+                    if sync_result["remote_exists"]:
+                        flash(
+                            (
+                                "Sync completed: imported "
+                                f"{sync_result['imported_from_remote']} new rows from remote, "
+                                f"skipped {sync_result['skipped_remote_existing']} existing rows, "
+                                f"added {sync_result['new_rows_added_to_shared_dataset']} new rows to the shared dataset."
+                            ),
+                            "success",
+                        )
+                    else:
+                        flash(
+                            (
+                                "Sync completed: no remote rows to import, "
+                                f"added {sync_result['new_rows_added_to_shared_dataset']} new rows to the shared dataset."
+                            ),
+                            "success",
+                        )
+                else:
+                    flash(
+                        (
+                            "Saved locally: "
+                            f"{sync_result['uploaded_total_rows']} total rows in local database/export."
+                        ),
+                        "success",
+                    )
 
                 return redirect(url_for("home"))
 
@@ -245,16 +275,25 @@ def admin_sync_now():
         return redirect(url_for("admin_login"))
 
     try:
-        sync_exports_now(
+        result = sync_exports_now(
             db_path=LOCAL_DB_FILE,
             excel_path=LOCAL_EXCEL_EXPORT_FILE,
             text_path=LOCAL_TEXT_EXPORT_FILE,
             config=Config,
             base_dir=BASE_DIR,
+            sync_state_file=SYNC_STATE_FILE,
+        )
+
+        flash(
+            (
+                f"Sync completed: added {result['new_rows_added_to_shared_dataset']} new rows "
+                f"to the shared dataset, uploaded {result['uploaded_total_rows']} total rows."
+            ),
+            "success",
         )
 
         logger.info("Admin sync now completed")
-        flash("Sync completed successfully.", "success")
+
 
     except Exception as exc:
         logger.exception("Admin sync now failed")

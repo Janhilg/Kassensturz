@@ -93,7 +93,75 @@
                 </div>
             </div>
         </div>
+        <div class="card">
+            <h2 id="admin_latest_entry_title">Latest Entry</h2>
 
+            {% if status.latest_entry %}
+                <div class="admin-latest-entry">
+
+                    <div class="admin-latest-row">
+                        <span class="admin-latest-label">ID</span>
+                        <span class="admin-latest-value">
+                            {{ status.latest_entry.id[:12] }}
+                        </span>
+                    </div>
+
+                    <div class="admin-latest-row">
+                        <span class="admin-latest-label">Date</span>
+                        <span class="admin-latest-value">
+                            {{ status.latest_entry.date }}
+                        </span>
+                    </div>
+
+                    <div class="admin-latest-row">
+                        <span class="admin-latest-label">Timestamp</span>
+                        <span class="admin-latest-value">
+                            {{ status.latest_entry.timestamp }}
+                        </span>
+                    </div>
+
+                    <div class="admin-latest-row">
+                        <span class="admin-latest-label">Event</span>
+                        <span class="admin-latest-value">
+                            {{ status.latest_entry.event_name }}
+                        </span>
+                    </div>
+
+                    <div class="admin-latest-row">
+                        <span class="admin-latest-label">Counted by</span>
+                        <span class="admin-latest-value">
+                            {{ status.latest_entry.counted_by }}
+                        </span>
+                    </div>
+
+                    <div class="admin-latest-row">
+                        <span class="admin-latest-label">Cash sum</span>
+                        <span class="admin-latest-value">
+                            {{ status.latest_entry.cash_sum }}
+                        </span>
+                    </div>
+
+                    <div class="admin-latest-row">
+                        <span class="admin-latest-label">Status</span>
+                        <span class="admin-latest-value">
+                            {{ status.latest_entry.event_status }}
+                        </span>
+                    </div>
+
+                    {% if status.latest_entry.comment %}
+                    <div class="admin-latest-row">
+                        <span class="admin-latest-label">Comment</span>
+                        <span class="admin-latest-value">
+                            {{ status.latest_entry.comment }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                </div>
+            {% else %}
+                <p>No entries yet.</p>
+            {% endif %}
+        </div>
         <div class="card">
             <h2 id="admin_actions_title">Actions</h2>
 

@@ -104,7 +104,34 @@
     border-color: #da3633;
     background: #2d1117;
 }
+.admin-latest-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
+.admin-latest-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.admin-latest-row:last-child {
+    border-bottom: none;
+}
+
+.admin-latest-label {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.admin-latest-value {
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+}
 
 @media (max-width: 800px) {
     .admin-status-grid {
