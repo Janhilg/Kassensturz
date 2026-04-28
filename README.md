@@ -33,7 +33,7 @@ pyinstaller --onedir --name Kassensturz \
 
 as one line:
 ```bash
-pyinstaller --onedir --name Kassensturz  --icon=assets/cash.ico --add-data "templates:templates" --add-data "static:static" --noconsole --noconfirm app.py
+pyinstaller --onedir --name Kassensturz  --icon=assets/cash.ico --add-data "templates:templates" --add-data "static:static" --noconfirm app.py
 ```
 
 Output will be in:
