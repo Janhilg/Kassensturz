@@ -393,6 +393,13 @@
                 <button type="button" class="theme-button" data-theme="dark" id="theme_dark_button">Dark</button>
                 <button type="button" class="theme-button" data-theme="light" id="theme_light_button">Light</button>
             </div>
+            {% if app_mode == "debug" %}
+            <div style="margin-top: 12px;">
+                <a href="{{ url_for('admin') }}" class="calc-button" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">
+                    Open admin page
+                </a>
+            </div>
+            {% endif %}
         </footer>
     </div>
 

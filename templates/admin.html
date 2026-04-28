@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Kassensturz{% endblock %}
+
+{% block content %}
+{% if app_mode == "debug" %}
+<div class="debug-banner">DEBUG MODE</div>
+{% endif %}
+
+<div class="page">
+    <div class="admin-header">
+        <h1>Admin</h1>
+        <a class="calc-button admin-back-link" href="{{ url_for('home') }}">
+            Back to app
+        </a>
+        <a class="calc-button admin-back-link" href="{{ url_for('admin_logout') }}">
+            Logout
+        </a>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            {% if category == "error" %}
+                <div class="submitted-values admin-error-box">
+                    <h3>Error</h3>
+                    <p>{{ message }}</p>
+                </div>
+            {% elif category == "success" %}
+                <div class="success-box">
+                    <h3>Success</h3>
+                    <p>{{ message }}</p>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endwith %}
+
+    <div class="layout admin-layout">
+
+        <!-- SYSTEM STATUS -->
+        <div class="card">
+            <h2>System Status</h2>
+
+            <div class="admin-status-grid">
+                <div class="admin-stat">
+                    <div class="admin-stat-label">Database</div>
+                    <div class="admin-stat-value">{{ "Present" if status.db_exists else "Missing" }}</div>
+                    <div class="admin-stat-meta">{{ status.db_path }} · {{ status.db_size_human }}</div>
+                </div>
+
+                <div class="admin-stat">
+                    <div class="admin-stat-label">Rows</div>
+                    <div class="admin-stat-value">{{ status.row_count }}</div>
+                    <div class="admin-stat-meta">Entries in DB</div>
+                </div>
+
+                <div class="admin-stat">
+                    <div class="admin-stat-label">Excel Export</div>
+                    <div class="admin-stat-value">{{ "Present" if status.excel_exists else "Missing" }}</div>
+                    <div class="admin-stat-meta">{{ status.excel_path }} · {{ status.excel_size_human }}</div>
+                </div>
+
+                <div class="admin-stat">
+                    <div class="admin-stat-label">Text Export</div>
+                    <div class="admin-stat-value">{{ "Present" if status.text_exists else "Missing" }}</div>
+                    <div class="admin-stat-meta">{{ status.text_path }} · {{ status.text_size_human }}</div>
+                </div>
+
+                <div class="admin-stat">
+                    <div class="admin-stat-label">Backups</div>
+                    <div class="admin-stat-value">{{ status.backup_count }}</div>
+                    <div class="admin-stat-meta">{{ status.backup_dir }}</div>
+                </div>
+
+                <div class="admin-stat">
+                    <div class="admin-stat-label">Nextcloud</div>
+                    <div class="admin-stat-value">
+                        {{ "Configured" if status.nextcloud_configured else "Not configured" }}
+                    </div>
+                    <div class="admin-stat-meta">
+                        {{ status.remote_dir }}/{{ status.remote_file }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="card">
+            <h2>Actions</h2>
+            <div class="admin-actions">
+                <form method="POST" action="{{ url_for('admin_rebuild_exports') }}">
+                    <button type="submit" class="primary-button admin-action-button">
+                        Rebuild exports now
+                    </button>
+                </form>
+
+                <form method="POST" action="{{ url_for('admin_sync_now') }}">
+                    <button type="submit" class="calc-button admin-action-button">
+                        Sync now
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- RESTORE BACKUP -->
+        <div class="card">
+            <h2>Restore Backup</h2>
+
+            {% if status.backups %}
+                <div class="backup-list">
+                    {% for backup in status.backups %}
+                        <form method="POST" action="{{ url_for('admin_restore_backup') }}" class="backup-item">
+                            <input type="hidden" name="backup_name" value="{{ backup.name }}">
+                            <div class="backup-info">
+                                <div class="backup-name">{{ backup.name }}</div>
+                                <div class="backup-meta">{{ backup.size_human }}</div>
+                            </div>
+                            <button
+                                type="submit"
+                                class="clear-button admin-restore-button"
+                                onclick="return confirm('Restore backup {{ backup.name }}? This will replace the current local database.')"
+                            >
+                                Restore
+                            </button>
+                        </form>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No backups available.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

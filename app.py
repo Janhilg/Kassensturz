@@ -6,11 +6,17 @@ import webbrowser
 import logging
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, redirect, render_template, request, url_for, session
 
 from config import Config
 from core.service import append_and_sync
 from core.logging_config import setup_logging
+from core.admin_service import (
+    get_status_snapshot,
+    rebuild_exports,
+    restore_backup,
+    sync_exports_now,
+)
 from core.storage import (
     ensure_db_file,
     get_denomination_values_from_form,
@@ -43,6 +49,24 @@ def is_debug_mode() -> bool:
 def get_form_value(name: str) -> str:
     return request.form.get(name, "").strip()
 
+def require_admin_password_or_reject():
+    expected = getattr(Config, "ADMIN_PASSWORD", "").strip()
+
+    if not expected:
+        raise PermissionError("ADMIN_PASSWORD is not configured.")
+
+    submitted = request.form.get("admin_password", "").strip()
+
+    if submitted != expected:
+        raise PermissionError("Invalid admin password.")
+
+def is_admin_authenticated() -> bool:
+    return session.get("admin_authenticated") is True
+
+
+def require_admin_login():
+    if not is_admin_authenticated():
+        return redirect(url_for("admin_login"))
 
 BASE_DIR = portable_base_dir()
 DATA_DIR = BASE_DIR / ("data_debug" if is_debug_mode() else "data")
@@ -124,6 +148,118 @@ def home():
 
     return render_template("index.html", app_mode=Config.MODE)
 
+@app.route("/admin", methods=["GET"])
+def admin():
+    if not is_admin_authenticated():
+        return redirect(url_for("admin_login"))
+
+    status = get_status_snapshot(
+        db_path=LOCAL_DB_FILE,
+        backup_dir=BACKUP_DIR,
+        excel_path=LOCAL_EXCEL_EXPORT_FILE,
+        text_path=LOCAL_TEXT_EXPORT_FILE,
+        config=Config,
+    )
+
+    return render_template(
+        "admin.html",
+        app_mode=Config.MODE,
+        status=status,
+    )
+
+@app.route("/admin/restore-backup", methods=["POST"])
+def admin_restore_backup():
+    if not is_admin_authenticated():
+        return redirect(url_for("admin_login"))
+
+    backup_name = request.form.get("backup_name", "").strip()
+    if not backup_name:
+        flash("No backup selected.", "error")
+        return redirect(url_for("admin"))
+
+    backup_file = BACKUP_DIR / backup_name
+
+    try:
+        restore_backup(
+            backup_file=backup_file,
+            db_path=LOCAL_DB_FILE,
+            excel_path=LOCAL_EXCEL_EXPORT_FILE,
+            text_path=LOCAL_TEXT_EXPORT_FILE,
+            config=Config,
+            base_dir=BASE_DIR,
+        )
+
+        logger.info("Backup restored | backup=%s", backup_name)
+        flash(f"Backup restored: {backup_name}", "success")
+
+    except Exception as exc:
+        logger.exception("Backup restore failed | backup=%s", backup_name)
+        flash(str(exc), "error")
+
+    return redirect(url_for("admin"))
+
+@app.route("/admin/rebuild-exports", methods=["POST"])
+def admin_rebuild_exports():
+    if not is_admin_authenticated():
+        return redirect(url_for("admin_login"))
+
+    try:
+        rebuild_exports(
+            db_path=LOCAL_DB_FILE,
+            excel_path=LOCAL_EXCEL_EXPORT_FILE,
+            text_path=LOCAL_TEXT_EXPORT_FILE,
+        )
+
+        logger.info("Admin rebuild exports completed")
+        flash("Exports rebuilt successfully.", "success")
+
+    except Exception as exc:
+        logger.exception("Admin rebuild exports failed")
+        flash(str(exc), "error")
+
+    return redirect(url_for("admin"))
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        password = request.form.get("password", "").strip()
+
+        if password == Config.ADMIN_PASSWORD:
+            session["admin_authenticated"] = True
+            return redirect(url_for("admin"))
+        else:
+            flash("Invalid admin password.", "error")
+
+    return render_template("admin_login.html")
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("admin_authenticated", None)
+    return redirect(url_for("home"))
+
+@app.route("/admin/sync-now", methods=["POST"])
+def admin_sync_now():
+    if not is_admin_authenticated():
+        return redirect(url_for("admin_login"))
+
+    try:
+        sync_exports_now(
+            db_path=LOCAL_DB_FILE,
+            excel_path=LOCAL_EXCEL_EXPORT_FILE,
+            text_path=LOCAL_TEXT_EXPORT_FILE,
+            config=Config,
+            base_dir=BASE_DIR,
+        )
+
+        logger.info("Admin sync now completed")
+        flash("Sync completed successfully.", "success")
+
+    except Exception as exc:
+        logger.exception("Admin sync now failed")
+        flash(str(exc), "error")
+
+    return redirect(url_for("admin"))
 
 def open_browser():
     webbrowser.open("http://127.0.0.1:5000")
