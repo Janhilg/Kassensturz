@@ -93,9 +93,11 @@ BASE_DIR = portable_base_dir()
 if is_debug_mode():
     LOCAL_DB_FILE = BASE_DIR / "data_debug" / "kassensturz.db"
     BACKUP_DIR = BASE_DIR / "data_debug" / "backups"
+    EXCEL_BACKUP_DIR = BASE_DIR / "data_debug" / "excel_backups"
 else:
     LOCAL_DB_FILE = BASE_DIR / "data" / "kassensturz.db"
     BACKUP_DIR = BASE_DIR / "data" / "backups"
+    EXCEL_BACKUP_DIR = BASE_DIR / "data" / "excel_backups"
 
 NEXTCLOUD_BASE_URL = Config.NEXTCLOUD_BASE_URL.rstrip("/")
 NEXTCLOUD_USERNAME = Config.NEXTCLOUD_USERNAME
@@ -294,6 +296,27 @@ def create_backup(max_backups: int = 25):
 
     return backup_file
 
+def create_excel_backup(source_excel: Path, max_backups: int = 25):
+    EXCEL_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_file = EXCEL_BACKUP_DIR / f"kassensturz_export_{timestamp}.xlsx"
+
+    shutil.copy2(source_excel, backup_file)
+
+    backups = sorted(
+        EXCEL_BACKUP_DIR.glob("kassensturz_export_*.xlsx"),
+        key=lambda f: f.stat().st_mtime,
+        reverse=True,
+    )
+
+    for old_file in backups[max_backups:]:
+        try:
+            old_file.unlink()
+        except Exception:
+            pass
+
+    return backup_file
 
 def excel_safe_value(value):
     return "" if value is None else value
@@ -577,7 +600,7 @@ def append_and_sync(entry: dict):
         create_backup()
         export_entries_to_excel(merged_export_file)
         upload_excel_file_to_nextcloud(merged_export_file)
-
+        create_excel_backup(merged_export_file)
 
 @app.route("/", methods=["GET", "POST"])
 def home():
