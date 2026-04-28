@@ -12,9 +12,9 @@ It provides:
 - English/German language switching
 - Dark / Light mode
 
-![Screenshot1 of Kassenstutz Webapp](/assets/Screenshot 2026-04-28 100743.png)
+![Screenshot1 of Kassenstutz Webapp](/assets/Screenshot%202026-04-28%20100743.png)
 
-![Screenshot1 of Kassenstutz Webapp](/assets/Screenshot 2026-04-28 100819.png)
+![Screenshot1 of Kassenstutz Webapp](/assets/Screenshot%202026-04-28%20100819.png)
 
 ## Build (recommended: portable folder / onedir)
 
