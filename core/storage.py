@@ -115,6 +115,9 @@ def fetch_all_entries(db_path: Path) -> list[dict]:
 def merge_imported_entries_append_only(db_path: Path, imported_entries: list[dict]):
     ensure_db_file(db_path)
 
+    imported_count = 0
+    skipped_count = 0
+
     with get_connection(db_path) as conn:
         existing_ids = {
             row["id"]
@@ -126,16 +129,34 @@ def merge_imported_entries_append_only(db_path: Path, imported_entries: list[dic
 
         for entry in imported_entries:
             entry_id = str(entry.get("id", "")).strip()
+
             if not entry_id or entry_id in existing_ids:
+                skipped_count += 1
                 continue
 
             conn.execute(
                 f"INSERT INTO entries ({columns_sql}) VALUES ({placeholders})",
                 entry_to_db_values(entry),
             )
+
             existing_ids.add(entry_id)
+            imported_count += 1
 
         conn.commit()
+
+    # ✅ Logging here
+    logger.info(
+        "Merge completed | imported=%s skipped=%s total_remote=%s",
+        imported_count,
+        skipped_count,
+        len(imported_entries),
+    )
+
+    return {
+        "imported": imported_count,
+        "skipped": skipped_count,
+        "total": len(imported_entries),
+    }
 
 
 def create_backup(db_path: Path, backup_dir: Path, max_backups: int = 25):
@@ -159,3 +180,10 @@ def create_backup(db_path: Path, backup_dir: Path, max_backups: int = 25):
             pass
 
     return backup_file
+
+def get_row_count(db_path: Path) -> int:
+    ensure_db_file(db_path)
+
+    with get_connection(db_path) as conn:
+        result = conn.execute("SELECT COUNT(*) FROM entries").fetchone()
+        return result[0] if result else 0

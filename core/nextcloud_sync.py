@@ -74,8 +74,15 @@ def download_remote_excel_to_temp(config, base_dir: Path, temp_path: Path) -> bo
     )
 
     if response.status_code == 200:
-        temp_path.parent.mkdir(parents=True, exist_ok=True)
         temp_path.write_bytes(response.content)
+
+        size = temp_path.stat().st_size
+        logger.info(
+            "Downloaded remote Excel | size=%s (%s)",
+            size,
+            f"{size / 1024:.1f} KB"
+        )
+
         return True
 
     if response.status_code == 404:
@@ -97,6 +104,15 @@ def upload_file_to_nextcloud(
 ):
     if not nextcloud_configured(config):
         return
+
+    file_size = file_path.stat().st_size
+
+    logger.info(
+        "Uploading file | name=%s size=%s (%s)",
+        file_path.name,
+        file_size,
+        f"{file_size / 1024:.1f} KB"
+    )
 
     ensure_nextcloud_folder(config, base_dir)
 
@@ -125,6 +141,11 @@ def upload_file_to_nextcloud(
             f"Failed to upload file to Nextcloud: "
             f"{response.status_code} {response.text}"
         )
+    logger.info(
+        "Upload completed | name=%s size=%s",
+        file_path.name,
+        file_size
+    )
 
 
 def upload_excel_file_to_nextcloud(config, base_dir: Path, file_path: Path):
