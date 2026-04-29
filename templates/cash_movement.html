@@ -5,12 +5,12 @@
 {% block page_content %}
 <div class="layout">
     <div class="card">
-        <h2>Record Cash Movement</h2>
+        <h2 id="movement_title">Move Cash</h2>
 
         <form method="POST">
 
             <div class="form-row">
-                <label for="amount_eur">Amount (€)</label>
+                <label for="amount_eur" id="amount_label">Amount (€)</label>
                 <input
                     id="amount_eur"
                     name="amount_eur"
@@ -23,7 +23,7 @@
             </div>
 
             <div class="form-row">
-                <label for="from_account_id">From account</label>
+                <label for="from_account_id" id="from_account_label">From account</label>
                 <select id="from_account_id" name="from_account_id">
                     <option value="">—</option>
                     {% for account in cash_accounts %}
@@ -33,7 +33,7 @@
             </div>
 
             <div class="form-row">
-                <label for="to_account_id">To account</label>
+                <label for="to_account_id" id="to_account_label">To account</label>
                 <select id="to_account_id" name="to_account_id">
                     <option value="">—</option>
                     {% for account in cash_accounts %}
@@ -43,7 +43,7 @@
             </div>
 
             <div class="form-row">
-                <label for="actor">Actor</label>
+                <label for="actor" id="actor_label">Actor</label>
                 <input
                     id="actor"
                     name="actor"
@@ -53,7 +53,7 @@
             </div>
 
             <div class="form-row">
-                <label for="reference">Reference</label>
+                <label for="reference" id="reference_label">Reference</label>
                 <input
                     id="reference"
                     name="reference"
@@ -63,7 +63,7 @@
             </div>
 
             <div class="form-row">
-                <label for="context_label">Context</label>
+                <label for="context_label" >Context</label>
                 <input
                     id="context_label"
                     name="context_label"
@@ -80,7 +80,7 @@
             </div>
 
             <div class="form-row">
-                <label for="note">Comment (optional)</label>
+                <label for="note" id="note_label">Comment (optional)</label>
                 <textarea
                     id="note"
                     name="note"

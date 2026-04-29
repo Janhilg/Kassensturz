@@ -7,7 +7,7 @@
 {% block page_content %}
 <div class="layout">
     <div class="card">
-        <h2>Balances</h2>
+        <h2 id="balances_title">Balances</h2>
 
         {% if balances %}
             <div class="admin-data-list">
@@ -29,7 +29,7 @@
 
     <div class="right-column">
         <div class="card">
-            <h2>Recent Counts</h2>
+            <h2 id="recent_counts_title">Recent Counts</h2>
 
             {% if recent_counts %}
                 <div class="admin-data-list">
@@ -49,7 +49,7 @@
         </div>
 
         <div class="card">
-            <h2>Recent Movements</h2>
+            <h2 id="recent_movements_title">Recent Movements</h2>
 
             {% if recent_movements %}
                 <div class="admin-data-list">

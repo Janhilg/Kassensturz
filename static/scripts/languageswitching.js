@@ -81,6 +81,29 @@ const translations = {
         admin_no_backups_text: "No backups available.",
         admin_login_title: "Admin Login",
         admin_login_button: "Login",
+        cash_account_label: "Cash account",
+        movement_title: "Move Cash",
+        movement_subtitle: "Transfer cash between accounts or record payments",
+        event_name_label: "Event Name",
+        amount_label: "Amount (€)",
+        from_account_label: "From account",
+        to_account_label: "To account",
+        actor_label: "Actor",
+        reference_label: "Reference",
+        context_label: "Context",
+        note_label: "Comment (optional)",
+
+        balances_title: "Balances",
+        recent_counts_title: "Recent Counts",
+        recent_movements_title: "Recent Movements",
+
+        active_label: "Active",
+        inactive_label: "Inactive",
+
+        apply_to_form: "Apply result to form",
+        send_to_calculator: "Send total to calculator",
+
+        rolls_label: "Rolls",
     },
 
     de: {
@@ -164,6 +187,30 @@ const translations = {
         admin_no_backups_text: "Keine Backups verfügbar.",
         admin_login_title: "Admin-Anmeldung",
         admin_login_button: "Anmelden",
+        event_name_label: "Veranstaltungsname",
+        cash_account_label: "Kassenkonto",
+        movement_title: "Geld bewegen",
+        movement_subtitle: "Geld zwischen Konten verschieben oder Ausgaben erfassen",
+
+        amount_label: "Betrag (€)",
+        from_account_label: "Von Konto",
+        to_account_label: "Zu Konto",
+        actor_label: "Person",
+        reference_label: "Referenz",
+        context_label: "Kontext",
+        note_label: "Kommentar (optional)",
+
+        balances_title: "Bestände",
+        recent_counts_title: "Letzte Zählungen",
+        recent_movements_title: "Letzte Bewegungen",
+
+        active_label: "Aktiv",
+        inactive_label: "Inaktiv",
+
+        apply_to_form: "Ergebnis ins Formular übernehmen",
+        send_to_calculator: "Zum Rechner senden",
+
+        rolls_label: "Rollen",
     }
 };
 
@@ -277,6 +324,22 @@ export function applyTranslations() {
     setText("admin_no_backups_text", t("admin_no_backups_text"));
     setText("admin_login_title", t("admin_login_title"));
     setText("admin_login_button", t("admin_login_button"));
+
+    setText("label_event_name", t("event_name_label"));
+    setText("amount_label", t("amount_label"));
+    setText("from_account_label", t("from_account_label"));
+    setText("to_account_label", t("to_account_label"));
+    setText("actor_label", t("actor_label"));
+    setText("reference_label", t("reference_label"));
+    setText("context_label", t("context_label"));
+    setText("note_label", t("note_label"));
+
+    setText("movement_title", t("movement_title"));
+    setText("balances_title", t("balances_title"));
+    setText("recent_counts_title", t("recent_counts_title"));
+    setText("recent_movements_title", t("recent_movements_title"));
+
+    setText("rolls_label", t("rolls_label"));
 
     const adminPasswordInput = document.getElementById("admin_password_shared");
     const loginPasswordInput = document.getElementById("password");
