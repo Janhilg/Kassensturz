@@ -1,76 +1,164 @@
 # Kassensturz
 
-Kassensturz is a small Flask web application for recording cash events.
+Kassensturz is a local-first Flask web application for managing cash balances across multiple cash boxes.
 
-It provides:
-- A web Interface to save cash box sum with essetial data, e.g. date, name and start or stop
-- a live calculator / cash counter
-- Local Excel export using `.xlsx` and `.txt`
-- Local data backup, SQLite
-- optional upload of the Excel and `.txt` file to Nextcloud via WebDAV
-- DB/Excel file merging to sync information. Remote as append only.
-- English/German language switching
-- Dark / Light mode
+It is designed for simple, reliable tracking of:
+- cash counts (physical reality)
+- cash movements (money flow)
+- current balances per cash box
 
-![Screenshot1 of Kassenstutz Webapp](/assets/Screenshot%202026-04-28%20100743.png)
+---
 
-![Screenshot1 of Kassenstutz Webapp](/assets/Screenshot%202026-04-28%20100819.png)
+##  Core Concept
 
-## Build (recommended: portable folder / onedir)
+Kassensturz follows a simple model:
 
-This creates a **portable folder** containing the executable and all required files.
+- **Cash count** → sets the current balance of a cash box  
+- **Cash movement** → moves money between accounts and updates balances  
+
+Count: Bar Cash Box = 200€
+Movement: Bar → Runner (50€)
+→ Bar = 150€, Runner = +50€
+
+---
+
+## Features
+
+### Cash Count (main page)
+- Record cash counts per cash box
+- Free-text context (e.g. event name)
+- Optional denomination breakdown (bills, coins, rolls)
+- Live calculator and cash counter integrated
+
+---
+
+### Cash Movements
+- Move cash between accounts (e.g. bar → entrance)
+- Record payments (e.g. bar → supplier)
+- Optional denomination tracking
+- Shared cash counter for fast input
+
+---
+
+### Balances Page
+- Current balance per cash account
+- Based on:
+  - latest count (anchor)
+  - movements (updates)
+- Shows recent:
+  - counts
+  - movements
+
+---
+
+### Admin Page
+- System status overview
+- Manual sync trigger
+- Rebuild exports
+- Restore database backups
+- Sync state visibility (import/upload info)
+
+---
+
+### Live Calculator & Cash Counter
+- Two modes:
+  - Calculator (add/subtract)
+  - Cash counter (denominations + rolls)
+- Cash counter is default
+- Supports:
+  - bills
+  - coins
+  - roll values (e.g. 2€ roll = 50€)
+- Can apply results directly to forms
+
+---
+
+### Storage & Backup
+- SQLite database (local source of truth)
+- Automatic rotating backups
+- Manual restore via admin page
+
+---
+
+### Export & Sync
+- Full export to:
+  - Excel (.xlsx)
+  - Text (.txt)
+- Optional Nextcloud sync via WebDAV
+- Append-only merge logic:
+  - remote data is imported without overwriting
+- Multi-device sync support
+
+---
+
+### Localization & UI
+- English / German language switching
+- Dark / Light theme
+- Consistent layout across all pages
+- Mobile-friendly
+
+---
+
+## Architecture
+
+### Local-first model
+- SQLite database is the single source of truth
+- Exports are generated from DB
+- Sync merges remote data into local DB
+
+### Data model
+- cash_accounts → cash boxes + live balance
+- cash_counts → physical counts
+- cash_movements → money flow
+- cash_contexts → grouping (free text)
+
+---
+
+## Sync behavior
+
+- Import remote Excel (if exists)
+- Merge new rows (append-only)
+- Rebuild full export
+- Upload to Nextcloud
+- Track sync state
+
+---
+
+## Build (portable / onedir)
 
 ### Windows
 
-```bash
 pyinstaller --onedir --name Kassensturz \
   --icon=assets/cash.ico \
   --add-data "templates:templates" \
   --add-data "static:static" \
   --noconfirm \
   app.py
-```
 
-as one line:
-```bash
-pyinstaller --onedir --name Kassensturz  --icon=assets/cash.ico --add-data "templates:templates" --add-data "static:static" --noconfirm app.py
-```
+Output:
 
-Output will be in:
-
-```text
 dist/Kassensturz/
-```
 
-You can copy this entire folder to another machine or USB stick and run:
+Run:
 
-```text
 Kassensturz.exe
-```
 
-## Features
+---
 
-### Form
-The form lets you submit:
-- Date
-- Event name
-- Accountant Name
-- Cash sum
-- Event Start/Stop
-- Comment (optional)
-  
-Optional:
-- Cash denominations
-Each confirmed submission is appended as a new row in the Excel file.
+## Future ideas
 
-### Live calculator and cash counter
-Live calculator on page to sum up cash
+- discrepancy detection (expected vs counted)
+- analytics per event/context
+- improved sync visualization
+- stricter movement validation rules
+- mobile UI improvements
 
-Cash denomination counter
+---
 
-### Nextcloud upload
-After each successful submission, the Excel file is be merged with and uploaded to Nextcloud using WebDAV.
+## Design Principles
 
-
-
-
+- Local-first
+- Simple mental model
+- Append-only sync
+- Explicit state tracking
+- Separation of concerns
