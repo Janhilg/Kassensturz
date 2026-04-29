@@ -3,7 +3,7 @@ const STORAGE_LANGUAGE_KEY = "kassensturz_language";
 const translations = {
     en: {
         html_lang: "en",
-        form_title: "Input Form",
+        form_title: "Cash Count",
         date_prefix: "Date: ",
         event_name: "Event",
         event_name_placeholder: "Enter event name",
@@ -99,7 +99,6 @@ const translations = {
 
         active_label: "Active",
         inactive_label: "Inactive",
-
         apply_to_form: "Apply result to form",
         send_to_calculator: "Send total to calculator",
 
@@ -108,7 +107,7 @@ const translations = {
 
     de: {
         html_lang: "de",
-        form_title: "Eingabeformular",
+        form_title: "Kassenzählung",
         date_prefix: "Datum: ",
 
         event_name: "Veranstaltung",
@@ -188,13 +187,13 @@ const translations = {
         admin_login_title: "Admin-Anmeldung",
         admin_login_button: "Anmelden",
         event_name_label: "Veranstaltungsname",
-        cash_account_label: "Kassenkonto",
+        cash_account_label: "Kasse",
         movement_title: "Geld bewegen",
         movement_subtitle: "Geld zwischen Konten verschieben oder Ausgaben erfassen",
 
         amount_label: "Betrag (€)",
-        from_account_label: "Von Konto",
-        to_account_label: "Zu Konto",
+        from_account_label: "Von Kasse",
+        to_account_label: "Zu Kasse",
         actor_label: "Person",
         reference_label: "Referenz",
         context_label: "Kontext",

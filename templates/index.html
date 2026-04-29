@@ -5,11 +5,11 @@
 {% block page_content %}
 <div class="layout">
     <div class="card">
-        <h2 id="form_title">Input Form</h2>
+        <h2 id="form_title">Cash Count</h2>
 
         <form method="POST">
             <div class="form-row">
-                <label for="context_label" id="label_event_name">Event</label>
+                <label for="text_input" id="label_event_name">Event</label>
                 <input
                     id="text_input"
                     name="context_label"
@@ -26,7 +26,7 @@
             </div>
 
             <div class="form-row">
-                <label for="cash_account_id">Cash account</label>
+                <label for="cash_account_id" id="cash_account_label">Cash account</label>
                 <select id="cash_account_id" name="cash_account_id" required>
                     <option value="">Select account</option>
                     {% for account in cash_accounts %}
@@ -36,7 +36,7 @@
             </div>
 
             <div class="form-row">
-                <label for="counted_by" id="label_counted_by">Counted by</label>
+                <label for="counted_by_input" id="label_counted_by">Counted by</label>
                 <input
                     id="counted_by_input"
                     name="counted_by"
@@ -47,7 +47,7 @@
             </div>
 
             <div class="form-row">
-                <label for="total_eur" id="label_cash_sum">Cash sum</label>
+                <label for="number_input" id="label_cash_sum">Cash sum</label>
                 <input
                     id="number_input"
                     name="total_eur"
@@ -71,7 +71,7 @@
             </div>
 
             <div class="form-row">
-                <label for="note" id="label_comment">Comment (optional)</label>
+                <label for="comment_input" id="label_comment">Comment (optional)</label>
                 <textarea
                     id="comment_input"
                     name="note"
