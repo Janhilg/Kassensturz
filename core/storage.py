@@ -66,6 +66,7 @@ CASH_ACCOUNT_COLUMNS = [
     "id",
     "name",
     "account_type",
+    "current_balance_cents",
     "is_active",
     "sort_order",
     "created_at",
@@ -118,6 +119,7 @@ CREATE TABLE IF NOT EXISTS cash_accounts (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     account_type TEXT NOT NULL,
+    current_balance_cents INTEGER NOT NULL DEFAULT 0,
     is_active INTEGER NOT NULL DEFAULT 1,
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
@@ -201,11 +203,10 @@ CREATE TABLE IF NOT EXISTS cash_counts (
 """
 
 DEFAULT_CASH_ACCOUNTS = [
-    ("Bar Cash Box", ACCOUNT_TYPE_CASH_BOX, 20),
-    ("Entrance Cash Box", ACCOUNT_TYPE_CASH_BOX, 30),
-    ("Runner Float", ACCOUNT_TYPE_FLOAT, 40),
-    ("Supplier / Drinks Purchase", ACCOUNT_TYPE_EXTERNAL_SINK, 60),
-    ("Correction", ACCOUNT_TYPE_ADJUSTMENT, 70),
+    ("acc_bar_cash_box", "Bar Cash Box", ACCOUNT_TYPE_CASH_BOX, 20),
+    ("acc_entrance_cash_box", "Entrance Cash Box", ACCOUNT_TYPE_CASH_BOX, 30),
+    ("acc_runner_float", "Runner Float", ACCOUNT_TYPE_FLOAT, 40),
+    ("acc_supplier_drinks", "Supplier / Drinks Purchase", ACCOUNT_TYPE_EXTERNAL_SINK, 60)
 ]
 
 
@@ -304,6 +305,7 @@ def insert_cash_account(
     db_path: Path,
     name: str,
     account_type: str,
+    current_balance_cents: int = 0,
     is_active: int = 1,
     sort_order: int = 0,
     account_id: str | None = None,
@@ -318,13 +320,14 @@ def insert_cash_account(
         conn.execute(
             """
             INSERT INTO cash_accounts (
-                id, name, account_type, is_active, sort_order, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
+                id, name, account_type, current_balance_cents, is_active, sort_order, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 account_id,
                 name,
                 account_type,
+                int(current_balance_cents),
                 int(is_active),
                 int(sort_order),
                 created_at,
@@ -333,10 +336,11 @@ def insert_cash_account(
         conn.commit()
 
     logger.info(
-        "Cash account created | id=%s name=%s type=%s",
+        "Cash account created | id=%s name=%s type=%s balance_cents=%s",
         account_id,
         name,
         account_type,
+        current_balance_cents,
     )
     return account_id
 
@@ -400,17 +404,19 @@ def update_cash_account_active_state(
 def seed_default_cash_accounts(db_path: Path):
     ensure_db_file(db_path)
 
-    existing_names = {
-        row["name"]
+    existing_ids = {
+        row["id"]
         for row in fetch_all_cash_accounts(db_path, active_only=False)
     }
 
     created = 0
-    for name, account_type, sort_order in DEFAULT_CASH_ACCOUNTS:
-        if name in existing_names:
+    for account_id, name, account_type, sort_order in DEFAULT_CASH_ACCOUNTS:
+        if account_id in existing_ids:
             continue
+
         insert_cash_account(
             db_path=db_path,
+            account_id=account_id,
             name=name,
             account_type=account_type,
             sort_order=sort_order,
@@ -741,11 +747,22 @@ def merge_imported_cash_movements_append_only(
 
     imported_count = 0
     skipped_count = 0
+    remapped_count = 0
 
     with get_connection(db_path) as conn:
         existing_ids = {
             row["id"]
             for row in conn.execute("SELECT id FROM cash_movements").fetchall()
+        }
+
+        account_name_to_id = {
+            row["name"]: row["id"]
+            for row in conn.execute("SELECT id, name FROM cash_accounts").fetchall()
+        }
+
+        existing_context_ids = {
+            row["id"]
+            for row in conn.execute("SELECT id FROM cash_contexts").fetchall()
         }
 
         placeholders = ", ".join("?" for _ in CASH_MOVEMENT_COLUMNS)
@@ -757,28 +774,293 @@ def merge_imported_cash_movements_append_only(
                 skipped_count += 1
                 continue
 
-            conn.execute(
-                f"INSERT INTO cash_movements ({columns_sql}) VALUES ({placeholders})",
-                row_values(movement, CASH_MOVEMENT_COLUMNS),
-            )
+            normalized = dict(movement)
+
+            from_name = normalized.get("from_account_name")
+            to_name = normalized.get("to_account_name")
+
+            if from_name and from_name in account_name_to_id:
+                local_from_id = account_name_to_id[from_name]
+                if normalized.get("from_account_id") != local_from_id:
+                    normalized["from_account_id"] = local_from_id
+                    remapped_count += 1
+
+            if to_name and to_name in account_name_to_id:
+                local_to_id = account_name_to_id[to_name]
+                if normalized.get("to_account_id") != local_to_id:
+                    normalized["to_account_id"] = local_to_id
+                    remapped_count += 1
+
+            context_id = normalized.get("context_id")
+            if context_id and context_id not in existing_context_ids:
+                normalized["context_id"] = None
+
+            try:
+                conn.execute(
+                    f"INSERT INTO cash_movements ({columns_sql}) VALUES ({placeholders})",
+                    row_values(normalized, CASH_MOVEMENT_COLUMNS),
+                )
+            except sqlite3.IntegrityError:
+                logger.exception(
+                    "Failed to import cash movement | id=%s from_id=%s from_name=%s to_id=%s to_name=%s context_id=%s",
+                    normalized.get("id"),
+                    normalized.get("from_account_id"),
+                    normalized.get("from_account_name"),
+                    normalized.get("to_account_id"),
+                    normalized.get("to_account_name"),
+                    normalized.get("context_id"),
+                )
+                raise
+
             existing_ids.add(movement_id)
             imported_count += 1
 
         conn.commit()
 
     logger.info(
-        "Cash movement merge completed | imported=%s skipped=%s total_remote=%s",
+        "Cash movement merge completed | imported=%s skipped=%s remapped=%s total_remote=%s",
         imported_count,
         skipped_count,
+        remapped_count,
         len(imported_movements),
     )
 
     return {
         "imported": imported_count,
         "skipped": skipped_count,
+        "remapped": remapped_count,
         "total": len(imported_movements),
     }
 
+def merge_imported_cash_contexts_append_only(
+    db_path: Path,
+    imported_contexts: list[dict],
+):
+    ensure_db_file(db_path)
+
+    imported_count = 0
+    skipped_count = 0
+
+    with get_connection(db_path) as conn:
+        existing_ids = {
+            row["id"]
+            for row in conn.execute("SELECT id FROM cash_contexts").fetchall()
+        }
+
+        placeholders = ", ".join("?" for _ in CASH_CONTEXT_COLUMNS)
+        columns_sql = ", ".join(CASH_CONTEXT_COLUMNS)
+
+        for context in imported_contexts:
+            context_id = str(context.get("id", "")).strip()
+
+            if not context_id or context_id in existing_ids:
+                skipped_count += 1
+                continue
+
+            normalized = dict(context)
+
+            if not normalized.get("label"):
+                skipped_count += 1
+                continue
+
+            if not normalized.get("created_at"):
+                normalized["created_at"] = now_iso()
+
+            if not normalized.get("last_used_at"):
+                normalized["last_used_at"] = normalized["created_at"]
+
+            if normalized.get("is_active") is None:
+                normalized["is_active"] = 1
+
+            conn.execute(
+                f"INSERT INTO cash_contexts ({columns_sql}) VALUES ({placeholders})",
+                row_values(normalized, CASH_CONTEXT_COLUMNS),
+            )
+
+            existing_ids.add(context_id)
+            imported_count += 1
+
+        conn.commit()
+
+    logger.info(
+        "Cash context merge completed | imported=%s skipped=%s total_remote=%s",
+        imported_count,
+        skipped_count,
+        len(imported_contexts),
+    )
+
+    return {
+        "imported": imported_count,
+        "skipped": skipped_count,
+        "total": len(imported_contexts),
+    }
+
+
+def merge_imported_cash_accounts_append_only(
+    db_path: Path,
+    imported_accounts: list[dict],
+):
+    ensure_db_file(db_path)
+
+    imported_count = 0
+    skipped_count = 0
+    matched_by_name_count = 0
+
+    with get_connection(db_path) as conn:
+        existing_ids = {
+            row["id"]
+            for row in conn.execute("SELECT id FROM cash_accounts").fetchall()
+        }
+        existing_names = {
+            row["name"]
+            for row in conn.execute("SELECT name FROM cash_accounts").fetchall()
+        }
+
+        placeholders = ", ".join("?" for _ in CASH_ACCOUNT_COLUMNS)
+        columns_sql = ", ".join(CASH_ACCOUNT_COLUMNS)
+
+        for account in imported_accounts:
+            account_id = str(account.get("id", "")).strip()
+            account_name = str(account.get("name", "")).strip()
+
+            if not account_id or not account_name:
+                skipped_count += 1
+                continue
+
+            if account_id in existing_ids:
+                skipped_count += 1
+                continue
+
+            if account_name in existing_names:
+                matched_by_name_count += 1
+                skipped_count += 1
+                logger.info(
+                    "Skipped remote cash account with duplicate name | name=%s remote_id=%s",
+                    account_name,
+                    account_id,
+                )
+                continue
+
+            normalized = dict(account)
+
+            # current_balance_cents is local live state; do not trust remote value
+            normalized["current_balance_cents"] = 0
+
+            if normalized.get("is_active") is None:
+                normalized["is_active"] = 1
+            if normalized.get("sort_order") is None:
+                normalized["sort_order"] = 0
+            if not normalized.get("created_at"):
+                normalized["created_at"] = now_iso()
+
+            conn.execute(
+                f"INSERT INTO cash_accounts ({columns_sql}) VALUES ({placeholders})",
+                row_values(normalized, CASH_ACCOUNT_COLUMNS),
+            )
+            existing_ids.add(account_id)
+            existing_names.add(account_name)
+            imported_count += 1
+
+        conn.commit()
+
+    logger.info(
+        "Cash account merge completed | imported=%s skipped=%s matched_by_name=%s total_remote=%s",
+        imported_count,
+        skipped_count,
+        matched_by_name_count,
+        len(imported_accounts),
+    )
+
+    return {
+        "imported": imported_count,
+        "skipped": skipped_count,
+        "matched_by_name": matched_by_name_count,
+        "total": len(imported_accounts),
+    }
+
+
+def merge_imported_cash_counts_append_only(
+    db_path: Path,
+    imported_counts: list[dict],
+):
+    ensure_db_file(db_path)
+
+    imported_count = 0
+    skipped_count = 0
+    remapped_count = 0
+
+    with get_connection(db_path) as conn:
+        existing_ids = {
+            row["id"]
+            for row in conn.execute("SELECT id FROM cash_counts").fetchall()
+        }
+
+        account_name_to_id = {
+            row["name"]: row["id"]
+            for row in conn.execute("SELECT id, name FROM cash_accounts").fetchall()
+        }
+
+        existing_context_ids = {
+            row["id"]
+            for row in conn.execute("SELECT id FROM cash_contexts").fetchall()
+        }
+
+        placeholders = ", ".join("?" for _ in CASH_COUNT_COLUMNS)
+        columns_sql = ", ".join(CASH_COUNT_COLUMNS)
+
+        for count_record in imported_counts:
+            count_id = str(count_record.get("id", "")).strip()
+            if not count_id or count_id in existing_ids:
+                skipped_count += 1
+                continue
+
+            normalized = dict(count_record)
+
+            account_name = normalized.get("cash_account_name")
+            if account_name and account_name in account_name_to_id:
+                local_account_id = account_name_to_id[account_name]
+                if normalized.get("cash_account_id") != local_account_id:
+                    normalized["cash_account_id"] = local_account_id
+                    remapped_count += 1
+
+            context_id = normalized.get("context_id")
+            if context_id and context_id not in existing_context_ids:
+                normalized["context_id"] = None
+
+            try:
+                conn.execute(
+                    f"INSERT INTO cash_counts ({columns_sql}) VALUES ({placeholders})",
+                    row_values(normalized, CASH_COUNT_COLUMNS),
+                )
+            except sqlite3.IntegrityError:
+                logger.exception(
+                    "Failed to import cash count | id=%s cash_account_id=%s cash_account_name=%s context_id=%s",
+                    normalized.get("id"),
+                    normalized.get("cash_account_id"),
+                    normalized.get("cash_account_name"),
+                    normalized.get("context_id"),
+                )
+                raise
+
+            existing_ids.add(count_id)
+            imported_count += 1
+
+        conn.commit()
+
+    logger.info(
+        "Cash count merge completed | imported=%s skipped=%s remapped=%s total_remote=%s",
+        imported_count,
+        skipped_count,
+        remapped_count,
+        len(imported_counts),
+    )
+
+    return {
+        "imported": imported_count,
+        "skipped": skipped_count,
+        "remapped": remapped_count,
+        "total": len(imported_counts),
+    }
 
 # ============================================================================
 # Counts
@@ -1002,6 +1284,52 @@ def merge_imported_cash_counts_append_only(
 # Balance helpers
 # ============================================================================
 
+def _build_account_id_map_by_name(db_path: Path) -> dict[str, str]:
+    accounts = fetch_all_cash_accounts(db_path, active_only=False)
+    return {row["name"]: row["id"] for row in accounts}
+
+
+def set_cash_account_balance_cents(db_path: Path, account_id: str, balance_cents: int):
+    ensure_db_file(db_path)
+
+    with get_connection(db_path) as conn:
+        conn.execute(
+            """
+            UPDATE cash_accounts
+            SET current_balance_cents = ?
+            WHERE id = ?
+            """,
+            (int(balance_cents), account_id),
+        )
+        conn.commit()
+
+    logger.info(
+        "Cash account balance set | account_id=%s balance_cents=%s",
+        account_id,
+        balance_cents,
+    )
+
+
+def adjust_cash_account_balance_cents(db_path: Path, account_id: str, delta_cents: int):
+    ensure_db_file(db_path)
+
+    with get_connection(db_path) as conn:
+        conn.execute(
+            """
+            UPDATE cash_accounts
+            SET current_balance_cents = current_balance_cents + ?
+            WHERE id = ?
+            """,
+            (int(delta_cents), account_id),
+        )
+        conn.commit()
+
+    logger.info(
+        "Cash account balance adjusted | account_id=%s delta_cents=%s",
+        account_id,
+        delta_cents,
+    )
+
 def get_cash_account_balance_cents(db_path: Path, account_id: str) -> int:
     ensure_db_file(db_path)
 
@@ -1032,7 +1360,7 @@ def fetch_cash_account_balances(db_path: Path) -> list[dict]:
     result = []
 
     for account in accounts:
-        balance_cents = get_cash_account_balance_cents(db_path, account["id"])
+        balance_cents = int(account.get("current_balance_cents") or 0)
         result.append(
             {
                 **account,
@@ -1167,3 +1495,5 @@ def create_backup(db_path: Path, backup_dir: Path, max_backups: int = 25):
     logger.info("Backup created | file=%s", backup_file)
 
     return backup_file
+
+

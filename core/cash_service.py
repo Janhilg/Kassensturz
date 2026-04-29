@@ -102,6 +102,15 @@ def _run_full_sync_pipeline(
             remote_count_counts,
             remote_count_movements,
         )
+        accounts_result = storage.merge_imported_cash_accounts_append_only(
+            db_path=db_path,
+            imported_accounts=remote_data.get("cash_accounts", []),
+        )
+
+        contexts_result = storage.merge_imported_cash_contexts_append_only(
+            db_path=db_path,
+            imported_contexts=remote_data.get("cash_contexts", []),
+        )
 
         counts_result = storage.merge_imported_cash_counts_append_only(
             db_path=db_path,
@@ -115,6 +124,12 @@ def _run_full_sync_pipeline(
 
         imported_counts = counts_result["imported"]
         imported_movements = movements_result["imported"]
+
+        logger.info(
+            "Reference merge summary | accounts imported=%s contexts imported=%s",
+            accounts_result["imported"],
+            contexts_result["imported"],
+        )
 
         logger.info(
             "Merge summary | counts imported=%s skipped=%s | movements imported=%s skipped=%s",
@@ -212,7 +227,18 @@ def record_cash_count_and_sync(
         denominations=denominations,
     )
 
-    logger.info("Cash count saved | id=%s", count_id)
+    storage.set_cash_account_balance_cents(
+        db_path=db_path,
+        account_id=cash_account_id,
+        balance_cents=total_cents,
+    )
+
+    logger.info(
+        "Cash count saved and account balance updated | id=%s account=%s balance_cents=%s",
+        count_id,
+        cash_account_id,
+        total_cents,
+    )
 
     sync_result = _run_full_sync_pipeline(
         db_path=db_path,
@@ -275,6 +301,28 @@ def record_cash_movement_and_sync(
         reference=reference,
         note=note,
         denominations=denominations,
+    )
+
+    if from_account_id:
+        storage.adjust_cash_account_balance_cents(
+            db_path=db_path,
+            account_id=from_account_id,
+            delta_cents=-amount_cents,
+        )
+
+    if to_account_id:
+        storage.adjust_cash_account_balance_cents(
+            db_path=db_path,
+            account_id=to_account_id,
+            delta_cents=amount_cents,
+        )
+
+    logger.info(
+        "Cash movement saved and balances updated | id=%s from=%s to=%s amount_cents=%s",
+        movement_id,
+        from_account_id,
+        to_account_id,
+        amount_cents,
     )
 
     sync_result = _run_full_sync_pipeline(
