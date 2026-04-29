@@ -1,217 +1,61 @@
 {% extends "base.html" %}
 
 {% block title %}Admin - Kassensturz{% endblock %}
+{% block app_subtitle %}System overview and maintenance{% endblock %}
 
-{% block content %}
-{% if app_mode == "debug" %}
-<div class="debug-banner" id="debug_banner">DEBUG MODE</div>
-{% endif %}
-
-<div class="page">
-    <div class="admin-header">
-        <div>
-            <h1 id="admin_title">Admin</h1>
-            {% if admin_logged_in %}
-                <div class="admin-login-state">
-                    <span class="admin-login-badge" id="admin_access_active">Admin access active</span>
-                </div>
-            {% endif %}
-        </div>
-
-        <div class="admin-header-actions">
-            <a class="calc-button admin-back-link" href="{{ url_for('home') }}" id="admin_back_to_app">
-                Back to app
-            </a>
-
-            {% if admin_logged_in %}
-                <a class="clear-button admin-logout-link" href="{{ url_for('admin_logout') }}" id="admin_logout_button">
-                    Logout
-                </a>
-            {% endif %}
-        </div>
-    </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            {% if category == "error" %}
-                <div class="submitted-values admin-error-box">
-                    <h3 id="admin_error_title">Error</h3>
-                    <p>{{ message }}</p>
-                </div>
-            {% elif category == "success" %}
-                <div class="success-box">
-                    <h3 id="success_title">Success</h3>
-                    <p>{{ message }}</p>
-                </div>
-            {% endif %}
-        {% endfor %}
-    {% endwith %}
-
-    <div class="layout admin-layout">
-        <div class="card">
-            <h2 id="admin_system_status_title">System Status</h2>
-
-            <div class="admin-status-grid">
-                <div class="admin-stat">
-                    <div class="admin-stat-label" id="admin_database_label">Database</div>
-                    <div class="admin-stat-value">{{ "Present" if status.db_exists else "Missing" }}</div>
-                    <div class="admin-stat-meta">{{ status.db_path }} · {{ status.db_size_human }}</div>
-                </div>
-
-                <div class="admin-stat">
-                    <div class="admin-stat-label" id="admin_rows_label">Rows</div>
-                    <div class="admin-stat-value">{{ status.row_count }}</div>
-                    <div class="admin-stat-meta" id="admin_rows_meta">Entries in DB</div>
-                </div>
-
-                <div class="admin-stat">
-                    <div class="admin-stat-label" id="admin_excel_export_label">Excel Export</div>
-                    <div class="admin-stat-value">{{ "Present" if status.excel_exists else "Missing" }}</div>
-                    <div class="admin-stat-meta">{{ status.excel_path }} · {{ status.excel_size_human }}</div>
-                </div>
-
-                <div class="admin-stat">
-                    <div class="admin-stat-label" id="admin_text_export_label">Text Export</div>
-                    <div class="admin-stat-value">{{ "Present" if status.text_exists else "Missing" }}</div>
-                    <div class="admin-stat-meta">{{ status.text_path }} · {{ status.text_size_human }}</div>
-                </div>
-
-                <div class="admin-stat">
-                    <div class="admin-stat-label" id="admin_backups_label">Backups</div>
-                    <div class="admin-stat-value">{{ status.backup_count }}</div>
-                    <div class="admin-stat-meta">{{ status.backup_dir }}</div>
-                </div>
-
-                <div class="admin-stat">
-                    <div class="admin-stat-label" id="admin_nextcloud_label">Nextcloud</div>
-                    <div class="admin-stat-value">
-                        {{ "Configured" if status.nextcloud_configured else "Not configured" }}
-                    </div>
-                    <div class="admin-stat-meta">
-                        {{ status.remote_dir }}/{{ status.remote_file }}
-                    </div>
-                </div>
+{% block page_content %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        {% if category == "error" %}
+            <div class="submitted-values" id="admin_error_box" style="border: 1px solid #da3633; background: #2d1117; margin-bottom: 16px;">
+                <h3 id="admin_error_title">Error</h3>
+                <p>{{ message }}</p>
             </div>
-        </div>
-        <div class="card">
-            <h2 id="admin_latest_entry_title">Latest Entry</h2>
+        {% elif category == "admin_success" %}
+            <div class="success-box" id="admin_success_box" style="margin-bottom: 16px;">
+                <h3>Success</h3>
+                <p>{{ message }}</p>
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endwith %}
 
-            {% if status.latest_entry %}
-                <div class="admin-latest-entry">
+<div class="layout">
+    <div class="card">
+        <h2 id="admin_system_status_title">System Status</h2>
 
-                    <div class="admin-latest-row">
-                        <span class="admin-latest-label">ID</span>
-                        <span class="admin-latest-value">
-                            {{ status.latest_entry.id[:12] }}
-                        </span>
-                    </div>
-
-                    <div class="admin-latest-row">
-                        <span class="admin-latest-label">Date</span>
-                        <span class="admin-latest-value">
-                            {{ status.latest_entry.date }}
-                        </span>
-                    </div>
-
-                    <div class="admin-latest-row">
-                        <span class="admin-latest-label">Timestamp</span>
-                        <span class="admin-latest-value">
-                            {{ status.latest_entry.timestamp }}
-                        </span>
-                    </div>
-
-                    <div class="admin-latest-row">
-                        <span class="admin-latest-label">Event</span>
-                        <span class="admin-latest-value">
-                            {{ status.latest_entry.event_name }}
-                        </span>
-                    </div>
-
-                    <div class="admin-latest-row">
-                        <span class="admin-latest-label">Counted by</span>
-                        <span class="admin-latest-value">
-                            {{ status.latest_entry.counted_by }}
-                        </span>
-                    </div>
-
-                    <div class="admin-latest-row">
-                        <span class="admin-latest-label">Cash sum</span>
-                        <span class="admin-latest-value">
-                            {{ status.latest_entry.cash_sum }}
-                        </span>
-                    </div>
-
-                    <div class="admin-latest-row">
-                        <span class="admin-latest-label">Status</span>
-                        <span class="admin-latest-value">
-                            {{ status.latest_entry.event_status }}
-                        </span>
-                    </div>
-
-                    {% if status.latest_entry.comment %}
-                    <div class="admin-latest-row">
-                        <span class="admin-latest-label">Comment</span>
-                        <span class="admin-latest-value">
-                            {{ status.latest_entry.comment }}
-                        </span>
-                    </div>
-                    {% endif %}
-
-                </div>
-            {% else %}
-                <p>No entries yet.</p>
-            {% endif %}
-        </div>
-        <div class="card">
-            <h2 id="admin_actions_title">Actions</h2>
-
-
-            <div class="admin-actions">
-                <form method="POST" action="{{ url_for('admin_rebuild_exports') }}">
-                    <button type="submit" class="primary-button admin-action-button" id="admin_rebuild_exports_button">
-                        Rebuild exports now
-                    </button>
-                </form>
-
-                <form method="POST" action="{{ url_for('admin_sync_now') }}">
-                    <button type="submit" class="calc-button admin-action-button" id="admin_sync_now_button">
-                        Sync now
-                    </button>
-                </form>
+        <div class="admin-status-grid">
+            <div class="admin-stat-box">
+                <strong>Accounts</strong>
+                <div>{{ row_counts.cash_accounts }}</div>
+            </div>
+            <div class="admin-stat-box">
+                <strong>Contexts</strong>
+                <div>{{ row_counts.cash_contexts }}</div>
+            </div>
+            <div class="admin-stat-box">
+                <strong>Movements</strong>
+                <div>{{ row_counts.cash_movements }}</div>
+            </div>
+            <div class="admin-stat-box">
+                <strong>Counts</strong>
+                <div>{{ row_counts.cash_counts }}</div>
             </div>
         </div>
 
-        <div class="card">
-            <h2 id="admin_restore_backup_title">Restore Backup</h2>
+        <div class="admin-actions-block">
+            <form method="POST" action="{{ url_for('admin_rebuild_exports') }}">
+                <button class="primary-button" type="submit" id="admin_rebuild_exports_button">
+                    Rebuild exports now
+                </button>
+            </form>
 
-            {% if status.backups %}
-                <div class="backup-list">
-                    {% for backup in status.backups %}
-                        <form method="POST" action="{{ url_for('admin_restore_backup') }}" class="backup-item">
-                            <input type="hidden" name="backup_name" value="{{ backup.name }}">
-                            <div class="backup-info">
-                                <div class="backup-name">{{ backup.name }}</div>
-                                <div class="backup-meta">{{ backup.size_human }}</div>
-                            </div>
-                            <button
-                                type="submit"
-                                class="clear-button admin-restore-button"
-                                onclick="return confirm('Restore backup {{ backup.name }}? This will replace the current local database.')"
-                                id="admin_restore_button"
-                            >
-                                Restore
-                            </button>
-                        </form>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p id="admin_no_backups_text">No backups available.</p>
-            {% endif %}
+            <form method="POST" action="{{ url_for('admin_sync_now') }}">
+                <button class="calc-button" type="submit" id="admin_sync_now_button">
+                    Sync now
+                </button>
+            </form>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block page_scripts %}
-
 {% endblock %}

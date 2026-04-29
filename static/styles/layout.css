@@ -106,3 +106,173 @@
         font-size: 0.92rem;
     }
 }
+
+/* =========================================================
+   New layout additions for counts / movements / admin
+   Add to: static/styles/layout.css
+   ========================================================= */
+
+.page-shell {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.25rem;
+}
+
+.page-header {
+    margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+    margin: 0 0 0.25rem;
+}
+
+.page-header p {
+    margin: 0.25rem 0 0.75rem;
+    opacity: 0.85;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.panel {
+    border-radius: 14px;
+    padding: 1.25rem;
+    box-sizing: border-box;
+}
+
+.narrow-panel {
+    max-width: 480px;
+    margin: 2rem auto;
+}
+
+.data-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.data-card {
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+}
+
+.data-card strong {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.debug-banner {
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.nav-links,
+.admin-status,
+.admin-link-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.muted {
+    opacity: 0.7;
+    font-size: 0.92rem;
+}
+
+@media (max-width: 900px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-shell {
+        padding: 1rem;
+    }
+}
+/* =========================
+   Top Navigation Bar
+   ========================= */
+
+.top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 10px 16px;
+}
+
+.top-nav-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.nav-left,
+.nav-right {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.nav-link {
+    text-decoration: none;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+
+.nav-button {
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 10px;
+}
+
+/* Add spacing below navbar */
+.with-navbar {
+    margin-top: 8px;
+}
+
+.top-nav {
+    margin-top: 12px;
+    margin-bottom: 16px;
+}
+
+.top-nav-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.nav-left,
+.nav-right {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.nav-link,
+.nav-button {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}

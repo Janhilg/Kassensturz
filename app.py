@@ -1,322 +1,354 @@
-import mimetypes
-import os
-import sys
-import threading
-import webbrowser
-import logging
-from datetime import datetime
+from functools import wraps
 from pathlib import Path
-from flask import Flask, flash, redirect, render_template, request, url_for, session
+from flask import Flask, flash, redirect, render_template, request, session, url_for
+import mimetypes
+import logging
 
-from config import Config
-from core.service import append_and_sync
 from core.logging_config import setup_logging
-from core.nextcloud_sync import nextcloud_configured
-from core.admin_service import (
-    get_status_snapshot,
-    rebuild_exports,
-    restore_backup,
-    sync_exports_now,
+from config import Config
+from core import storage
+from core.cash_service import (
+    rebuild_exports_and_sync,
+    record_cash_count_and_sync,
+    record_cash_movement_and_sync,
 )
-from core.storage import (
-    ensure_db_file,
-    get_denomination_values_from_form,
-    new_entry_id,
-)
+
+app = Flask(__name__)
+app.config.from_object(Config)
+app.secret_key = Config.SECRET_KEY
+
 
 mimetypes.add_type("application/javascript", ".js")
 
 logger = logging.getLogger(__name__)
-logger.info(f"MODE = {Config.MODE}")
-logger.info(f"FROZEN = {getattr(sys, 'frozen', False)}")
 
 
-def resource_path(relative_path: str) -> str:
-    if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.abspath("."), relative_path)
+# ============================================================================
+# Local paths
+# ============================================================================
 
-
-def portable_base_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parent
-
-
-def is_debug_mode() -> bool:
-    return Config.MODE == "debug" and not Config.IS_FROZEN
-
-
-def get_form_value(name: str) -> str:
-    return request.form.get(name, "").strip()
-
-def require_admin_password_or_reject():
-    expected = getattr(Config, "ADMIN_PASSWORD", "").strip()
-
-    if not expected:
-        raise PermissionError("ADMIN_PASSWORD is not configured.")
-
-    submitted = request.form.get("admin_password", "").strip()
-
-    if submitted != expected:
-        raise PermissionError("Invalid admin password.")
-
-def is_admin_authenticated() -> bool:
-    return session.get("admin_authenticated") is True
-
-
-def require_admin_login():
-    if not is_admin_authenticated():
-        return redirect(url_for("admin_login"))
-
-BASE_DIR = portable_base_dir()
-DATA_DIR = BASE_DIR / ("data_debug" if is_debug_mode() else "data")
-
-SYNC_STATE_FILE = DATA_DIR / "sync_state.json"
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data" / Config.MODE
+BACKUP_DIR = DATA_DIR / "backups"
 
 LOCAL_DB_FILE = DATA_DIR / "kassensturz.db"
-BACKUP_DIR = DATA_DIR / "backups"
 LOCAL_EXCEL_EXPORT_FILE = DATA_DIR / "kassensturz_data.xlsx"
 LOCAL_TEXT_EXPORT_FILE = DATA_DIR / "kassensturz_data.txt"
+SYNC_STATE_FILE = DATA_DIR / "sync_state.json"
 
-template_dir = resource_path("templates")
-static_dir = resource_path("static")
+setup_logging(BASE_DIR, debug=(Config.MODE == "debug"))
+logger = logging.getLogger(__name__)
+logger.info("App startup | mode=%s db=%s", Config.MODE, LOCAL_DB_FILE)
 
-app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
+
+# ============================================================================
+# Startup
+# ============================================================================
+
+storage.ensure_db_file(LOCAL_DB_FILE)
+storage.seed_default_cash_accounts(LOCAL_DB_FILE)
+
+
+# ============================================================================
+# Helpers
+# ============================================================================
+
+def admin_required(view_func):
+    @wraps(view_func)
+    def wrapped(*args, **kwargs):
+        if not session.get("admin_logged_in"):
+            return redirect(url_for("admin_login"))
+        return view_func(*args, **kwargs)
+
+    return wrapped
+
+
+def _parse_cents_from_form_amount(raw_value: str) -> int:
+    raw_value = str(raw_value).strip().replace(",", ".")
+    return storage.eur_to_cents(raw_value)
+
+
+def _common_template_context():
+    return {
+        "cash_accounts": storage.fetch_all_cash_accounts(LOCAL_DB_FILE, active_only=True),
+        "recent_contexts": storage.fetch_recent_cash_contexts(LOCAL_DB_FILE, limit=20),
+        "count_types": [
+            storage.COUNT_TYPE_OPENING,
+            storage.COUNT_TYPE_CLOSING,
+            storage.COUNT_TYPE_SPOT_CHECK,
+            storage.COUNT_TYPE_HANDOVER,
+            storage.COUNT_TYPE_RECONCILIATION,
+        ],
+        "movement_types": [
+            storage.MOVEMENT_TYPE_TRANSFER,
+            storage.MOVEMENT_TYPE_PURCHASE,
+            storage.MOVEMENT_TYPE_DEPOSIT,
+            storage.MOVEMENT_TYPE_WITHDRAWAL,
+            storage.MOVEMENT_TYPE_CORRECTION,
+        ],
+        "denom_fields": storage.DENOM_FIELDS,
+        "mode": Config.MODE,
+    }
+
+
+def _get_denominations_from_request_form():
+    return storage.get_denomination_values_from_form(request.form)
+
+
+# ============================================================================
+# Main count route
+# ============================================================================
 
 @app.route("/", methods=["GET", "POST"])
-def home():
+def index():
     if request.method == "POST":
-        submitted_text = get_form_value("text_input")
-        submitted_counted_by = get_form_value("counted_by_input")
-        submitted_number = get_form_value("number_input")
-        submitted_event_state = get_form_value("event_state")
-        submitted_comment = get_form_value("comment_input")
-
         try:
-            denominations = get_denomination_values_from_form(request.form)
-        except Exception:
-            flash("Invalid denomination input.", "error")
-            return redirect(url_for("home"))
+            cash_account_id = request.form.get("cash_account_id", "").strip()
+            counted_by = request.form.get("counted_by", "").strip()
+            count_type = request.form.get("count_type", "").strip()
+            context_label = request.form.get("context_label", "").strip()
+            note = request.form.get("note", "").strip()
 
-        if submitted_text and submitted_counted_by and submitted_number and submitted_event_state:
-            try:
-                now = datetime.now()
-                current_date = now.strftime("%Y-%m-%d")
-                current_timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+            denominations = _get_denominations_from_request_form()
 
-                entry = {
-                    "id": new_entry_id(),
-                    "date": current_date,
-                    "timestamp": current_timestamp,
-                    "event_name": submitted_text,
-                    "counted_by": submitted_counted_by,
-                    "cash_sum": float(submitted_number),
-                    "event_status": submitted_event_state,
-                    "comment": submitted_comment,
-                    **denominations,
-                }
-
-                sync_result = append_and_sync(
-                    entry=entry,
-                    db_path=LOCAL_DB_FILE,
-                    backup_dir=BACKUP_DIR,
-                    excel_path=LOCAL_EXCEL_EXPORT_FILE,
-                    text_path=LOCAL_TEXT_EXPORT_FILE,
-                    config=Config,
-                    base_dir=BASE_DIR,
-                    is_debug=is_debug_mode(),
-                    sync_state_file=SYNC_STATE_FILE,
+            raw_total = request.form.get("total_eur", "").strip()
+            if raw_total:
+                total_cents = _parse_cents_from_form_amount(raw_total)
+            else:
+                total_cents = storage.calculate_total_cents_from_denominations(
+                    denominations
                 )
-                flash(
-                    {
-                        "date": current_date,
-                        "timestamp": current_timestamp,
-                        "text": submitted_text,
-                        "counted_by": submitted_counted_by,
-                        "number": submitted_number,
-                        "event_state": submitted_event_state,
-                        "comment": submitted_comment,
-                        "denominations": denominations,
-                    },
-                    "submitted",
-                )
-                if nextcloud_configured(Config):
-                    if sync_result["remote_exists"]:
-                        flash(
-                            (
-                                "Sync completed: imported "
-                                f"{sync_result['imported_from_remote']} new rows from remote, "
-                                f"skipped {sync_result['skipped_remote_existing']} existing rows, "
-                                f"added {sync_result['new_rows_added_to_shared_dataset']} new rows to the shared dataset."
-                            ),
-                            "success",
-                        )
-                    else:
-                        flash(
-                            (
-                                "Sync completed: no remote rows to import, "
-                                f"added {sync_result['new_rows_added_to_shared_dataset']} new rows to the shared dataset."
-                            ),
-                            "success",
-                        )
-                else:
-                    flash(
-                        (
-                            "Saved locally: "
-                            f"{sync_result['uploaded_total_rows']} total rows in local database/export."
-                        ),
-                        "success",
-                    )
 
-                return redirect(url_for("home"))
+            logger.info(
+                "Count form submitted | account=%s counted_by=%s type=%s context=%s",
+                cash_account_id,
+                counted_by,
+                count_type,
+                context_label,
+            )
 
-            except Exception as exc:
-                flash(str(exc), "error")
-                return redirect(url_for("home"))
+            result = record_cash_count_and_sync(
+                db_path=LOCAL_DB_FILE,
+                excel_path=LOCAL_EXCEL_EXPORT_FILE,
+                text_path=LOCAL_TEXT_EXPORT_FILE,
+                backup_dir=BACKUP_DIR,
+                sync_state_file=SYNC_STATE_FILE,
+                config=Config,
+                cash_account_id=cash_account_id,
+                counted_by=counted_by,
+                total_cents=total_cents,
+                count_type=count_type,
+                context_label=context_label,
+                note=note,
+                denominations=denominations,
+            )
 
-    return render_template("index.html", app_mode=Config.MODE)
+            flash(
+                (
+                    f"Cash count recorded. "
+                    f"Imported counts: {result['imported_counts']}, "
+                    f"imported movements: {result['imported_movements']}."
+                ),
+                "count_success",
+            )
+            return redirect(url_for("index"))
 
-@app.route("/admin", methods=["GET"])
-def admin():
-    if not is_admin_authenticated():
-        return redirect(url_for("admin_login"))
+        except Exception as exc:
+            logger.exception("Failed to record cash count")
+            flash(f"Failed to record cash count: {exc}", "error")
 
-    status = get_status_snapshot(
-        db_path=LOCAL_DB_FILE,
-        backup_dir=BACKUP_DIR,
-        excel_path=LOCAL_EXCEL_EXPORT_FILE,
-        text_path=LOCAL_TEXT_EXPORT_FILE,
-        config=Config,
+    context = _common_template_context()
+    context["recent_counts"] = storage.fetch_recent_cash_counts(LOCAL_DB_FILE, limit=20)
+    return render_template("index.html", **context)
+
+
+# ============================================================================
+# Cash movement route
+# ============================================================================
+
+@app.route("/cash/movement", methods=["GET", "POST"])
+def cash_movement():
+    if request.method == "POST":
+        try:
+            movement_type = request.form.get("movement_type", "").strip()
+            from_account_id = request.form.get("from_account_id", "").strip() or None
+            to_account_id = request.form.get("to_account_id", "").strip() or None
+            actor = request.form.get("actor", "").strip()
+            reference = request.form.get("reference", "").strip()
+            note = request.form.get("note", "").strip()
+            context_label = request.form.get("context_label", "").strip()
+            amount_cents = _parse_cents_from_form_amount(
+                request.form.get("amount_eur", "").strip()
+            )
+
+            logger.info(
+                "Movement form submitted | type=%s from=%s to=%s actor=%s context=%s",
+                movement_type,
+                from_account_id,
+                to_account_id,
+                actor,
+                context_label,
+            )
+            denominations = _get_denominations_from_request_form()
+
+            result = record_cash_movement_and_sync(
+                db_path=LOCAL_DB_FILE,
+                excel_path=LOCAL_EXCEL_EXPORT_FILE,
+                text_path=LOCAL_TEXT_EXPORT_FILE,
+                backup_dir=BACKUP_DIR,
+                sync_state_file=SYNC_STATE_FILE,
+                config=Config,
+                movement_type=movement_type,
+                amount_cents=amount_cents,
+                from_account_id=from_account_id,
+                to_account_id=to_account_id,
+                context_label=context_label,
+                actor=actor,
+                reference=reference,
+                note=note,
+                denominations=denominations,
+            )
+
+            flash(
+                (
+                    f"Cash movement recorded. "
+                    f"Imported counts: {result['imported_counts']}, "
+                    f"imported movements: {result['imported_movements']}."
+                ),
+                "movement_success",
+            )
+            return redirect(url_for("cash_movement"))
+
+        except Exception as exc:
+            logger.exception("Failed to record cash movement")
+            flash(f"Failed to record cash movement: {exc}", "error")
+
+    context = _common_template_context()
+    context["recent_movements"] = storage.fetch_recent_cash_movements(
+        LOCAL_DB_FILE,
+        limit=20,
     )
+    return render_template("cash_movement.html", **context)
 
-    return render_template(
-        "admin.html",
-        app_mode=Config.MODE,
-        status=status,
-        admin_logged_in=is_admin_authenticated(),
-    )
+# ============================================================================
+# Cash Balance route
+# ============================================================================
 
-@app.route("/admin/restore-backup", methods=["POST"])
-def admin_restore_backup():
-    if not is_admin_authenticated():
-        return redirect(url_for("admin_login"))
+@app.route("/balances")
+def balances():
+    context = {
+        **_common_template_context(),
+        "balances": storage.fetch_cash_account_balances(LOCAL_DB_FILE),
+        "recent_counts": storage.fetch_recent_cash_counts(LOCAL_DB_FILE, limit=4),
+        "recent_movements": storage.fetch_recent_cash_movements(LOCAL_DB_FILE, limit=4),
+    }
+    return render_template("balances.html", **context)
 
-    backup_name = request.form.get("backup_name", "").strip()
-    if not backup_name:
-        flash("No backup selected.", "error")
-        return redirect(url_for("admin"))
-
-    backup_file = BACKUP_DIR / backup_name
-
-    try:
-        restore_backup(
-            backup_file=backup_file,
-            db_path=LOCAL_DB_FILE,
-            excel_path=LOCAL_EXCEL_EXPORT_FILE,
-            text_path=LOCAL_TEXT_EXPORT_FILE,
-            config=Config,
-            base_dir=BASE_DIR,
-        )
-
-        logger.info("Backup restored | backup=%s", backup_name)
-        flash(f"Backup restored: {backup_name}", "success")
-
-    except Exception as exc:
-        logger.exception("Backup restore failed | backup=%s", backup_name)
-        flash(str(exc), "error")
-
-    return redirect(url_for("admin"))
-
-@app.route("/admin/rebuild-exports", methods=["POST"])
-def admin_rebuild_exports():
-    if not is_admin_authenticated():
-        return redirect(url_for("admin_login"))
-
-    try:
-        rebuild_exports(
-            db_path=LOCAL_DB_FILE,
-            excel_path=LOCAL_EXCEL_EXPORT_FILE,
-            text_path=LOCAL_TEXT_EXPORT_FILE,
-        )
-
-        logger.info("Admin rebuild exports completed")
-        flash("Exports rebuilt successfully.", "success")
-
-    except Exception as exc:
-        logger.exception("Admin rebuild exports failed")
-        flash(str(exc), "error")
-
-    return redirect(url_for("admin"))
+# ============================================================================
+# Admin auth
+# ============================================================================
 
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        password = request.form.get("password", "").strip()
+        submitted_password = request.form.get("password", "")
+        if submitted_password == Config.ADMIN_PASSWORD:
+            session["admin_logged_in"] = True
 
-        if password == Config.ADMIN_PASSWORD:
-            session["admin_authenticated"] = True
-            return redirect(url_for("admin"))
-        else:
-            flash("Invalid admin password.", "error")
+            return redirect(url_for("admin_dashboard"))
 
-    return render_template("admin_login.html", app_mode=Config.MODE)
+        flash("Invalid password.", "error")
+
+    return render_template("admin_login.html")
 
 
 @app.route("/admin/logout")
 def admin_logout():
-    session.pop("admin_authenticated", None)
-    return redirect(url_for("home"))
+    session.pop("admin_logged_in", None)
+    flash("Logged out.", "admin_success")
+    return redirect(url_for("index"))
 
-@app.route("/admin/sync-now", methods=["POST"])
-def admin_sync_now():
-    if not is_admin_authenticated():
-        return redirect(url_for("admin_login"))
 
+# ============================================================================
+# Admin dashboard
+# ============================================================================
+
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+    context = {
+        **_common_template_context(),
+        "row_counts": {
+            "cash_accounts": storage.get_row_count(LOCAL_DB_FILE, "cash_accounts"),
+            "cash_contexts": storage.get_row_count(LOCAL_DB_FILE, "cash_contexts"),
+            "cash_movements": storage.get_row_count(LOCAL_DB_FILE, "cash_movements"),
+            "cash_counts": storage.get_row_count(LOCAL_DB_FILE, "cash_counts"),
+        },
+    }
+    return render_template("admin.html", **context)
+
+
+# ============================================================================
+# Admin actions
+# ============================================================================
+
+@app.route("/admin/rebuild-exports", methods=["POST"])
+@admin_required
+def admin_rebuild_exports():
     try:
-        result = sync_exports_now(
+        result = rebuild_exports_and_sync(
             db_path=LOCAL_DB_FILE,
             excel_path=LOCAL_EXCEL_EXPORT_FILE,
             text_path=LOCAL_TEXT_EXPORT_FILE,
-            config=Config,
-            base_dir=BASE_DIR,
+            backup_dir=BACKUP_DIR,
             sync_state_file=SYNC_STATE_FILE,
+            config=Config,
         )
-
         flash(
             (
-                f"Sync completed: added {result['new_rows_added_to_shared_dataset']} new rows "
-                f"to the shared dataset, uploaded {result['uploaded_total_rows']} total rows."
+                f"Rebuild + sync complete. "
+                f"Imported counts: {result['imported_counts']}, "
+                f"imported movements: {result['imported_movements']}."
             ),
-            "success",
+            "admin_success",
         )
-
-        logger.info("Admin sync now completed")
-
-
     except Exception as exc:
-        logger.exception("Admin sync now failed")
-        flash(str(exc), "error")
+        logger.exception("Manual rebuild failed")
+        flash(f"Rebuild failed: {exc}", "error")
 
-    return redirect(url_for("admin"))
+    return redirect(url_for("admin_dashboard"))
 
-@app.context_processor
-def inject_admin_state():
-    return {
-        "admin_logged_in": is_admin_authenticated(),
-    }
 
-def open_browser():
-    webbrowser.open("http://127.0.0.1:5000")
+@app.route("/admin/sync-now", methods=["POST"])
+@admin_required
+def admin_sync_now():
+    try:
+        result = rebuild_exports_and_sync(
+            db_path=LOCAL_DB_FILE,
+            excel_path=LOCAL_EXCEL_EXPORT_FILE,
+            text_path=LOCAL_TEXT_EXPORT_FILE,
+            backup_dir=BACKUP_DIR,
+            sync_state_file=SYNC_STATE_FILE,
+            config=Config,
+        )
+        flash(
+            (
+                f"Sync complete. "
+                f"Imported counts: {result['imported_counts']}, "
+                f"imported movements: {result['imported_movements']}."
+            ),
+            "admin_success",
+        )
+    except Exception as exc:
+        logger.exception("Manual sync failed")
+        flash(f"Sync failed: {exc}", "error")
+
+    return redirect(url_for("admin_dashboard"))
+
+
+# ============================================================================
+# App entry
+# ============================================================================
 
 if __name__ == "__main__":
-    setup_logging(BASE_DIR, is_debug_mode())
-    ensure_db_file(LOCAL_DB_FILE)
-    threading.Timer(1.0, open_browser).start()
-    app.run(
-        host="127.0.0.1",
-        port=5000,
-        debug=is_debug_mode(),
-        use_reloader=False,
-    )
+    app.run(debug=True)

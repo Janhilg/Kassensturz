@@ -1,420 +1,118 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kassensturz</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/layout.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/form.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/calculator.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/cash-counter.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/footer.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/theme.css') }}">
+{% extends "base.html" %}
 
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='resources/cash.ico') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='resources/cash.png') }}">
-</head>
-<body>
-    {% if app_mode == "debug" %}
-    <div class="debug-banner" id="debug_banner">DEBUG MODE</div>
-    {% endif %}
+{% block title %}Kassensturz{% endblock %}
 
-    <div class="page">
-        <div class="app-title">
-        <div class="app-header">
-            <div class="app-title-wrap">
-                <img
-                    src="{{ url_for('static', filename='resources/cash.ico') }}"
-                    alt=""
-                    class="app-title-icon"
+{% block page_content %}
+<div class="layout">
+    <div class="card">
+        <h2 id="form_title">Input Form</h2>
+
+        <form method="POST">
+            <div class="form-row">
+                <label for="context_label" id="label_event_name">Event</label>
+                <input
+                    id="text_input"
+                    name="context_label"
+                    type="text"
+                    list="context-list"
+                    placeholder="Enter event name"
                 >
-                <div>
-                    <h1 id="app_title">Kassensturz</h1>
-                    <p class="app-subtitle">Cash counting and event balance logging</p>
-                </div>
-            </div>
-        </div>
-        <div class="admin-header">
-            {% if admin_logged_in %}
-                <div class="admin-login-state">
-                    <span class="admin-login-badge" id="admin_access_active">Admin access active</span>
-                </div>
-            {% endif %}
-            <div class="admin-header-actions">
-                {% if admin_logged_in %}
-                    <a class="clear-button admin-logout-link" href="{{ url_for('admin_logout') }}" id="admin_logout_button">
-                        Logout
-                    </a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-        <div class="layout">
-            <div class="card">
-                <h2 id="form_title">Input Form</h2>
-
-                <form method="POST">
-                    <div>
-                        <div id="current_date" class="current-date"></div>
-
-                        <label for="text_input" id="label_event_name">Event name</label>
-                        <input
-                            id="text_input"
-                            type="text"
-                            name="text_input"
-                            placeholder="Enter event name"
-                            required
-                        >
-                    </div>
-
-                    <div>
-                        <label for="counted_by_input" id="label_counted_by">Counted by</label>
-                        <input
-                            id="counted_by_input"
-                            type="text"
-                            name="counted_by_input"
-                            placeholder="Enter name of person counting"
-                            required
-                        >
-                    </div>
-
-                    <div>
-                        <label for="number_input" id="label_cash_sum">Cash sum</label>
-                        <input
-                            id="number_input"
-                            type="number"
-                            name="number_input"
-                            placeholder="Enter cash amount"
-                            step="any"
-                            required
-                        >
-                    </div>
-
-                    <div>
-                        <label id="label_event_state">Event status</label>
-                        <div class="radio-group">
-                            <label class="radio-option">
-                                <input type="radio" name="event_state" value="opening" checked required>
-                                <span id="event_state_opening_label">Opening</span>
-                            </label>
-
-                            <label class="radio-option">
-                                <input type="radio" name="event_state" value="closing">
-                                <span id="event_state_closing_label">Closing</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label for="comment_input" id="label_comment">Comment (optional)</label>
-                        <input
-                            id="comment_input"
-                            type="text"
-                            name="comment_input"
-                            placeholder="Enter comment (optional)"
-                        >
-                    </div>
-                    <input type="hidden" name="denom_100" id="hidden_denom_100">
-                    <input type="hidden" name="denom_50" id="hidden_denom_50">
-                    <input type="hidden" name="denom_20" id="hidden_denom_20">
-                    <input type="hidden" name="denom_10" id="hidden_denom_10">
-                    <input type="hidden" name="denom_5" id="hidden_denom_5">
-                    <input type="hidden" name="denom_2" id="hidden_denom_2">
-                    <input type="hidden" name="denom_1" id="hidden_denom_1">
-                    <input type="hidden" name="denom_050" id="hidden_denom_050">
-                    <input type="hidden" name="denom_020" id="hidden_denom_020">
-                    <input type="hidden" name="denom_010" id="hidden_denom_010">
-                    <button class="primary-button" type="submit" id="confirm_button">Confirm</button>
-                </form>
-
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% for category, message in messages %}
-                        {% if category == "submitted" %}
-                            <div class="submitted-values">
-                                <h3 id="submitted_values_title">Submitted values</h3>
-                                <p><strong id="submitted_date_label">Date:</strong> {{ message.date }}</p>
-                                <p><strong id="submitted_timestamp_label">Timestamp:</strong> {{ message.timestamp }}</p>
-                                <p><strong id="submitted_event_name_label">Event name:</strong> {{ message.text }}</p>
-                                <p><strong id="submitted_counted_by_label">Counted by:</strong> {{ message.counted_by }}</p>
-                                <p><strong id="submitted_cash_sum_label">Cash sum:</strong> {{ message.number }}</p>
-                                <p><strong id="submitted_event_state_label">Event status:</strong> {{ message.event_state }}</p>
-                                <p><strong id="submitted_comment_label">Comment:</strong> {{ message.comment or "-" }}</p>
-                            </div>
-                        {% elif category == "error" %}
-                            <div class="submitted-values" id="save_error_box" style="border: 1px solid #da3633; background: #2d1117;">
-                                <h3>Save error</h3>
-                                <p id="save_error_message">{{ message }}</p>
-                            </div>
-                        {% elif category == "success" %}
-                            <div class="success-box" id="success_box">
-                                <h3 id="success_title">Success</h3>
-                                <p id="success_message">{{ message }}</p>
-                            </div>
-                        {% endif %}
+                <datalist id="context-list">
+                    {% for context in recent_contexts %}
+                        <option value="{{ context.label }}"></option>
                     {% endfor %}
-                {% endwith %}
+                </datalist>
             </div>
 
-            <div class="card">
-                <h2 id="calc_title">Live Calculation</h2>
-
-                <div class="mode-switcher">
-                    <button type="button" class="mode-button active" id="mode_calculator_button" data-mode="calculator">Calculator</button>
-                    <button type="button" class="mode-button" id="mode_cash_counter_button" data-mode="cash_counter">Cash counter</button>
-                </div>
-
-                <div id="calculator_mode">
-
-                    <div>
-                        <label for="calc_input" id="label_calc_input">Number for calculation</label>
-                        <input
-                            id="calc_input"
-                            type="number"
-                            step="any"
-                            placeholder="Enter number to add or subtract"
-                        >
-                    </div>
-
-                    <div class="calc-controls">
-                        <div></div>
-                        <button type="button" class="calc-button" id="add_button">+</button>
-                        <button type="button" class="calc-button" id="subtract_button">-</button>
-                    </div>
-
-                    <div class="result-box">
-                        <div id="current_total_label">Current total</div>
-                        <div class="current-total" id="current_total">0</div>
-
-                        <button type="button" class="primary-button" id="apply_to_form_button" style="margin-top:12px;">
-                            Apply result to form
-                        </button>
-                    </div>
-
-                    <button type="button" class="clear-button" id="clear_button">
-                        Clear Session History
-                    </button>
-
-                    <div class="history">
-                        <h3 id="history_title">Session History</h3>
-                        <div id="empty_history" class="empty-history">
-                            No calculations yet.
-                        </div>
-                        <ul id="history_list" class="history-list"></ul>
-                    </div>
-                </div>
-                <div id="cash_counter_mode" style="display: none;">
-                    <h3 id="cash_counter_title">Euro cash counter</h3>
-                    <div class="cash-section-title" id="bills_label">Bills</div>
-                    <div class="cash-counter-grid">
-                        <div class="cash-row">
-                            <label for="denom_100">100 €</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_100">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_100"
-                                    data-value="100"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_100">+</button>
-                            </div>
-                        </div>
-                        <div class="cash-row">
-                            <label for="denom_50">50 €</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_50">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_50"
-                                    data-value="50"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_50">+</button>
-                            </div>
-                        </div>
-                        <div class="cash-row">
-                            <label for="denom_20">20 €</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_20">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_20"
-                                    data-value="20"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_20">+</button>
-                            </div>
-                        </div>
-                        <div class="cash-row">
-                            <label for="denom_10">10 €</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_10">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_10"
-                                    data-value="10"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_10">+</button>
-                            </div>
-                        </div>
-                        <div class="cash-row">
-                            <label for="denom_5">5 €</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_5">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_5"
-                                    data-value="5"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_5">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cash-section-title" id="coins_label">Coins</div>
-                    <div class="cash-counter-grid">
-                        <div class="cash-row">
-                            <label for="denom_2">2 €</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_2">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_2"
-                                    data-value="2"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_2">+</button>
-                            </div>
-                        </div>
-                        <div class="cash-row">
-                            <label for="denom_1">1 €</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_1">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_1"
-                                    data-value="1"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_1">+</button>
-                            </div>
-                        </div>
-                        <div class="cash-row">
-                            <label for="denom_050">50 ct</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_050">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_050"
-                                    data-value="0.5"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_050">+</button>
-                            </div>
-                        </div>
-                        <div class="cash-row">
-                            <label for="denom_020">20 ct</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_020">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_020"
-                                    data-value="0.2"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_020">+</button>
-                            </div>
-                        </div>
-                        <div class="cash-row">
-                            <label for="denom_010">10 ct</label>
-                            <div class="cash-stepper">
-                                <button type="button" class="denom-btn minus-btn" data-target="denom_010">−</button>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value=""
-                                    class="denomination-input"
-                                    id="denom_010"
-                                    data-value="0.1"
-                                >
-                                <button type="button" class="denom-btn plus-btn" data-target="denom_010">+</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="result-box">
-                        <div id="cash_counter_total_label">Cash counter total</div>
-                        <div class="current-total" id="cash_counter_total">0</div>
-
-                        <div class="cash-counter-actions">
-                            <button type="button" class="primary-button" id="apply_cash_counter_to_form_button" style="margin-top:12px;">
-                                Apply result to form
-                            </button>
-
-                            <button type="button" class="calc-button" id="apply_cash_counter_to_calculator_button" style="margin-top:12px;">
-                                Send total to calculator
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="button" class="clear-button" id="clear_cash_counter_button">
-                        Clear cash counter
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <footer class="footer">
-            <div class="language-switcher">
-                <span id="language_label">Language:</span>
-                <button type="button" class="lang-button" data-lang="en">English</button>
-                <button type="button" class="lang-button" data-lang="de">Deutsch</button>
+            <div class="form-row">
+                <label for="cash_account_id">Cash account</label>
+                <select id="cash_account_id" name="cash_account_id" required>
+                    <option value="">Select account</option>
+                    {% for account in cash_accounts %}
+                        <option value="{{ account.id }}">{{ account.name }} ({{ account.account_type }})</option>
+                    {% endfor %}
+                </select>
             </div>
 
-            <div class="theme-switcher">
-                <span id="theme_label">Theme:</span>
-                <button type="button" class="theme-button" data-theme="dark" id="theme_dark_button">Dark</button>
-                <button type="button" class="theme-button" data-theme="light" id="theme_light_button">Light</button>
+            <div class="form-row">
+                <label for="counted_by" id="label_counted_by">Counted by</label>
+                <input
+                    id="counted_by_input"
+                    name="counted_by"
+                    type="text"
+                    required
+                    placeholder="Enter name of person counting"
+                >
             </div>
-            <div style="margin-top: 12px;">
-                <a href="{{ url_for('admin') }}" class="calc-button" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">
-                    Open admin page
-                </a>
+
+            <div class="form-row">
+                <label for="total_eur" id="label_cash_sum">Cash sum</label>
+                <input
+                    id="number_input"
+                    name="total_eur"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Enter cash amount"
+                >
             </div>
-        </footer>
+
+            <div class="form-row">
+                <label for="count_type" id="label_event_state">Event status</label>
+                <select id="count_type" name="count_type" required>
+                    <option value="">Select type</option>
+                    <option value="opening" id="event_state_opening_label">Opening</option>
+                    <option value="closing" id="event_state_closing_label">Closing</option>
+                    <option value="spot_check">Spot check</option>
+                    <option value="handover">Handover</option>
+                    <option value="reconciliation">Reconciliation</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label for="note" id="label_comment">Comment (optional)</label>
+                <textarea
+                    id="comment_input"
+                    name="note"
+                    rows="3"
+                    placeholder="Enter comment (optional)"
+                ></textarea>
+            </div>
+
+            <input type="hidden" name="denom_100" id="hidden_denom_100">
+            <input type="hidden" name="denom_50" id="hidden_denom_50">
+            <input type="hidden" name="denom_20" id="hidden_denom_20">
+            <input type="hidden" name="denom_10" id="hidden_denom_10">
+            <input type="hidden" name="denom_5" id="hidden_denom_5">
+            <input type="hidden" name="denom_2" id="hidden_denom_2">
+            <input type="hidden" name="denom_1" id="hidden_denom_1">
+            <input type="hidden" name="denom_050" id="hidden_denom_050">
+            <input type="hidden" name="denom_020" id="hidden_denom_020">
+            <input type="hidden" name="denom_010" id="hidden_denom_010">
+            <input type="hidden" name="roll_2" id="hidden_roll_2">
+            <input type="hidden" name="roll_1" id="hidden_roll_1">
+            <input type="hidden" name="roll_050" id="hidden_roll_050">
+
+            <button class="primary-button" type="submit" id="confirm_button">Confirm</button>
+        </form>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                {% if category == "error" %}
+                    <div class="submitted-values" id="save_error_box" style="border: 1px solid #da3633; background: #2d1117;">
+                        <h3>Save error</h3>
+                        <p id="save_error_message">{{ message }}</p>
+                    </div>
+                {% elif category == "count_success" %}
+                    <div class="success-box" id="success_box">
+                        <h3 id="success_title">Success</h3>
+                        <p id="success_message">{{ message }}</p>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
     </div>
 
-    <script type="module" src="{{ url_for('static', filename='scripts/app.js') }}"></script>
-</body>
-</html>
+    {% include "partials/calculator_panel.html" %}
+</div>
+{% endblock %}

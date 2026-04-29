@@ -300,7 +300,7 @@ export function initCalculator(options) {
     bindEvents();
     render();
     calculateCashCounterTotal();
-    switchMode("calculator");
+    switchMode("cash_counter");
 
     return {
         render

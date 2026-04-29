@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Cash Movement - Kassensturz{% endblock %}
+
+{% block page_content %}
+<div class="layout">
+    <div class="card">
+        <h2>Record Cash Movement</h2>
+
+        <form method="POST">
+            <div class="form-row">
+                <label for="movement_type">Movement type</label>
+                <select id="movement_type" name="movement_type" required>
+                    <option value="">Select type</option>
+                    {% for item in movement_types %}
+                        <option value="{{ item }}">{{ item.replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label for="amount_eur">Amount (€)</label>
+                <input
+                    id="amount_eur"
+                    name="amount_eur"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    placeholder="Enter amount"
+                >
+            </div>
+
+            <div class="form-row">
+                <label for="from_account_id">From account</label>
+                <select id="from_account_id" name="from_account_id">
+                    <option value="">—</option>
+                    {% for account in cash_accounts %}
+                        <option value="{{ account.id }}">{{ account.name }} ({{ account.account_type }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label for="to_account_id">To account</label>
+                <select id="to_account_id" name="to_account_id">
+                    <option value="">—</option>
+                    {% for account in cash_accounts %}
+                        <option value="{{ account.id }}">{{ account.name }} ({{ account.account_type }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label for="actor">Actor</label>
+                <input
+                    id="actor"
+                    name="actor"
+                    type="text"
+                    placeholder="Who made the movement"
+                >
+            </div>
+
+            <div class="form-row">
+                <label for="reference">Reference</label>
+                <input
+                    id="reference"
+                    name="reference"
+                    type="text"
+                    placeholder="Receipt / note / external ref"
+                >
+            </div>
+
+            <div class="form-row">
+                <label for="context_label">Context</label>
+                <input
+                    id="context_label"
+                    name="context_label"
+                    type="text"
+                    list="context-list"
+                    placeholder="Friday bar"
+                >
+                <datalist id="context-list">
+                    {% for context in recent_contexts %}
+                        <option value="{{ context.label }}"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <div class="form-row">
+                <label for="note">Comment (optional)</label>
+                <textarea
+                    id="note"
+                    name="note"
+                    rows="3"
+                    placeholder="Enter comment (optional)"
+                ></textarea>
+            </div>
+            <input type="hidden" name="denom_100" id="hidden_denom_100">
+            <input type="hidden" name="denom_50" id="hidden_denom_50">
+            <input type="hidden" name="denom_20" id="hidden_denom_20">
+            <input type="hidden" name="denom_10" id="hidden_denom_10">
+            <input type="hidden" name="denom_5" id="hidden_denom_5">
+            <input type="hidden" name="denom_2" id="hidden_denom_2">
+            <input type="hidden" name="denom_1" id="hidden_denom_1">
+            <input type="hidden" name="denom_050" id="hidden_denom_050">
+            <input type="hidden" name="denom_020" id="hidden_denom_020">
+            <input type="hidden" name="denom_010" id="hidden_denom_010">
+            <input type="hidden" name="roll_2" id="hidden_roll_2">
+            <input type="hidden" name="roll_1" id="hidden_roll_1">
+            <input type="hidden" name="roll_050" id="hidden_roll_050">
+
+            <button class="primary-button" type="submit">Save movement</button>
+        </form>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                {% if category == "error" %}
+                    <div class="submitted-values" id="save_error_box" style="border: 1px solid #da3633; background: #2d1117;">
+                        <h3>Error</h3>
+                        <p>{{ message }}</p>
+                    </div>
+                {% elif category == "movement_success" %}
+                    <div class="success-box" id="success_box">
+                        <h3>Success</h3>
+                        <p>{{ message }}</p>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
+    </div>
+
+    {% include "partials/calculator_panel.html" %}
+</div>
+{% endblock %}
