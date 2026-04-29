@@ -216,3 +216,19 @@ body[data-theme="dark"] .nav-button.active {
     font-weight: 700;
     border-bottom: 2px solid #f3f4f6;
 }
+
+body[data-theme="light"] .sync-state-pre {
+    background: #f8fafc;
+    border: 1px solid #d7dde5;
+    padding: 12px;
+    border-radius: 10px;
+    color: #1f2937;
+}
+
+body[data-theme="dark"] .sync-state-pre {
+    background: #111827;
+    border: 1px solid #2e3748;
+    padding: 12px;
+    border-radius: 10px;
+    color: #f3f4f6;
+}

@@ -103,6 +103,10 @@ const translations = {
         send_to_calculator: "Send total to calculator",
 
         rolls_label: "Rolls",
+
+        admin_restore_backup_label: "Available backups",
+        admin_restore_backup_button: "Restore selected backup",
+        admin_sync_state_title: "Sync State",
     },
 
     de: {
@@ -210,6 +214,10 @@ const translations = {
         send_to_calculator: "Zum Rechner senden",
 
         rolls_label: "Rollen",
+
+        admin_restore_backup_label: "Verfügbare Backups",
+        admin_restore_backup_button: "Ausgewähltes Backup wiederherstellen",
+        admin_sync_state_title: "Sync-Status",
     }
 };
 
@@ -339,6 +347,10 @@ export function applyTranslations() {
     setText("recent_movements_title", t("recent_movements_title"));
 
     setText("rolls_label", t("rolls_label"));
+
+    setText("admin_restore_backup_label", t("admin_restore_backup_label"));
+    setText("admin_restore_backup_button", t("admin_restore_backup_button"));
+    setText("admin_sync_state_title", t("admin_sync_state_title"));
 
     const adminPasswordInput = document.getElementById("admin_password_shared");
     const loginPasswordInput = document.getElementById("password");

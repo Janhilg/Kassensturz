@@ -42,7 +42,32 @@
                 <div>{{ row_counts.cash_counts }}</div>
             </div>
         </div>
+    </div>
+    <div class="card">
+        <h2 id="admin_sync_state_title">Sync State</h2>
 
+        {% if sync_state_data %}
+            <div class="admin-data-list">
+                <div class="admin-data-card">
+                    <strong>Imported counts</strong>
+                    <div>{{ sync_state_data.get("imported_counts", 0) }}</div>
+                </div>
+
+                <div class="admin-data-card">
+                    <strong>Imported movements</strong>
+                    <div>{{ sync_state_data.get("imported_movements", 0) }}</div>
+                </div>
+
+                <!--<div class="admin-data-card">
+                    <strong>Upload result</strong>
+                    <pre class="sync-state-pre">{{ sync_state_data.get("uploaded", {}) | tojson(indent=2) }}</pre>
+                </div>-->
+            </div>
+        {% else %}
+            <p>No sync state available yet.</p>
+        {% endif %}
+    </div>
+    <div class="card">
         <div class="admin-actions-block">
             <form method="POST" action="{{ url_for('admin_rebuild_exports') }}">
                 <button class="primary-button" type="submit" id="admin_rebuild_exports_button">
@@ -57,5 +82,30 @@
             </form>
         </div>
     </div>
+     <div class="card">
+            <h2 id="admin_restore_backup_title">Restore Backup</h2>
+
+            {% if available_backups %}
+                <form method="POST" action="{{ url_for('admin_restore_backup') }}"
+                    onsubmit="return confirm('Restore this backup and overwrite the current database?');">
+                    <div class="form-row">
+                        <label for="backup_name" id="admin_restore_backup_label">Available backups</label>
+                        <select id="backup_name" name="backup_name" required>
+                            <option value="">Select backup</option>
+                            {% for backup in available_backups %}
+                                <option value="{{ backup.name }}">{{ backup.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button class="calc-button" type="submit" id="admin_restore_backup_button">
+                        Restore selected backup
+                    </button>
+                </form>
+            {% else %}
+                <p>No backups available.</p>
+            {% endif %}
+        </div>
+
 </div>
 {% endblock %}

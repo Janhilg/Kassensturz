@@ -7,6 +7,7 @@ import logging
 from core.logging_config import setup_logging
 from config import Config
 from core import storage
+from core import sync_state
 from core.cash_service import (
     rebuild_exports_and_sync,
     record_cash_count_and_sync,
@@ -261,6 +262,8 @@ def admin_logout():
     return redirect(url_for("index"))
 
 
+
+
 # ============================================================================
 # Admin dashboard
 # ============================================================================
@@ -270,6 +273,8 @@ def admin_logout():
 def admin_dashboard():
     context = {
         **_common_template_context(),
+        "available_backups": storage.list_backups(BACKUP_DIR),
+        "sync_state_data": sync_state.load_sync_state(SYNC_STATE_FILE),
         "row_counts": {
             "cash_accounts": storage.get_row_count(LOCAL_DB_FILE, "cash_accounts"),
             "cash_contexts": storage.get_row_count(LOCAL_DB_FILE, "cash_contexts"),
@@ -279,6 +284,38 @@ def admin_dashboard():
     }
     return render_template("admin.html", **context)
 
+@app.route("/admin/restore-backup", methods=["POST"])
+@admin_required
+def admin_restore_backup():
+    try:
+        backup_name = request.form.get("backup_name", "").strip()
+        if not backup_name:
+            raise ValueError("No backup selected.")
+
+        backup_file = BACKUP_DIR / backup_name
+
+        storage.restore_backup(
+            db_path=LOCAL_DB_FILE,
+            backup_file=backup_file,
+        )
+
+        # optional but useful: rebuild exports after restore
+        rebuild_exports_and_sync(
+            db_path=LOCAL_DB_FILE,
+            excel_path=LOCAL_EXCEL_EXPORT_FILE,
+            text_path=LOCAL_TEXT_EXPORT_FILE,
+            backup_dir=BACKUP_DIR,
+            sync_state_file=SYNC_STATE_FILE,
+            config=Config,
+        )
+
+        flash(f"Backup restored: {backup_name}", "admin_success")
+
+    except Exception as exc:
+        logger.exception("Backup restore failed")
+        flash(f"Restore failed: {exc}", "error")
+
+    return redirect(url_for("admin_dashboard"))
 
 # ============================================================================
 # Admin actions

@@ -26,10 +26,6 @@ def save_sync_state(sync_state_file: Path, state: dict):
 
 
 def update_sync_state(sync_state_file: Path, updates: dict):
-    """
-    Compatibility wrapper for the refactored service layer.
-    Loads existing state, merges updates, and writes it back.
-    """
     state = load_sync_state(sync_state_file)
     state.update(updates)
     save_sync_state(sync_state_file, state)
