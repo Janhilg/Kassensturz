@@ -44,6 +44,21 @@
         </div>
     </div>
     <div class="card">
+        <div class="admin-actions-block">
+            <form method="POST" action="{{ url_for('admin_rebuild_exports') }}">
+                <button class="primary-button" type="submit" id="admin_rebuild_exports_button">
+                    Rebuild exports now
+                </button>
+            </form>
+
+            <form method="POST" action="{{ url_for('admin_sync_now') }}">
+                <button class="calc-button" type="submit" id="admin_sync_now_button">
+                    Sync now
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="card">
         <h2 id="admin_sync_state_title">Sync State</h2>
 
         {% if sync_state_data %}
@@ -58,29 +73,14 @@
                     <div>{{ sync_state_data.get("imported_movements", 0) }}</div>
                 </div>
 
-                <!--<div class="admin-data-card">
+                <div class="admin-data-card">
                     <strong>Upload result</strong>
                     <pre class="sync-state-pre">{{ sync_state_data.get("uploaded", {}) | tojson(indent=2) }}</pre>
-                </div>-->
+                </div>
             </div>
         {% else %}
             <p>No sync state available yet.</p>
         {% endif %}
-    </div>
-    <div class="card">
-        <div class="admin-actions-block">
-            <form method="POST" action="{{ url_for('admin_rebuild_exports') }}">
-                <button class="primary-button" type="submit" id="admin_rebuild_exports_button">
-                    Rebuild exports now
-                </button>
-            </form>
-
-            <form method="POST" action="{{ url_for('admin_sync_now') }}">
-                <button class="calc-button" type="submit" id="admin_sync_now_button">
-                    Sync now
-                </button>
-            </form>
-        </div>
     </div>
      <div class="card">
             <h2 id="admin_restore_backup_title">Restore Backup</h2>
