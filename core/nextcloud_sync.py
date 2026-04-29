@@ -1,9 +1,14 @@
-import requests
 import logging
 from pathlib import Path
 from urllib.parse import quote
 
+import requests
+
 logger = logging.getLogger(__name__)
+
+
+def _default_base_dir() -> Path:
+    return Path(__file__).resolve().parent.parent
 
 
 def get_verify_setting(config, base_dir: Path):
@@ -21,11 +26,13 @@ def get_verify_setting(config, base_dir: Path):
 
 
 def nextcloud_configured(config) -> bool:
-    return all([
-        config.NEXTCLOUD_BASE_URL,
-        config.NEXTCLOUD_USERNAME,
-        config.NEXTCLOUD_APP_PASSWORD,
-    ])
+    return all(
+        [
+            getattr(config, "NEXTCLOUD_BASE_URL", ""),
+            getattr(config, "NEXTCLOUD_USERNAME", ""),
+            getattr(config, "NEXTCLOUD_APP_PASSWORD", ""),
+        ]
+    )
 
 
 def build_webdav_url(base_url: str, username: str, path: str) -> str:
@@ -38,6 +45,7 @@ def build_webdav_url(base_url: str, username: str, path: str) -> str:
 
 def ensure_nextcloud_folder(config, base_dir: Path):
     if not nextcloud_configured(config):
+        logger.info("Nextcloud not configured; skipping folder creation")
         return
 
     parts = [part for part in config.NEXTCLOUD_REMOTE_DIR.strip("/").split("/") if part]
@@ -45,9 +53,14 @@ def ensure_nextcloud_folder(config, base_dir: Path):
 
     for part in parts:
         current_path = f"{current_path}/{part}" if current_path else part
+
         response = requests.request(
             "MKCOL",
-            build_webdav_url(config.NEXTCLOUD_BASE_URL, config.NEXTCLOUD_USERNAME, current_path),
+            build_webdav_url(
+                config.NEXTCLOUD_BASE_URL,
+                config.NEXTCLOUD_USERNAME,
+                current_path,
+            ),
             auth=(config.NEXTCLOUD_USERNAME, config.NEXTCLOUD_APP_PASSWORD),
             timeout=30,
             verify=get_verify_setting(config, base_dir),
@@ -59,38 +72,89 @@ def ensure_nextcloud_folder(config, base_dir: Path):
                 f"{response.status_code} {response.text}"
             )
 
+    logger.info("Nextcloud folder ensured | remote_dir=%s", config.NEXTCLOUD_REMOTE_DIR)
+
 
 def download_remote_excel_to_temp(config, base_dir: Path, temp_path: Path) -> bool:
     if not nextcloud_configured(config):
+        logger.info("Nextcloud not configured; skipping remote Excel download")
         return False
 
     remote_path = f"{config.NEXTCLOUD_REMOTE_DIR}/{config.NEXTCLOUD_REMOTE_FILE}"
+    logger.info("Downloading remote Excel | remote_path=%s", remote_path)
+
     response = requests.get(
-        build_webdav_url(config.NEXTCLOUD_BASE_URL, config.NEXTCLOUD_USERNAME, remote_path),
+        build_webdav_url(
+            config.NEXTCLOUD_BASE_URL,
+            config.NEXTCLOUD_USERNAME,
+            remote_path,
+        ),
         auth=(config.NEXTCLOUD_USERNAME, config.NEXTCLOUD_APP_PASSWORD),
         timeout=60,
         verify=get_verify_setting(config, base_dir),
     )
 
     if response.status_code == 200:
+        temp_path.parent.mkdir(parents=True, exist_ok=True)
         temp_path.write_bytes(response.content)
-
         size = temp_path.stat().st_size
         logger.info(
-            "Downloaded remote Excel | size=%s (%s)",
+            "Downloaded remote Excel | path=%s size=%s (%s)",
+            temp_path,
             size,
-            f"{size / 1024:.1f} KB"
+            f"{size / 1024:.1f} KB",
         )
-
         return True
 
     if response.status_code == 404:
+        logger.info("Remote Excel does not exist | remote_path=%s", remote_path)
         return False
 
     raise RuntimeError(
-        f"Failed to download Excel file from Nextcloud: "
+        "Failed to download Excel file from Nextcloud: "
         f"{response.status_code} {response.text}"
     )
+
+
+def download_remote_excel_if_exists(local_excel_path: Path, config) -> bool:
+    """
+    Service-layer wrapper expected by cash_service.py.
+
+    Downloads the remote Excel into a temporary file first, then replaces the
+    provided local file if the remote exists.
+
+    Returns:
+        True if the remote file existed and was downloaded.
+        False if no remote file exists or Nextcloud is not configured.
+    """
+    base_dir = _default_base_dir()
+    temp_path = local_excel_path.parent / f".{local_excel_path.stem}.remote.tmp{local_excel_path.suffix}"
+
+    try:
+        downloaded = download_remote_excel_to_temp(
+            config=config,
+            base_dir=base_dir,
+            temp_path=temp_path,
+        )
+
+        if not downloaded:
+            return False
+
+        local_excel_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path.replace(local_excel_path)
+
+        logger.info(
+            "Remote Excel moved into local path | local_path=%s",
+            local_excel_path,
+        )
+        return True
+
+    finally:
+        if temp_path.exists():
+            try:
+                temp_path.unlink()
+            except Exception:
+                logger.exception("Failed to clean up temp download | path=%s", temp_path)
 
 
 def upload_file_to_nextcloud(
@@ -102,24 +166,35 @@ def upload_file_to_nextcloud(
     content_type: str,
 ):
     if not nextcloud_configured(config):
-        return
+        logger.info("Nextcloud not configured; skipping upload | file=%s", file_path)
+        return {
+            "uploaded": False,
+            "reason": "nextcloud_not_configured",
+            "file": file_path.name,
+        }
+
+    if not file_path.exists():
+        raise FileNotFoundError(f"Cannot upload missing file: {file_path}")
 
     file_size = file_path.stat().st_size
-
     logger.info(
         "Uploading file | name=%s size=%s (%s)",
         file_path.name,
         file_size,
-        f"{file_size / 1024:.1f} KB"
+        f"{file_size / 1024:.1f} KB",
     )
 
     ensure_nextcloud_folder(config, base_dir)
 
     remote_path = f"{config.NEXTCLOUD_REMOTE_DIR}/{remote_filename}"
-    url = build_webdav_url(config.NEXTCLOUD_BASE_URL, config.NEXTCLOUD_USERNAME, remote_path)
+    url = build_webdav_url(
+        config.NEXTCLOUD_BASE_URL,
+        config.NEXTCLOUD_USERNAME,
+        remote_path,
+    )
 
-    logger.info(f"Uploading to: {remote_path}")
-    logger.info(f"WebDAV URL: {url}")
+    logger.info("Uploading to remote path | remote_path=%s", remote_path)
+    logger.debug("WebDAV URL | url=%s", url)
 
     with file_path.open("rb") as file_handle:
         response = requests.put(
@@ -131,24 +206,37 @@ def upload_file_to_nextcloud(
             verify=get_verify_setting(config, base_dir),
         )
 
-    logger.debug(f"Upload response: {response.status_code}")
-    logger.debug(f"Upload response body: {response.text[:500]}")
+    logger.debug("Upload response | status=%s", response.status_code)
+    logger.debug("Upload response body | body=%s", response.text[:500])
 
     if response.status_code not in (200, 201, 204):
-        logger.error(f"Failed to upload file to Nextcloud {response.status_code} {response.text}")
+        logger.error(
+            "Failed to upload file | status=%s body=%s",
+            response.status_code,
+            response.text,
+        )
         raise RuntimeError(
-            f"Failed to upload file to Nextcloud: "
+            "Failed to upload file to Nextcloud: "
             f"{response.status_code} {response.text}"
         )
+
     logger.info(
-        "Upload completed | name=%s size=%s",
+        "Upload completed | name=%s size=%s remote_path=%s",
         file_path.name,
-        file_size
+        file_size,
+        remote_path,
     )
+
+    return {
+        "uploaded": True,
+        "file": file_path.name,
+        "remote_path": remote_path,
+        "size_bytes": file_size,
+    }
 
 
 def upload_excel_file_to_nextcloud(config, base_dir: Path, file_path: Path):
-    upload_file_to_nextcloud(
+    return upload_file_to_nextcloud(
         config=config,
         base_dir=base_dir,
         file_path=file_path,
@@ -162,10 +250,37 @@ def upload_excel_file_to_nextcloud(config, base_dir: Path, file_path: Path):
 
 def upload_text_file_to_nextcloud(config, base_dir: Path, file_path: Path):
     remote_txt_filename = Path(config.NEXTCLOUD_REMOTE_FILE).with_suffix(".txt").name
-    upload_file_to_nextcloud(
+    return upload_file_to_nextcloud(
         config=config,
         base_dir=base_dir,
         file_path=file_path,
         remote_filename=remote_txt_filename,
         content_type="text/plain; charset=utf-8",
     )
+
+
+def upload_files(excel_path: Path, text_path: Path, config):
+    """
+    Service-layer wrapper expected by cash_service.py.
+    Uploads both Excel and text exports and returns a combined summary.
+    """
+    base_dir = _default_base_dir()
+
+    excel_result = upload_excel_file_to_nextcloud(
+        config=config,
+        base_dir=base_dir,
+        file_path=excel_path,
+    )
+    text_result = upload_text_file_to_nextcloud(
+        config=config,
+        base_dir=base_dir,
+        file_path=text_path,
+    )
+
+    combined = {
+        "excel": excel_result,
+        "text": text_result,
+    }
+
+    logger.info("Upload summary | %s", combined)
+    return combined

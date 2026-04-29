@@ -70,3 +70,90 @@ label {
     border-bottom: 2px solid #cc9900;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
+
+/* =========================================================
+   New form additions for count + movement pages
+   Add to: static/styles/form.css
+   ========================================================= */
+
+.main-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.form-row {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.form-row label {
+    font-weight: 600;
+}
+
+.main-form input,
+.main-form select,
+.main-form textarea {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    box-sizing: border-box;
+    font: inherit;
+}
+
+.main-form textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.25rem;
+}
+
+.secondary-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.denomination-block h3 {
+    margin: 0 0 0.75rem;
+}
+
+.denomination-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.denomination-grid label {
+    display: grid;
+    gap: 0.35rem;
+    font-weight: 500;
+}
+
+.denomination-grid input {
+    min-width: 0;
+}
+
+@media (max-width: 900px) {
+    .denomination-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .denomination-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+.main-form button,
+.action-row button {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+}

@@ -5,35 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Kassensturz{% endblock %}</title>
 
-    <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/layout.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/form.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/calculator.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/cash-counter.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/admin.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/footer.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/theme.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/admin.css') }}">
+
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='resources/cash.ico') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='resources/cash.png') }}">
+
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
+    {% if mode == "debug" %}
+    <div class="debug-banner" id="debug_banner">DEBUG MODE</div>
+    {% endif %}
 
-    {% block content %}
-    {% endblock %}
-    <footer class="footer">
-        <div class="language-switcher">
-            <span id="language_label">Language:</span>
-            <button type="button" class="lang-button" data-lang="en">English</button>
-            <button type="button" class="lang-button" data-lang="de">Deutsch</button>
+    <div class="page">
+        <div class="app-title">
+            <div class="app-header">
+                <div class="app-title-wrap">
+                    <img
+                        src="{{ url_for('static', filename='resources/cash.ico') }}"
+                        alt=""
+                        class="app-title-icon"
+                    >
+                    <div>
+                        <h1 id="app_title">Kassensturz</h1>
+                        <p class="app-subtitle">{% block app_subtitle %}Cash counting and event balance logging{% endblock %}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-header">
+                {% if session.get("admin_logged_in") %}
+                    <div class="admin-login-state">
+                        <span class="admin-login-badge" id="admin_access_active">Admin access active</span>
+                    </div>
+                {% endif %}
+
+                <div class="admin-header-actions">
+                    {% block admin_header_actions %}
+                        {% if session.get("admin_logged_in") %}
+                            <a class="clear-button admin-logout-link" href="{{ url_for('admin_logout') }}" id="admin_logout_button">
+                                Logout
+                            </a>
+                        {% endif %}
+                    {% endblock %}
+                </div>
+            </div>
         </div>
 
-        <div class="theme-switcher">
-            <span id="theme_label">Theme:</span>
-            <button type="button" class="theme-button" data-theme="dark" id="theme_dark_button">Dark</button>
-            <button type="button" class="theme-button" data-theme="light" id="theme_light_button">Light</button>
-        </div>
-    </footer>
+        <nav class="top-nav">
+            <div class="top-nav-inner">
+                <div class="nav-left">
+                    <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Count</a>
+                    <a href="{{ url_for('cash_movement') }}" class="nav-link {% if request.endpoint == 'cash_movement' %}active{% endif %}">Movement</a>
+                    <a href="{{ url_for('balances') }}" class="nav-link {% if request.endpoint == 'balances' %}active{% endif %}">Balances</a>
+                    {% if session.get("admin_logged_in") %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Admin</a>
+                    {% endif %}
+                </div>
 
-    <script type="module" src="{{ url_for('static', filename='scripts/base-page.js') }}"></script>
-    {% block page_scripts %}{% endblock %}
+                <div class="nav-right">
+                    {% if session.get("admin_logged_in") %}
+                        <a href="{{ url_for('admin_logout') }}" class="nav-button">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('admin_login') }}" class="nav-button {% if request.endpoint == 'admin_login' %}active{% endif %}">Admin Login</a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+
+        {% block page_content %}{% endblock %}
+
+        <footer class="footer">
+            <div class="language-switcher">
+                <span id="language_label">Language:</span>
+                <button type="button" class="lang-button" data-lang="en">English</button>
+                <button type="button" class="lang-button" data-lang="de">Deutsch</button>
+            </div>
+
+            <div class="theme-switcher">
+                <span id="theme_label">Theme:</span>
+                <button type="button" class="theme-button" data-theme="dark" id="theme_dark_button">Dark</button>
+                <button type="button" class="theme-button" data-theme="light" id="theme_light_button">Light</button>
+            </div>
+            <div style="margin-top: 12px;"></div>
+        </footer>
+    </div>
+
+    <script type="module" src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -214,3 +214,43 @@ button:active {
         width: 100%;
     }
 }
+
+/* =========================================================
+   Generic component additions
+   Add to: static/styles/base.css
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.message-box {
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+}
+
+.message-box h3 {
+    margin-top: 0;
+    margin-bottom: 0.35rem;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}

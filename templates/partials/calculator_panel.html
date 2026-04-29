@@ -1,0 +1,211 @@
+<div class="card">
+    <h2 id="calc_title">Live Calculation</h2>
+
+    <div class="mode-switcher">
+        <button type="button" class="mode-button" id="mode_calculator_button" data-mode="calculator">Calculator</button>
+        <button type="button" class="mode-button active" id="mode_cash_counter_button" data-mode="cash_counter">Cash counter</button>
+    </div>
+
+    <div id="calculator_mode" style="display: none;">
+        <div>
+            <label for="calc_input" id="label_calc_input">Number for calculation</label>
+            <input
+                id="calc_input"
+                type="number"
+                step="any"
+                placeholder="Enter number to add or subtract"
+            >
+        </div>
+
+        <div class="calc-controls">
+            <div></div>
+            <button type="button" class="calc-button" id="add_button">+</button>
+            <button type="button" class="calc-button" id="subtract_button">-</button>
+        </div>
+
+        <div class="result-box">
+            <div id="current_total_label">Current total</div>
+            <div class="current-total" id="current_total">0</div>
+
+            <button type="button" class="primary-button" id="apply_to_form_button" style="margin-top:12px;">
+                Apply result to form
+            </button>
+        </div>
+
+        <button type="button" class="clear-button" id="clear_button">
+            Clear Session History
+        </button>
+
+        <div class="history">
+            <h3 id="history_title">Session History</h3>
+            <div id="empty_history" class="empty-history">
+                No calculations yet.
+            </div>
+            <ul id="history_list" class="history-list"></ul>
+        </div>
+    </div>
+
+    <div id="cash_counter_mode" >
+        <h3 id="cash_counter_title">Euro cash counter</h3>
+        <div class="cash-section-title" id="bills_label">Bills</div>
+        <div class="cash-counter-grid">
+            <div class="cash-row">
+                <label for="denom_100">100 €</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_100">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_100" data-value="100">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_100">+</button>
+                </div>
+            </div>
+            <div class="cash-row">
+                <label for="denom_50">50 €</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_50">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_50" data-value="50">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_50">+</button>
+                </div>
+            </div>
+            <div class="cash-row">
+                <label for="denom_20">20 €</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_20">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_20" data-value="20">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_20">+</button>
+                </div>
+            </div>
+            <div class="cash-row">
+                <label for="denom_10">10 €</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_10">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_10" data-value="10">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_10">+</button>
+                </div>
+            </div>
+            <div class="cash-row">
+                <label for="denom_5">5 €</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_5">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_5" data-value="5">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_5">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cash-section-title" id="coins_label">Coins</div>
+        <div class="cash-counter-grid">
+            <div class="cash-row">
+                <label for="denom_2">2 €</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_2">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_2" data-value="2">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_2">+</button>
+                </div>
+            </div>
+            <div class="cash-row">
+                <label for="denom_1">1 €</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_1">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_1" data-value="1">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_1">+</button>
+                </div>
+            </div>
+            <div class="cash-row">
+                <label for="denom_050">50 ct</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_050">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_050" data-value="0.5">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_050">+</button>
+                </div>
+            </div>
+            <div class="cash-row">
+                <label for="denom_020">20 ct</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_020">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_020" data-value="0.2">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_020">+</button>
+                </div>
+            </div>
+            <div class="cash-row">
+                <label for="denom_010">10 ct</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="denom_010">−</button>
+                    <input type="number" min="0" step="1" value="" class="denomination-input" id="denom_010" data-value="0.1">
+                    <button type="button" class="denom-btn plus-btn" data-target="denom_010">+</button>
+                </div>
+            </div>
+        </div>
+        <div class="cash-section-title" id="rolls_label">Rolls</div>
+
+        <div class="cash-counter-grid">
+            <div class="cash-row">
+                <label for="roll_2">2 € roll (25x)</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="roll_2">−</button>
+                    <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value=""
+                        class="denomination-input"
+                        id="roll_2"
+                        data-value="50"
+                    >
+                    <button type="button" class="denom-btn plus-btn" data-target="roll_2">+</button>
+                </div>
+            </div>
+
+            <div class="cash-row">
+                <label for="roll_1">1 € roll (25x)</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="roll_1">−</button>
+                    <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value=""
+                        class="denomination-input"
+                        id="roll_1"
+                        data-value="25"
+                    >
+                    <button type="button" class="denom-btn plus-btn" data-target="roll_1">+</button>
+                </div>
+            </div>
+
+            <div class="cash-row">
+                <label for="roll_050">0.50 € roll (40x)</label>
+                <div class="cash-stepper">
+                    <button type="button" class="denom-btn minus-btn" data-target="roll_050">−</button>
+                    <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value=""
+                        class="denomination-input"
+                        id="roll_050"
+                        data-value="20"
+                    >
+                    <button type="button" class="denom-btn plus-btn" data-target="roll_050">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-box">
+            <div id="cash_counter_total_label">Cash counter total</div>
+            <div class="current-total" id="cash_counter_total">0</div>
+
+            <div class="cash-counter-actions">
+                <button type="button" class="primary-button" id="apply_cash_counter_to_form_button" style="margin-top:12px;">
+                    Apply result to form
+                </button>
+
+                <button type="button" class="calc-button" id="apply_cash_counter_to_calculator_button" style="margin-top:12px;">
+                    Send total to calculator
+                </button>
+            </div>
+        </div>
+
+        <button type="button" class="clear-button" id="clear_cash_counter_button">
+            Clear cash counter
+        </button>
+    </div>
+</div>

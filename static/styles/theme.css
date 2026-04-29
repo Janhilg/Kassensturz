@@ -52,3 +52,183 @@ body[data-theme="light"] .result-box {
         rgba(31, 111, 235, 0.025)
     );
 }
+/* =========================================================
+   Theme support for new components
+   Add to: static/styles/theme.css
+   ========================================================= */
+
+/* ---------- Light theme ---------- */
+body[data-theme="light"] .panel,
+body[data-theme="light"] .status-card,
+body[data-theme="light"] .data-card {
+    background: #ffffff;
+    border: 1px solid #d7dde5;
+    box-shadow: 0 6px 18px rgba(20, 20, 20, 0.05);
+}
+
+body[data-theme="light"] .main-form input,
+body[data-theme="light"] .main-form select,
+body[data-theme="light"] .main-form textarea {
+    background: #ffffff;
+    color: #1f2937;
+    border: 1px solid #cfd8e3;
+}
+
+body[data-theme="light"] .main-form input:focus,
+body[data-theme="light"] .main-form select:focus,
+body[data-theme="light"] .main-form textarea:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+body[data-theme="light"] .debug-banner {
+    background: #fff4d6;
+    color: #7a4b00;
+    border: 1px solid #f0cf7a;
+}
+
+body[data-theme="light"] .message-box.success-box {
+    background: #ecfdf3;
+    border: 1px solid #86efac;
+    color: #166534;
+}
+
+body[data-theme="light"] .message-box.error-box {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+}
+
+/* ---------- Dark theme ---------- */
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .status-card,
+body[data-theme="dark"] .data-card {
+    background: #1b2230;
+    border: 1px solid #2e3748;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+}
+
+body[data-theme="dark"] .main-form input,
+body[data-theme="dark"] .main-form select,
+body[data-theme="dark"] .main-form textarea {
+    background: #111827;
+    color: #f3f4f6;
+    border: 1px solid #374151;
+}
+
+body[data-theme="dark"] .main-form input:focus,
+body[data-theme="dark"] .main-form select:focus,
+body[data-theme="dark"] .main-form textarea:focus {
+    outline: none;
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.18);
+}
+
+body[data-theme="dark"] .debug-banner {
+    background: #3a2f00;
+    color: #ffd76a;
+    border: 1px solid #6f5b12;
+}
+
+body[data-theme="dark"] .message-box.success-box {
+    background: #10261a;
+    border: 1px solid #1f6b42;
+    color: #9de2b3;
+}
+
+body[data-theme="dark"] .message-box.error-box {
+    background: #2b1414;
+    border: 1px solid #7f1d1d;
+    color: #f2a5a5;
+}
+
+body[data-theme="light"] .admin-stat-box,
+body[data-theme="light"] .admin-data-card {
+    background: #ffffff;
+    border: 1px solid #d7dde5;
+}
+
+body[data-theme="dark"] .admin-stat-box,
+body[data-theme="dark"] .admin-data-card {
+    background: #1b2230;
+    border: 1px solid #2e3748;
+}
+
+/* =========================
+   Navbar Theme
+   ========================= */
+
+body[data-theme="light"] .top-nav {
+    background: #ffffff;
+    border-bottom: 1px solid #d7dde5;
+}
+
+body[data-theme="light"] .nav-link {
+    color: #1f2937;
+}
+
+body[data-theme="light"] .nav-link:hover {
+    background: #f1f5f9;
+}
+
+body[data-theme="light"] .nav-button {
+    background: #e5e7eb;
+    color: #1f2937;
+}
+
+body[data-theme="dark"] .top-nav {
+    background: #111827;
+    border-bottom: 1px solid #2e3748;
+}
+
+body[data-theme="dark"] .nav-link {
+    color: #e5e7eb;
+}
+
+body[data-theme="dark"] .nav-link:hover {
+    background: #1f2937;
+}
+
+body[data-theme="dark"] .nav-button {
+    background: #1f2937;
+    color: #e5e7eb;
+}
+
+body[data-theme="light"] .top-nav {
+    border-top: 1px solid #d7dde5;
+    padding-top: 12px;
+}
+
+body[data-theme="dark"] .top-nav {
+    border-top: 1px solid #2e3748;
+    padding-top: 12px;
+}
+
+body[data-theme="light"] .nav-link.active,
+body[data-theme="light"] .nav-button.active {
+    font-weight: 700;
+    border-bottom: 2px solid #1f2937;
+}
+
+body[data-theme="dark"] .nav-link.active,
+body[data-theme="dark"] .nav-button.active {
+    font-weight: 700;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+body[data-theme="light"] .sync-state-pre {
+    background: #f8fafc;
+    border: 1px solid #d7dde5;
+    padding: 12px;
+    border-radius: 10px;
+    color: #1f2937;
+}
+
+body[data-theme="dark"] .sync-state-pre {
+    background: #111827;
+    border: 1px solid #2e3748;
+    padding: 12px;
+    border-radius: 10px;
+    color: #f3f4f6;
+}

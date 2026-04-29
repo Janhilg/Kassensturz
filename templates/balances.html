@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Balances - Kassensturz{% endblock %}
+
+{% block app_subtitle %}Cash account balances and recent activity{% endblock %}
+
+{% block page_content %}
+<div class="layout">
+    <div class="card">
+        <h2 id="balances_title">Balances</h2>
+
+        {% if balances %}
+            <div class="admin-data-list">
+                {% for row in balances %}
+                    <div class="admin-data-card">
+                        <strong>{{ row.name }}</strong>
+                        <div>{{ row.account_type }}</div>
+                        <div>€ {{ "%.2f"|format(row.balance_cents / 100) }}</div>
+                        <div class="admin-muted">
+                            {% if row.is_active %}Active{% else %}Inactive{% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No balances available.</p>
+        {% endif %}
+    </div>
+
+    <div class="right-column">
+        <div class="card">
+            <h2 id="recent_counts_title">Recent Counts</h2>
+
+            {% if recent_counts %}
+                <div class="admin-data-list">
+                    {% for row in recent_counts %}
+                        <div class="admin-data-card">
+                            <strong>{{ row.cash_account_name }}</strong>
+                            <div>{{ row.count_type }}</div>
+                            <div>€ {{ "%.2f"|format(row.total_cents / 100) }}</div>
+                            <div>{{ row.context_label or "-" }}</div>
+                            <div class="admin-muted">{{ row.counted_at }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No counts yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2 id="recent_movements_title">Recent Movements</h2>
+
+            {% if recent_movements %}
+                <div class="admin-data-list">
+                    {% for row in recent_movements %}
+                        <div class="admin-data-card">
+                            <div>€ {{ "%.2f"|format(row.amount_cents / 100) }}</div>
+                            <div>{{ row.from_account_name or "—" }} → {{ row.to_account_name or "—" }}</div>
+                            <div>{{ row.context_label or "-" }}</div>
+                            <div class="admin-muted">{{ row.effective_at }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No movements yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

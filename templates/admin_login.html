@@ -1,42 +1,43 @@
 {% extends "base.html" %}
 
 {% block title %}Admin Login - Kassensturz{% endblock %}
+{% block app_subtitle %}Admin access{% endblock %}
 
-{% block content %}
-{% if app_mode == "debug" %}
-<div class="debug-banner" id="debug_banner">DEBUG MODE</div>
-{% endif %}
-
-<div class="page">
-    <div class="card" style="max-width: 420px; margin: 80px auto;">
+{% block page_content %}
+<div class="layout admin-layout-single">
+    <div class="card">
         <h2 id="admin_login_title">Admin Login</h2>
+
+        <form method="POST">
+            <div class="form-row">
+                <label for="password" id="admin_password_label">Admin password</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    placeholder="Enter admin password"
+                >
+            </div>
+
+            <button class="primary-button" type="submit" id="admin_login_button">Login</button>
+        </form>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% for category, message in messages %}
                 {% if category == "error" %}
-                    <div class="submitted-values admin-error-box">
+                    <div class="submitted-values" id="admin_error_box" style="border: 1px solid #da3633; background: #2d1117;">
                         <h3 id="admin_error_title">Error</h3>
+                        <p>{{ message }}</p>
+                    </div>
+                {% elif category == "admin_success" %}
+                    <div class="success-box" id="admin_success_box">
+                        <h3>Success</h3>
                         <p>{{ message }}</p>
                     </div>
                 {% endif %}
             {% endfor %}
         {% endwith %}
-
-        <form method="POST">
-            <label for="password" id="admin_password_label">Admin password</label>
-            <input
-                type="password"
-                name="password"
-                id="password"
-                placeholder="Enter admin password"
-                required
-                autofocus
-            >
-
-            <button type="submit" class="primary-button" style="margin-top: 12px;" id="admin_login_button">
-                Login
-            </button>
-        </form>
     </div>
 </div>
 {% endblock %}
