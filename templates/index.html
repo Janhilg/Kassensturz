@@ -16,6 +16,7 @@
                     type="text"
                     list="context-list"
                     placeholder="Enter event name"
+                    value="{{ request.form.get('context_label', latest_context_label) }}"
                 >
                 <datalist id="context-list">
                     {% for context in recent_contexts %}

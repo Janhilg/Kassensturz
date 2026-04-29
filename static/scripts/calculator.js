@@ -9,6 +9,7 @@ export function initCalculator(options) {
         emptyHistory,
         applyToFormButton,
         leftNumberInput,
+        amountInput,
         t
     } = options;
 
@@ -25,6 +26,10 @@ export function initCalculator(options) {
     const applyCashCounterToFormButton = document.getElementById("apply_cash_counter_to_form_button");
     const applyCashCounterToCalculatorButton = document.getElementById("apply_cash_counter_to_calculator_button");
     const clearCashCounterButton = document.getElementById("clear_cash_counter_button");
+
+    function getFormAmountTarget() {
+        return leftNumberInput || amountInput || null;
+    }
 
     function loadTotal() {
         const stored = sessionStorage.getItem(STORAGE_TOTAL_KEY);
@@ -119,19 +124,22 @@ export function initCalculator(options) {
     }
 
     function applyResultToForm(value) {
-        if (!leftNumberInput) {
+        const targetInput = getFormAmountTarget();
+        if (!targetInput) {
             return;
         }
 
-        leftNumberInput.value = formatNumber(value);
+        targetInput.value = formatNumber(value);
+        targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+        targetInput.dispatchEvent(new Event("change", { bubbles: true }));
 
-        leftNumberInput.style.border = "2px solid #28a745";
+        targetInput.style.border = "2px solid #28a745";
         setTimeout(() => {
-            leftNumberInput.style.border = "";
+            targetInput.style.border = "";
         }, 600);
     }
 
-   function applyResultToCalculator(value) {
+    function applyResultToCalculator(value) {
         if (!calcInput) return;
 
         switchMode("calculator");
@@ -208,7 +216,16 @@ export function initCalculator(options) {
         denominationInputs.forEach((input) => {
             input.value = "";
         });
+        syncHiddenDenominationFields();
         calculateCashCounterTotal();
+    }
+
+    function syncHiddenDenominationFields() {
+        denominationInputs.forEach((input) => {
+            const hiddenField = document.getElementById(`hidden_${input.id}`);
+            if (!hiddenField) return;
+            hiddenField.value = input.value || "";
+        });
     }
 
     function bindEvents() {
@@ -259,12 +276,14 @@ export function initCalculator(options) {
 
         denominationInputs.forEach((input) => {
             input.addEventListener("input", function () {
+                syncHiddenDenominationFields();
                 calculateCashCounterTotal();
             });
         });
 
         if (applyCashCounterToFormButton) {
             applyCashCounterToFormButton.addEventListener("click", function () {
+                syncHiddenDenominationFields();
                 applyResultToForm(calculateCashCounterTotal());
             });
         }
@@ -280,16 +299,14 @@ export function initCalculator(options) {
                 clearCashCounter();
             });
         }
-
     }
-    // + buttons
+
     document.querySelectorAll(".plus-btn").forEach((btn) => {
         btn.addEventListener("click", function () {
             changeDenominationValue(btn.dataset.target, 1);
         });
     });
 
-    // - buttons
     document.querySelectorAll(".minus-btn").forEach((btn) => {
         btn.addEventListener("click", function () {
             changeDenominationValue(btn.dataset.target, -1);
@@ -299,6 +316,7 @@ export function initCalculator(options) {
     clearOnReloadIfNeeded();
     bindEvents();
     render();
+    syncHiddenDenominationFields();
     calculateCashCounterTotal();
     switchMode("cash_counter");
 

@@ -72,19 +72,13 @@ def _common_template_context():
     return {
         "cash_accounts": storage.fetch_all_cash_accounts(LOCAL_DB_FILE, active_only=True),
         "recent_contexts": storage.fetch_recent_cash_contexts(LOCAL_DB_FILE, limit=20),
+        "latest_context_label": storage.get_latest_cash_context_label(LOCAL_DB_FILE),
         "count_types": [
             storage.COUNT_TYPE_OPENING,
             storage.COUNT_TYPE_CLOSING,
             storage.COUNT_TYPE_SPOT_CHECK,
             storage.COUNT_TYPE_HANDOVER,
             storage.COUNT_TYPE_RECONCILIATION,
-        ],
-        "movement_types": [
-            storage.MOVEMENT_TYPE_TRANSFER,
-            storage.MOVEMENT_TYPE_PURCHASE,
-            storage.MOVEMENT_TYPE_DEPOSIT,
-            storage.MOVEMENT_TYPE_WITHDRAWAL,
-            storage.MOVEMENT_TYPE_CORRECTION,
         ],
         "denom_fields": storage.DENOM_FIELDS,
         "mode": Config.MODE,
@@ -93,6 +87,7 @@ def _common_template_context():
 
 def _get_denominations_from_request_form():
     return storage.get_denomination_values_from_form(request.form)
+
 
 
 # ============================================================================
@@ -170,7 +165,6 @@ def index():
 def cash_movement():
     if request.method == "POST":
         try:
-            movement_type = request.form.get("movement_type", "").strip()
             from_account_id = request.form.get("from_account_id", "").strip() or None
             to_account_id = request.form.get("to_account_id", "").strip() or None
             actor = request.form.get("actor", "").strip()
@@ -183,7 +177,6 @@ def cash_movement():
 
             logger.info(
                 "Movement form submitted | type=%s from=%s to=%s actor=%s context=%s",
-                movement_type,
                 from_account_id,
                 to_account_id,
                 actor,
@@ -198,7 +191,6 @@ def cash_movement():
                 backup_dir=BACKUP_DIR,
                 sync_state_file=SYNC_STATE_FILE,
                 config=Config,
-                movement_type=movement_type,
                 amount_cents=amount_cents,
                 from_account_id=from_account_id,
                 to_account_id=to_account_id,

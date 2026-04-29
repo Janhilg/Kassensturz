@@ -50,12 +50,6 @@ ACCOUNT_TYPE_BANK = "bank"
 ACCOUNT_TYPE_EXTERNAL_SINK = "external_sink"
 ACCOUNT_TYPE_ADJUSTMENT = "adjustment"
 
-MOVEMENT_TYPE_TRANSFER = "transfer"
-MOVEMENT_TYPE_PURCHASE = "purchase"
-MOVEMENT_TYPE_DEPOSIT = "deposit"
-MOVEMENT_TYPE_WITHDRAWAL = "withdrawal"
-MOVEMENT_TYPE_CORRECTION = "correction"
-
 COUNT_TYPE_OPENING = "opening"
 COUNT_TYPE_CLOSING = "closing"
 COUNT_TYPE_SPOT_CHECK = "spot_check"
@@ -86,7 +80,6 @@ CASH_MOVEMENT_COLUMNS = [
     "context_label",
     "effective_at",
     "created_at",
-    "movement_type",
     "from_account_id",
     "to_account_id",
     "amount_cents",
@@ -143,7 +136,6 @@ CREATE TABLE IF NOT EXISTS cash_movements (
     context_label TEXT DEFAULT '',
     effective_at TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    movement_type TEXT NOT NULL,
     from_account_id TEXT,
     to_account_id TEXT,
     amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
@@ -559,7 +551,6 @@ def get_or_create_cash_context(
 # ============================================================================
 
 def build_cash_movement_record(
-    movement_type: str,
     amount_cents: int,
     from_account_id: str | None = None,
     to_account_id: str | None = None,
@@ -580,7 +571,6 @@ def build_cash_movement_record(
         "context_label": normalize_context_label(context_label),
         "effective_at": effective_at or now_iso(),
         "created_at": now_iso(),
-        "movement_type": movement_type,
         "from_account_id": from_account_id,
         "to_account_id": to_account_id,
         "amount_cents": int(amount_cents),
@@ -642,7 +632,6 @@ def insert_cash_movement(db_path: Path, movement: dict) -> str:
 
 def create_cash_movement(
     db_path: Path,
-    movement_type: str,
     amount_cents: int,
     from_account_id: str | None = None,
     to_account_id: str | None = None,
@@ -656,7 +645,6 @@ def create_cash_movement(
     denominations: dict | None = None,
 ) -> str:
     movement = build_cash_movement_record(
-        movement_type=movement_type,
         amount_cents=amount_cents,
         from_account_id=from_account_id,
         to_account_id=to_account_id,
@@ -1446,6 +1434,23 @@ def fetch_cash_account_statement(
         "outgoing_movements": dicts_from_rows(outgoing_rows),
     }
 
+
+def get_latest_cash_context_label(db_path: Path) -> str:
+    ensure_db_file(db_path)
+
+    with get_connection(db_path) as conn:
+        row = conn.execute(
+            """
+            SELECT label
+            FROM cash_contexts
+            WHERE is_active = 1
+              AND label != ''
+            ORDER BY last_used_at DESC, created_at DESC
+            LIMIT 1
+            """
+        ).fetchone()
+
+    return str(row["label"]).strip() if row and row["label"] else ""
 
 # ============================================================================
 # Counts and totals

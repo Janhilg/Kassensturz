@@ -55,7 +55,6 @@
                 <div class="admin-data-list">
                     {% for row in recent_movements %}
                         <div class="admin-data-card">
-                            <strong>{{ row.movement_type }}</strong>
                             <div>€ {{ "%.2f"|format(row.amount_cents / 100) }}</div>
                             <div>{{ row.from_account_name or "—" }} → {{ row.to_account_name or "—" }}</div>
                             <div>{{ row.context_label or "-" }}</div>

@@ -14,7 +14,7 @@ import {
 
 
 document.addEventListener("DOMContentLoaded", function () {
-    const calculator = initCalculator({
+    initCalculator({
         calcInput: document.getElementById("calc_input"),
         addButton: document.getElementById("add_button"),
         subtractButton: document.getElementById("subtract_button"),
@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
         emptyHistory: document.getElementById("empty_history"),
         applyToFormButton: document.getElementById("apply_to_form_button"),
         leftNumberInput: document.getElementById("number_input"),
+        amountInput: document.getElementById("amount_eur"),
         t
     });
 

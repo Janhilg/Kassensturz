@@ -8,15 +8,6 @@
         <h2>Record Cash Movement</h2>
 
         <form method="POST">
-            <div class="form-row">
-                <label for="movement_type">Movement type</label>
-                <select id="movement_type" name="movement_type" required>
-                    <option value="">Select type</option>
-                    {% for item in movement_types %}
-                        <option value="{{ item }}">{{ item.replace('_', ' ')|title }}</option>
-                    {% endfor %}
-                </select>
-            </div>
 
             <div class="form-row">
                 <label for="amount_eur">Amount (€)</label>
@@ -78,7 +69,8 @@
                     name="context_label"
                     type="text"
                     list="context-list"
-                    placeholder="Friday bar"
+                    placeholder="Event Name"
+                    value="{{ request.form.get('context_label', latest_context_label) }}"
                 >
                 <datalist id="context-list">
                     {% for context in recent_contexts %}

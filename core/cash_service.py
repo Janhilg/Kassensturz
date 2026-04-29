@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 def _validate_movement(
-    movement_type: str,
     amount_cents: int,
     from_account_id: str | None,
     to_account_id: str | None,
@@ -264,7 +263,6 @@ def record_cash_movement_and_sync(
     sync_state_file: Path,
     config,
 
-    movement_type: str,
     amount_cents: int,
     from_account_id: str | None = None,
     to_account_id: str | None = None,
@@ -277,13 +275,11 @@ def record_cash_movement_and_sync(
 ):
     logger.info(
         "Recording cash movement | type=%s amount=%s context=%s",
-        movement_type,
         amount_cents,
         context_label,
     )
 
     _validate_movement(
-        movement_type,
         amount_cents,
         from_account_id,
         to_account_id,
@@ -292,7 +288,6 @@ def record_cash_movement_and_sync(
 
     movement_id = storage.create_cash_movement(
         db_path=db_path,
-        movement_type=movement_type,
         amount_cents=amount_cents,
         from_account_id=from_account_id,
         to_account_id=to_account_id,

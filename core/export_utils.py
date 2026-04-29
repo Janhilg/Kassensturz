@@ -201,7 +201,6 @@ def export_text(db_path: Path, text_path: Path):
             " | ".join(
                 [
                     _safe_str(row["effective_at"]),
-                    _safe_str(row["movement_type"]),
                     f"amount_eur={_format_cents(row['amount_cents'])}",
                     f"from={_safe_str(row.get('from_account_name'))}",
                     f"to={_safe_str(row.get('to_account_name'))}",
