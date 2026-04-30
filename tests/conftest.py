@@ -1,56 +1,122 @@
-import pytest
-import sys
 from pathlib import Path
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import pytest
+import app as app_module
 
-class DummyForm(dict):
-    def get(self, key, default=None):
-        return super().get(key, default)
+from core import storage
 
-
-class DummyConfig:
-    NEXTCLOUD_BASE_URL = "https://example.test"
-    NEXTCLOUD_USERNAME = "user"
-    NEXTCLOUD_APP_PASSWORD = "pass"
-    NEXTCLOUD_REMOTE_DIR = "Apps/Kassensturz/Kassensturz_data"
-    NEXTCLOUD_REMOTE_FILE = "kassensturz_data.xlsx"
-    NEXTCLOUD_VERIFY = "true"
-    NEXTCLOUD_CA_CERT_PATH = ""
 
 
 @pytest.fixture
-def temp_paths(tmp_path: Path):
-    return {
-        "base_dir": tmp_path,
-        "db_path": tmp_path / "data" / "kassensturz.db",
-        "backup_dir": tmp_path / "data" / "backups",
-        "excel_path": tmp_path / "data" / "kassensturz_data.xlsx",
-        "text_path": tmp_path / "data" / "kassensturz_data.txt",
-        "sync_state_file": tmp_path / "data" / "sync_state.json",
-    }
+def db_path(tmp_path: Path) -> Path:
+    return tmp_path / "test.db"
 
 
 @pytest.fixture
-def sample_entry():
-    return {
-        "id": "test-id-001",
-        "date": "2026-04-28",
-        "timestamp": "2026-04-28 10:00:00",
-        "event_name": "Barabend",
-        "counted_by": "Jan",
-        "cash_sum": 83.4,
-        "event_status": "opening",
-        "comment": "test",
-        "denom_100": None,
-        "denom_50": 1,
-        "denom_20": 1,
-        "denom_10": 1,
-        "denom_5": 0,
-        "denom_2": 1,
-        "denom_1": 1,
-        "denom_050": 0,
-        "denom_020": 2,
-        "denom_010": 0,
-    }
+def backup_dir(tmp_path: Path) -> Path:
+    return tmp_path / "backups"
+
+
+@pytest.fixture
+def excel_path(tmp_path: Path) -> Path:
+    return tmp_path / "export.xlsx"
+
+
+@pytest.fixture
+def text_path(tmp_path: Path) -> Path:
+    return tmp_path / "export.txt"
+
+
+@pytest.fixture
+def sync_state_file(tmp_path: Path) -> Path:
+    return tmp_path / "sync_state.json"
+
+
+@pytest.fixture
+def seeded_db(db_path: Path) -> Path:
+    storage.ensure_db_file(db_path)
+    storage.seed_default_cash_accounts(db_path)
+    return db_path
+
+
+@pytest.fixture
+def bar_account_id(seeded_db: Path) -> str:
+    account = storage.fetch_cash_account_by_name(seeded_db, "Bar Cash Box")
+    assert account is not None
+    return account["id"]
+
+
+@pytest.fixture
+def entrance_account_id(seeded_db: Path) -> str:
+    account = storage.fetch_cash_account_by_name(seeded_db, "Entrance Cash Box")
+    assert account is not None
+    return account["id"]
+
+
+@pytest.fixture
+def runner_account_id(seeded_db: Path) -> str:
+    account = storage.fetch_cash_account_by_name(seeded_db, "Runner Float")
+    assert account is not None
+    return account["id"]
+
+
+@pytest.fixture
+def supplier_account_id(seeded_db: Path) -> str:
+    account = storage.fetch_cash_account_by_name(seeded_db, "Supplier / Drinks Purchase")
+    assert account is not None
+    return account["id"]
+
+
+@pytest.fixture
+def config_stub():
+    class ConfigStub:
+        NEXTCLOUD_BASE_URL = ""
+        NEXTCLOUD_USERNAME = ""
+        NEXTCLOUD_APP_PASSWORD = ""
+        NEXTCLOUD_CA_CERT_PATH = ""
+        NEXTCLOUD_VERIFY = "false"
+        NEXTCLOUD_REMOTE_DIR = "Apps/Kassensturz/Debug"
+        NEXTCLOUD_REMOTE_FILE = "kassensturz_data.xlsx"
+        MODE = "debug"
+        ADMIN_PASSWORD = "admin"
+
+    return ConfigStub
+
+@pytest.fixture
+def client(tmp_path, monkeypatch):
+    db_path = tmp_path / "test.db"
+    excel_path = tmp_path / "export.xlsx"
+    text_path = tmp_path / "export.txt"
+    backup_dir = tmp_path / "backups"
+    sync_state_file = tmp_path / "sync_state.json"
+
+    monkeypatch.setattr(app_module, "LOCAL_DB_FILE", db_path)
+    monkeypatch.setattr(app_module, "LOCAL_EXCEL_EXPORT_FILE", excel_path)
+    monkeypatch.setattr(app_module, "LOCAL_TEXT_EXPORT_FILE", text_path)
+    monkeypatch.setattr(app_module, "BACKUP_DIR", backup_dir)
+    monkeypatch.setattr(app_module, "SYNC_STATE_FILE", sync_state_file)
+
+    app_module.storage.ensure_db_file(db_path)
+    app_module.storage.seed_default_cash_accounts(db_path)
+
+    monkeypatch.setattr(
+        app_module,
+        "record_cash_count_and_sync",
+        lambda **kwargs: {"imported_counts": 0, "imported_movements": 0, "count_id": "count-1"},
+    )
+    monkeypatch.setattr(
+        app_module,
+        "record_cash_movement_and_sync",
+        lambda **kwargs: {"imported_counts": 0, "imported_movements": 0, "movement_id": "mov-1"},
+    )
+    monkeypatch.setattr(
+        app_module,
+        "rebuild_exports_and_sync",
+        lambda **kwargs: {"imported_counts": 0, "imported_movements": 0},
+    )
+
+    app_module.app.config["TESTING"] = True
+    app_module.app.secret_key = "test-secret"
+
+    with app_module.app.test_client() as client:
+        yield client

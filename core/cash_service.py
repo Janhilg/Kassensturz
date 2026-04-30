@@ -274,7 +274,7 @@ def record_cash_movement_and_sync(
     denominations: dict | None = None,
 ):
     logger.info(
-        "Recording cash movement | type=%s amount=%s context=%s",
+        "Recording cash movement | amount=%s context=%s",
         amount_cents,
         context_label,
     )

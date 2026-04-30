@@ -619,13 +619,9 @@ def insert_cash_movement(db_path: Path, movement: dict) -> str:
         conn.commit()
 
     logger.info(
-        "Cash movement inserted | id=%s type=%s amount_cents=%s from=%s to=%s context=%s",
-        movement["id"],
-        movement["movement_type"],
-        movement["amount_cents"],
-        movement["from_account_id"],
-        movement["to_account_id"],
-        movement["context_label"],
+        f"Cash movement inserted | id={movement['id']} amount_cents={movement['amount_cents']} "
+        f"from={movement['from_account_id']} to={movement['to_account_id']} "
+        f"context={movement['context_label']}"
     )
     return movement["id"]
 
@@ -790,13 +786,12 @@ def merge_imported_cash_movements_append_only(
                 )
             except sqlite3.IntegrityError:
                 logger.exception(
-                    "Failed to import cash movement | id=%s from_id=%s from_name=%s to_id=%s to_name=%s context_id=%s",
-                    normalized.get("id"),
-                    normalized.get("from_account_id"),
-                    normalized.get("from_account_name"),
-                    normalized.get("to_account_id"),
-                    normalized.get("to_account_name"),
-                    normalized.get("context_id"),
+                    f"Failed to import cash movement | id={normalized.get("id")}"
+                    f" from_id={normalized.get("from_account_id")}"
+                    f" from_name={normalized.get("from_account_name")}"
+                    f" to_id={normalized.get("to_account_id")}"
+                    f" to_name={normalized.get("to_account_name")}"
+                    f" context_id={normalized.get("context_id")}"
                 )
                 raise
 
@@ -806,11 +801,11 @@ def merge_imported_cash_movements_append_only(
         conn.commit()
 
     logger.info(
-        "Cash movement merge completed | imported=%s skipped=%s remapped=%s total_remote=%s",
-        imported_count,
-        skipped_count,
-        remapped_count,
-        len(imported_movements),
+        f"Cash movement merge completed | "
+        f"imported={imported_count} "
+        f"skipped={skipped_count} "
+        f"remapped={remapped_count} "
+        f"total_remote={len(imported_movements)}"
     )
 
     return {
@@ -871,10 +866,10 @@ def merge_imported_cash_contexts_append_only(
         conn.commit()
 
     logger.info(
-        "Cash context merge completed | imported=%s skipped=%s total_remote=%s",
-        imported_count,
-        skipped_count,
-        len(imported_contexts),
+        f"Cash context merge completed | "
+        f"imported={imported_count} "
+        f"skipped={skipped_count} "
+        f"total_remote={len(imported_contexts)}"
     )
 
     return {
