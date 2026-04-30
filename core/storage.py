@@ -5,6 +5,8 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+from config import Config
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,17 +46,7 @@ DENOM_VALUE_CENTS = {
     "roll_050": 2000,
 }
 
-ACCOUNT_TYPE_CASH_BOX = "cash_box"
-ACCOUNT_TYPE_FLOAT = "float"
-ACCOUNT_TYPE_BANK = "bank"
-ACCOUNT_TYPE_EXTERNAL_SINK = "external_sink"
-ACCOUNT_TYPE_ADJUSTMENT = "adjustment"
 
-COUNT_TYPE_OPENING = "opening"
-COUNT_TYPE_CLOSING = "closing"
-COUNT_TYPE_SPOT_CHECK = "spot_check"
-COUNT_TYPE_HANDOVER = "handover"
-COUNT_TYPE_RECONCILIATION = "reconciliation"
 
 CASH_ACCOUNT_COLUMNS = [
     "id",
@@ -194,12 +186,6 @@ CREATE TABLE IF NOT EXISTS cash_counts (
 )
 """
 
-DEFAULT_CASH_ACCOUNTS = [
-    ("acc_bar_cash_box", "Bar Cash Box", ACCOUNT_TYPE_CASH_BOX, 20),
-    ("acc_entrance_cash_box", "Entrance Cash Box", ACCOUNT_TYPE_CASH_BOX, 30),
-    ("acc_runner_float", "Runner Float", ACCOUNT_TYPE_FLOAT, 40),
-    ("acc_supplier_drinks", "Supplier / Drinks Purchase", ACCOUNT_TYPE_EXTERNAL_SINK, 60)
-]
 
 
 # ============================================================================
@@ -402,7 +388,7 @@ def seed_default_cash_accounts(db_path: Path):
     }
 
     created = 0
-    for account_id, name, account_type, sort_order in DEFAULT_CASH_ACCOUNTS:
+    for account_id, name, account_type, sort_order in Config.DEFAULT_CASH_ACCOUNTS:
         if account_id in existing_ids:
             continue
 

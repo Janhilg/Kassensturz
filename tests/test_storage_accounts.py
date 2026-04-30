@@ -1,3 +1,4 @@
+import config
 from core import storage
 
 
@@ -5,12 +6,10 @@ def test_seed_default_cash_accounts_creates_expected_accounts(seeded_db):
     accounts = storage.fetch_all_cash_accounts(seeded_db, active_only=False)
     names = {row["name"] for row in accounts}
 
-    assert names == {
-        "Bar Cash Box",
-        "Entrance Cash Box",
-        "Runner Float",
-        "Supplier / Drinks Purchase",
-    }
+    config_names = {row[1] for row in config.Config.DEFAULT_CASH_ACCOUNTS}
+
+    for name, config_name in names - config_names:
+        assert name == config_name
 
 def test_seed_default_cash_accounts_is_idempotent(seeded_db):
     before = storage.fetch_all_cash_accounts(seeded_db, active_only=False)

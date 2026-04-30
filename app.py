@@ -74,13 +74,7 @@ def _common_template_context():
         "cash_accounts": storage.fetch_all_cash_accounts(LOCAL_DB_FILE, active_only=True),
         "recent_contexts": storage.fetch_recent_cash_contexts(LOCAL_DB_FILE, limit=20),
         "latest_context_label": storage.get_latest_cash_context_label(LOCAL_DB_FILE),
-        "count_types": [
-            storage.COUNT_TYPE_OPENING,
-            storage.COUNT_TYPE_CLOSING,
-            storage.COUNT_TYPE_SPOT_CHECK,
-            storage.COUNT_TYPE_HANDOVER,
-            storage.COUNT_TYPE_RECONCILIATION,
-        ],
+        "count_types": Config.COUNT_TYPES,
         "denom_fields": storage.DENOM_FIELDS,
         "mode": Config.MODE,
     }
