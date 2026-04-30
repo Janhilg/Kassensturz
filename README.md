@@ -1,4 +1,7 @@
 # Kassensturz
+![Version](https://img.shields.io/badge/version-v0.2.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
 Kassensturz is a local-first Flask web application for managing cash balances across multiple cash boxes.
 
@@ -151,5 +154,7 @@ Kassensturz.exe
 ## 📄 License
 
 MIT License
+
+MIT License – free to use, modify and distribute.
 
 Copyright (c) 2026
