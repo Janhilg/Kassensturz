@@ -71,20 +71,6 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-### 🐛 Fixed
-
-- Multiple sync-related issues:
-  - foreign key constraint failures
-  - mismatched account IDs across devices
-- Import issues with legacy Excel data
-- Logging format errors (mismatched placeholders)
-- Theme inconsistencies between light and dark mode
-- Form styling inconsistencies (select / textarea)
-- Navigation layout mismatch with content width
-- Calculator/cash counter form integration issues
-
----
-
 ### 🧪 Tests
 
 - Rebuilt test suite from scratch
@@ -105,14 +91,3 @@ All notable changes to this project will be documented in this file.
   - **counts define reality**
   - **movements define flow**
 - Sync is designed to be safe and append-only
-
----
-
-## [Unreleased]
-
-### Planned
-
-- Discrepancy detection (expected vs counted balance)
-- Improved analytics per context/event
-- Sync diagnostics and visualization
-- Mobile UX improvements
