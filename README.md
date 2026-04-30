@@ -9,7 +9,7 @@ It is designed for simple, reliable tracking of:
 
 ---
 
-##  Core Concept
+## 🧠 Core Concept
 
 Kassensturz follows a simple model:
 
@@ -22,9 +22,9 @@ Movement: Bar → Runner (50€)
 
 ---
 
-## Features
+## 🔧 Features
 
-### Cash Count (main page)
+### 💰 Cash Count (main page)
 - Record cash counts per cash box
 - Free-text context (e.g. event name)
 - Optional denomination breakdown (bills, coins, rolls)
@@ -32,7 +32,7 @@ Movement: Bar → Runner (50€)
 
 ---
 
-### Cash Movements
+### 🔄 Cash Movements
 - Move cash between accounts (e.g. bar → entrance)
 - Record payments (e.g. bar → supplier)
 - Optional denomination tracking
@@ -40,7 +40,7 @@ Movement: Bar → Runner (50€)
 
 ---
 
-### Balances Page
+### 🧾 Balances Page
 - Current balance per cash account
 - Based on:
   - latest count (anchor)
@@ -51,7 +51,7 @@ Movement: Bar → Runner (50€)
 
 ---
 
-### Admin Page
+### ⚙️ Admin Page
 - System status overview
 - Manual sync trigger
 - Rebuild exports
@@ -60,7 +60,7 @@ Movement: Bar → Runner (50€)
 
 ---
 
-### Live Calculator & Cash Counter
+### 🧮 Live Calculator & Cash Counter
 - Two modes:
   - Calculator (add/subtract)
   - Cash counter (denominations + rolls)
@@ -73,14 +73,14 @@ Movement: Bar → Runner (50€)
 
 ---
 
-### Storage & Backup
+### 💾 Storage & Backup
 - SQLite database (local source of truth)
 - Automatic rotating backups
 - Manual restore via admin page
 
 ---
 
-### Export & Sync
+### 📤 Export & Sync
 - Full export to:
   - Excel (.xlsx)
   - Text (.txt)
@@ -91,7 +91,7 @@ Movement: Bar → Runner (50€)
 
 ---
 
-### Localization & UI
+### 🌐 Localization & UI
 - English / German language switching
 - Dark / Light theme
 - Consistent layout across all pages
@@ -99,7 +99,7 @@ Movement: Bar → Runner (50€)
 
 ---
 
-## Architecture
+## 📦 Architecture
 
 ### Local-first model
 - SQLite database is the single source of truth
@@ -114,7 +114,7 @@ Movement: Bar → Runner (50€)
 
 ---
 
-## Sync behavior
+## 🔄 Sync behavior
 
 - Import remote Excel (if exists)
 - Merge new rows (append-only)
@@ -124,7 +124,7 @@ Movement: Bar → Runner (50€)
 
 ---
 
-## Build (portable / onedir)
+## 🖥️ Build (portable / onedir)
 
 ### Windows
 
@@ -145,20 +145,27 @@ Kassensturz.exe
 
 ---
 
-## Future ideas
 
-- discrepancy detection (expected vs counted)
-- analytics per event/context
-- improved sync visualization
-- stricter movement validation rules
-- mobile UI improvements
+## 📄 License
 
----
+MIT License
 
-## Design Principles
+Copyright (c) 2026
 
-- Local-first
-- Simple mental model
-- Append-only sync
-- Explicit state tracking
-- Separation of concerns
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
