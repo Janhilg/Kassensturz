@@ -1,3 +1,8 @@
+/* =========================================================
+   Pill toggle buttons (language / theme)
+   ========================================================= */
+
+.pill-button,
 .lang-button,
 .theme-button {
     padding: 8px 13px;
@@ -8,13 +13,20 @@
     color: var(--text);
     cursor: pointer;
     font-weight: 700;
+    transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast),
+        color var(--transition-fast);
 }
 
+.pill-button:hover,
 .lang-button:hover,
 .theme-button:hover {
     background: var(--calc-btn-hover);
 }
 
+.pill-button.active,
 .lang-button.active,
 .theme-button.active {
     background: var(--input-focus);

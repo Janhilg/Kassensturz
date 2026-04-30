@@ -2,31 +2,45 @@
     --bg: #0d1117;
     --text: #e6edf3;
     --heading: #f0f6fc;
+
     --card-bg: #161b22;
     --card-border: #30363d;
+
     --input-bg: #0d1117;
     --input-border: #30363d;
     --input-placeholder: #8b949e;
     --input-focus: #1f6feb;
+
     --primary-btn: #238636;
     --primary-btn-hover: #2ea043;
+
     --calc-btn-bg: #21262d;
     --calc-btn-hover: #30363d;
+
     --danger-btn: #da3633;
     --danger-btn-hover: #f85149;
+
     --result-bg: #0d1117;
     --accent: #58a6ff;
     --muted: #8b949e;
+
     --submitted-bg: #0f2419;
     --submitted-border: #238636;
     --footer-border: #30363d;
+
     --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.18);
     --shadow-focus: 0 0 0 3px rgba(31, 111, 235, 0.18);
+
     --radius-lg: 16px;
     --radius-md: 10px;
     --radius-sm: 8px;
+
     --transition-fast: 0.15s ease;
 }
+
+/* =========================================================
+   Reset / global base
+   ========================================================= */
 
 * {
     box-sizing: border-box;
@@ -37,12 +51,16 @@ html {
 }
 
 body {
-    font-family: Arial, sans-serif;
     margin: 0;
     padding: 40px;
+    font-family: Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
 }
+
+/* =========================================================
+   Typography
+   ========================================================= */
 
 h1,
 h2,
@@ -67,6 +85,34 @@ h3 {
     font-size: 1.05rem;
 }
 
+/* =========================================================
+   Shared element defaults
+   ========================================================= */
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+/* =========================================================
+   Inputs
+   ========================================================= */
+
 input {
     width: 100%;
     padding: 12px 14px;
@@ -75,7 +121,10 @@ input {
     border-radius: var(--radius-sm);
     background: var(--input-bg);
     color: var(--text);
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    transition:
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast),
+        background var(--transition-fast);
 }
 
 input::placeholder {
@@ -88,12 +137,15 @@ input:focus {
     box-shadow: var(--shadow-focus);
 }
 
+/* =========================================================
+   Buttons
+   ========================================================= */
+
 button {
     padding: 12px 16px;
     font-size: 15px;
     border: none;
     border-radius: var(--radius-sm);
-    cursor: pointer;
     transition:
         background var(--transition-fast),
         transform var(--transition-fast),
@@ -131,9 +183,9 @@ button:active {
 
 .clear-button {
     margin-top: 14px;
+    width: 100%;
     background: var(--danger-btn);
     color: white;
-    width: 100%;
     font-weight: 700;
     box-shadow: 0 8px 18px rgba(218, 54, 51, 0.16);
 }
@@ -141,6 +193,10 @@ button:active {
 .clear-button:hover {
     background: var(--danger-btn-hover);
 }
+
+/* =========================================================
+   Shared boxes / components
+   ========================================================= */
 
 .result-box {
     margin-top: 18px;
@@ -155,12 +211,27 @@ button:active {
 }
 
 .current-total {
+    margin: 10px 0 0 0;
     font-size: 36px;
     font-weight: 800;
-    margin: 10px 0 0 0;
     color: var(--accent);
     letter-spacing: 0.4px;
 }
+
+.message-box {
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+}
+
+.message-box h3 {
+    margin-top: 0;
+    margin-bottom: 0.35rem;
+}
+
+/* =========================================================
+   Admin header
+   ========================================================= */
 
 .admin-header {
     display: flex;
@@ -195,16 +266,24 @@ button:active {
 }
 
 .admin-logout-link {
-    text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: auto;
     margin-top: 0;
     padding: 10px 14px;
+    text-decoration: none;
 }
 
+/* =========================================================
+   Responsive
+   ========================================================= */
+
 @media (max-width: 800px) {
+    body {
+        padding: 20px;
+    }
+
     .admin-header {
         flex-direction: column;
         align-items: flex-start;
@@ -213,44 +292,4 @@ button:active {
     .admin-header-actions {
         width: 100%;
     }
-}
-
-/* =========================================================
-   Generic component additions
-   Add to: static/styles/base.css
-   ========================================================= */
-
-* {
-    box-sizing: border-box;
-}
-
-button,
-input,
-select,
-textarea {
-    font: inherit;
-}
-
-button {
-    cursor: pointer;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.message-box {
-    margin-top: 1rem;
-    padding: 0.9rem 1rem;
-    border-radius: 10px;
-}
-
-.message-box h3 {
-    margin-top: 0;
-    margin-bottom: 0.35rem;
-}
-
-.table-wrap {
-    overflow-x: auto;
 }

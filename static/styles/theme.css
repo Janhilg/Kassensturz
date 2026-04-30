@@ -1,27 +1,130 @@
+/* =========================================================
+   Base Theme Variables
+   ========================================================= */
+
+/* Light Theme */
 body[data-theme="light"] {
     --bg: #f7f7f7;
     --text: #222222;
     --heading: #111111;
+
     --card-bg: #ffffff;
     --card-border: #d0d7de;
+
     --input-bg: #ffffff;
     --input-border: #cfcfcf;
     --input-placeholder: #6b7280;
     --input-focus: #1f6feb;
+
     --primary-btn: #1f6feb;
     --primary-btn-hover: #1857b6;
+
     --calc-btn-bg: #e9ecef;
     --calc-btn-hover: #d9dee3;
+
     --danger-btn: #dc3545;
     --danger-btn-hover: #bb2d3b;
+
     --result-bg: #f1f5f9;
+
     --accent: #1f6feb;
     --muted: #666666;
+
     --submitted-bg: #eef6ee;
     --submitted-border: #238636;
+
     --footer-border: #d0d7de;
+
     --shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.08);
     --shadow-focus: 0 0 0 3px rgba(31, 111, 235, 0.15);
+}
+
+/* Dark Theme */
+body[data-theme="dark"] {
+    --bg: #0f172a;
+    --text: #e5e7eb;
+    --heading: #f3f4f6;
+
+    --card-bg: #1b2230;
+    --card-border: #2e3748;
+
+    --input-bg: #111827;
+    --input-border: #374151;
+    --input-placeholder: #9ca3af;
+    --input-focus: #4f8cff;
+
+    --primary-btn: #4f8cff;
+    --primary-btn-hover: #3b6fd8;
+
+    --calc-btn-bg: #1f2937;
+    --calc-btn-hover: #2a3647;
+
+    --danger-btn: #dc3545;
+    --danger-btn-hover: #bb2d3b;
+
+    --result-bg: #111827;
+
+    --accent: #4f8cff;
+    --muted: #9ca3af;
+
+    --submitted-bg: #10261a;
+    --submitted-border: #1f6b42;
+
+    --footer-border: #2e3748;
+
+    --shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.25);
+    --shadow-focus: 0 0 0 3px rgba(79, 140, 255, 0.25);
+}
+
+/* =========================================================
+   Global Elements
+   ========================================================= */
+
+body {
+    background: var(--bg);
+    color: var(--text);
+}
+
+h1, h2, h3 {
+    color: var(--heading);
+}
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-soft);
+}
+
+/* Inputs (shared across all pages) */
+input,
+select,
+textarea {
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--input-border);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--input-placeholder);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: var(--shadow-focus);
+}
+
+/* =========================================================
+   Messages / Alerts
+   ========================================================= */
+
+.success-box {
+    background: var(--submitted-bg);
+    border: 1px solid var(--submitted-border);
 }
 
 body[data-theme="light"] .success-box {
@@ -30,99 +133,31 @@ body[data-theme="light"] .success-box {
     color: #1a1a1a;
 }
 
-body[data-theme="light"] .debug-banner {
-    color: #111111;
+body[data-theme="dark"] .success-box {
+    background: #10261a;
+    border-color: #1f6b42;
+    color: #9de2b3;
 }
 
-body[data-theme="light"] .cash-row {
-    background: #ffffff;
-}
-
-body[data-theme="light"] .history-list {
-    background: #ffffff;
-}
-
-body[data-theme="light"] .card {
-    background: #ffffff;
-}
-body[data-theme="light"] .result-box {
-    background: linear-gradient(
-        180deg,
-        rgba(31, 111, 235, 0.06),
-        rgba(31, 111, 235, 0.025)
-    );
-}
-/* =========================================================
-   Theme support for new components
-   Add to: static/styles/theme.css
-   ========================================================= */
-
-/* ---------- Light theme ---------- */
-body[data-theme="light"] .panel,
-body[data-theme="light"] .status-card,
-body[data-theme="light"] .data-card {
-    background: #ffffff;
-    border: 1px solid #d7dde5;
-    box-shadow: 0 6px 18px rgba(20, 20, 20, 0.05);
-}
-
-body[data-theme="light"] .main-form input,
-body[data-theme="light"] .main-form select,
-body[data-theme="light"] .main-form textarea {
-    background: #ffffff;
-    color: #1f2937;
-    border: 1px solid #cfd8e3;
-}
-
-body[data-theme="light"] .main-form input:focus,
-body[data-theme="light"] .main-form select:focus,
-body[data-theme="light"] .main-form textarea:focus {
-    outline: none;
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
-}
-
-body[data-theme="light"] .debug-banner {
-    background: #fff4d6;
-    color: #7a4b00;
-    border: 1px solid #f0cf7a;
-}
-
-body[data-theme="light"] .message-box.success-box {
-    background: #ecfdf3;
-    border: 1px solid #86efac;
-    color: #166534;
+.message-box.error-box {
+    border: 1px solid #fca5a5;
 }
 
 body[data-theme="light"] .message-box.error-box {
     background: #fef2f2;
-    border: 1px solid #fca5a5;
     color: #991b1b;
 }
 
-/* ---------- Dark theme ---------- */
-body[data-theme="dark"] .panel,
-body[data-theme="dark"] .status-card,
-body[data-theme="dark"] .data-card {
-    background: #1b2230;
-    border: 1px solid #2e3748;
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+body[data-theme="dark"] .message-box.error-box {
+    background: #2b1414;
+    color: #f2a5a5;
 }
 
-body[data-theme="dark"] .main-form input,
-body[data-theme="dark"] .main-form select,
-body[data-theme="dark"] .main-form textarea {
-    background: #111827;
-    color: #f3f4f6;
-    border: 1px solid #374151;
-}
-
-body[data-theme="dark"] .main-form input:focus,
-body[data-theme="dark"] .main-form select:focus,
-body[data-theme="dark"] .main-form textarea:focus {
-    outline: none;
-    border-color: #818cf8;
-    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.18);
+/* Debug banner */
+body[data-theme="light"] .debug-banner {
+    background: #fff4d6;
+    color: #7a4b00;
+    border: 1px solid #f0cf7a;
 }
 
 body[data-theme="dark"] .debug-banner {
@@ -131,104 +166,70 @@ body[data-theme="dark"] .debug-banner {
     border: 1px solid #6f5b12;
 }
 
-body[data-theme="dark"] .message-box.success-box {
-    background: #10261a;
-    border: 1px solid #1f6b42;
-    color: #9de2b3;
-}
+/* =========================================================
+   Navigation
+   ========================================================= */
 
-body[data-theme="dark"] .message-box.error-box {
-    background: #2b1414;
-    border: 1px solid #7f1d1d;
-    color: #f2a5a5;
-}
-
-body[data-theme="light"] .admin-stat-box,
-body[data-theme="light"] .admin-data-card {
-    background: #ffffff;
-    border: 1px solid #d7dde5;
-}
-
-body[data-theme="dark"] .admin-stat-box,
-body[data-theme="dark"] .admin-data-card {
-    background: #1b2230;
-    border: 1px solid #2e3748;
-}
-
-/* =========================
-   Navbar Theme
-   ========================= */
-
-body[data-theme="light"] .top-nav {
-    background: #ffffff;
-    border-bottom: 1px solid #d7dde5;
-}
-
-body[data-theme="light"] .nav-link {
-    color: #1f2937;
-}
-
-body[data-theme="light"] .nav-link:hover {
-    background: #f1f5f9;
-}
-
-body[data-theme="light"] .nav-button {
-    background: #e5e7eb;
-    color: #1f2937;
-}
-
-body[data-theme="dark"] .top-nav {
-    background: #111827;
-    border-bottom: 1px solid #2e3748;
-}
-
-body[data-theme="dark"] .nav-link {
-    color: #e5e7eb;
-}
-
-body[data-theme="dark"] .nav-link:hover {
-    background: #1f2937;
-}
-
-body[data-theme="dark"] .nav-button {
-    background: #1f2937;
-    color: #e5e7eb;
+.top-nav {
+    padding: 12px 0;
 }
 
 body[data-theme="light"] .top-nav {
-    border-top: 1px solid #d7dde5;
-    padding-top: 12px;
+    background: #ffffff;
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
 }
 
 body[data-theme="dark"] .top-nav {
-    border-top: 1px solid #2e3748;
-    padding-top: 12px;
+    background: var(--card-bg);
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
 }
 
-body[data-theme="light"] .nav-link.active,
-body[data-theme="light"] .nav-button.active {
+.nav-link {
+    color: var(--text);
+}
+
+.nav-link:hover,
+.nav-button:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body[data-theme="dark"] .nav-link:hover,
+body[data-theme="dark"] .nav-button:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-button {
+    background: var(--calc-btn-bg);
+    color: var(--text);
+}
+
+.nav-link.active,
+.nav-button.active {
     font-weight: 700;
-    border-bottom: 2px solid #1f2937;
+    border-bottom: 2px solid var(--text);
 }
 
-body[data-theme="dark"] .nav-link.active,
-body[data-theme="dark"] .nav-button.active {
-    font-weight: 700;
-    border-bottom: 2px solid #f3f4f6;
+/* =========================================================
+   Admin / Data Cards
+   ========================================================= */
+
+.admin-stat-box,
+.admin-data-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
 }
 
-body[data-theme="light"] .sync-state-pre {
-    background: #f8fafc;
-    border: 1px solid #d7dde5;
+/* Sync state display */
+.sync-state-pre {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     padding: 12px;
     border-radius: 10px;
-    color: #1f2937;
-}
-
-body[data-theme="dark"] .sync-state-pre {
-    background: #111827;
-    border: 1px solid #2e3748;
-    padding: 12px;
-    border-radius: 10px;
-    color: #f3f4f6;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.9rem;
+    line-height: 1.4;
 }

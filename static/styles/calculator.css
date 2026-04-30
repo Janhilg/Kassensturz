@@ -1,18 +1,22 @@
+/* =========================================================
+   Mode switcher
+   ========================================================= */
+
 .mode-switcher {
     display: flex;
     gap: 10px;
     margin-bottom: 18px;
     padding: 4px;
-    background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--card-border);
     border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .mode-button {
     flex: 1;
     padding: 11px 14px;
-    border-radius: 10px;
     border: 1px solid transparent;
+    border-radius: 10px;
     background: transparent;
     color: var(--text);
     font-weight: 700;
@@ -29,6 +33,14 @@
     box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.22);
 }
 
+/* =========================================================
+   Calculator controls
+   ========================================================= */
+
+#calculator_mode {
+    max-width: 100%;
+}
+
 .calc-controls {
     display: grid;
     grid-template-columns: 1fr auto auto;
@@ -36,22 +48,22 @@
     margin-top: 16px;
 }
 
-#calculator_mode {
-    max-width: 100%;
-}
+/* =========================================================
+   History
+   ========================================================= */
 
 .history {
     margin-top: 20px;
 }
 
 .history-list {
-    list-style: none;
-    padding: 0;
     margin: 12px 0 0 0;
+    padding: 0;
+    list-style: none;
     max-height: 260px;
     overflow-y: auto;
-    border-radius: 14px;
     border: 1px solid var(--card-border);
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.015);
 }
 
@@ -70,6 +82,11 @@
     color: var(--muted);
     font-style: italic;
 }
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
 @media (max-width: 640px) {
     .calc-controls {
         grid-template-columns: 1fr 1fr;

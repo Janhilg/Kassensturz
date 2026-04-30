@@ -1,26 +1,49 @@
+/* =========================================================
+   Page wrapper
+   ========================================================= */
+
 .page {
-    max-width: 1160px;
+    max-width: 1080px;
     margin: 0 auto;
 }
 
+/* =========================================================
+   Main two-column layout
+   ========================================================= */
+
 .layout {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1.1fr 0.9fr;
     gap: 24px;
-    align-items: start;
+    justify-content: center;   /* centers grid inside container */
+    max-width: 1080px;          /* controls total width of both columns */
+    margin: 0 auto;            /* centers the layout block */
 }
 
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* =========================================================
+   Cards
+   ========================================================= */
+
 .card {
-    background: linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.025),
-        rgba(255, 255, 255, 0.01)
-    );
     border-radius: var(--radius-lg);
-    padding: 24px;
+    padding: 20px;
     box-shadow: 0 0 0 1px var(--card-border), var(--shadow-soft);
     backdrop-filter: blur(4px);
 }
+
+.layout .card:first-child {
+    max-width: 560px;
+}
+
+/* =========================================================
+   Footer
+   ========================================================= */
 
 .footer {
     margin-top: 28px;
@@ -39,6 +62,10 @@
     gap: 10px;
     flex-wrap: wrap;
 }
+
+/* =========================================================
+   App header
+   ========================================================= */
 
 .app-header {
     margin-bottom: 24px;
@@ -67,6 +94,95 @@
     line-height: 1.4;
 }
 
+/* =========================================================
+   Utility / shared layout helpers
+   ========================================================= */
+
+.debug-banner {
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.admin-status,
+.admin-link-row,
+.nav-links {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.muted {
+    opacity: 0.7;
+    font-size: 0.92rem;
+}
+
+/* =========================================================
+   Top navigation
+   ========================================================= */
+
+.top-nav {
+    margin-top: 12px;
+    margin-bottom: 16px;
+    padding: 10px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.top-nav-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    max-width: 1080px;
+    margin: 0 auto;
+}
+
+.nav-left,
+.nav-right {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.nav-link,
+.nav-button {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+
+/* =========================================================
+   Admin page layout helpers
+   ========================================================= */
+
+.admin-layout-single {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.admin-layout-single .card {
+    width: 100%;
+    max-width: 480px;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
 @media (max-width: 900px) {
     .layout {
         grid-template-columns: 1fr;
@@ -87,6 +203,7 @@
         gap: 18px;
     }
 }
+
 @media (max-width: 640px) {
     .app-title-wrap {
         align-items: flex-start;
@@ -105,174 +222,4 @@
     .app-subtitle {
         font-size: 0.92rem;
     }
-}
-
-/* =========================================================
-   New layout additions for counts / movements / admin
-   Add to: static/styles/layout.css
-   ========================================================= */
-
-.page-shell {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.25rem;
-}
-
-.page-header {
-    margin-bottom: 1.5rem;
-}
-
-.page-header h1 {
-    margin: 0 0 0.25rem;
-}
-
-.page-header p {
-    margin: 0.25rem 0 0.75rem;
-    opacity: 0.85;
-}
-
-.content-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 1.25rem;
-    align-items: start;
-}
-
-.panel {
-    border-radius: 14px;
-    padding: 1.25rem;
-    box-sizing: border-box;
-}
-
-.narrow-panel {
-    max-width: 480px;
-    margin: 2rem auto;
-}
-
-.data-list {
-    display: grid;
-    gap: 0.75rem;
-}
-
-.data-card {
-    border-radius: 12px;
-    padding: 0.9rem 1rem;
-}
-
-.data-card strong {
-    display: block;
-    margin-bottom: 0.25rem;
-}
-
-.debug-banner {
-    margin-bottom: 1rem;
-    padding: 0.6rem 0.9rem;
-    border-radius: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.nav-links,
-.admin-status,
-.admin-link-row {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-top: 0.75rem;
-}
-
-.muted {
-    opacity: 0.7;
-    font-size: 0.92rem;
-}
-
-@media (max-width: 900px) {
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .page-shell {
-        padding: 1rem;
-    }
-}
-/* =========================
-   Top Navigation Bar
-   ========================= */
-
-.top-nav {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    padding: 10px 16px;
-}
-
-.top-nav-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.nav-left,
-.nav-right {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-}
-
-.nav-link {
-    text-decoration: none;
-    font-weight: 600;
-    padding: 6px 10px;
-    border-radius: 8px;
-}
-
-.nav-button {
-    text-decoration: none;
-    padding: 6px 12px;
-    border-radius: 10px;
-}
-
-/* Add spacing below navbar */
-.with-navbar {
-    margin-top: 8px;
-}
-
-.top-nav {
-    margin-top: 12px;
-    margin-bottom: 16px;
-}
-
-.top-nav-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.nav-left,
-.nav-right {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.nav-link,
-.nav-button {
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.right-column {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
 }

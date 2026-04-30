@@ -1,15 +1,111 @@
-form {
+/* =========================================================
+   Form layout
+   ========================================================= */
+
+form,
+.main-form {
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
 
-label {
+.form-row {
+    display: grid;
+    gap: 0.4rem;
+}
+
+label,
+.form-row label {
+    display: block;
     font-weight: 700;
     margin-bottom: 7px;
-    display: block;
     letter-spacing: 0.1px;
 }
+
+/* =========================================================
+   Form controls
+   ========================================================= */
+
+.form-row input,
+.form-row select,
+.form-row textarea,
+.main-form input,
+.main-form select,
+.main-form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 14px;
+    box-sizing: border-box;
+    font: inherit;
+}
+
+.form-row input::placeholder,
+.form-row textarea::placeholder,
+.main-form input::placeholder,
+.main-form textarea::placeholder {
+    color: var(--input-placeholder);
+}
+
+.form-row input:focus,
+.form-row select:focus,
+.form-row textarea:focus,
+.main-form input:focus,
+.main-form select:focus,
+.main-form textarea:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: var(--shadow-focus);
+}
+
+.form-row select,
+.main-form select {
+    cursor: pointer;
+    appearance: none;
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 36px;
+}
+
+.form-row textarea,
+.main-form textarea {
+    resize: vertical;
+    min-height: 96px;
+}
+
+/* =========================================================
+   Form actions
+   ========================================================= */
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.25rem;
+}
+
+.secondary-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.main-form button,
+.action-row button {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* =========================================================
+   Messages / state boxes
+   ========================================================= */
 
 .submitted-values {
     margin-top: 24px;
@@ -17,18 +113,20 @@ label {
     border-radius: 14px;
     background: var(--submitted-bg);
     border: 1px solid var(--submitted-border);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .success-box {
     margin-top: 20px;
     padding: 14px 16px;
     border-radius: 14px;
-    background: #0f2419;
-    border: 1px solid #2ea043;
     color: var(--text);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
+
+/* =========================================================
+   Radio groups
+   ========================================================= */
 
 .radio-group {
     display: flex;
@@ -50,6 +148,10 @@ label {
     margin: 0;
 }
 
+/* =========================================================
+   Utility / contextual
+   ========================================================= */
+
 .current-date {
     margin-bottom: 10px;
     font-weight: 700;
@@ -58,8 +160,6 @@ label {
 
 .debug-banner {
     width: 100%;
-    background: #ffcc00;
-    color: #111111;
     text-align: center;
     font-weight: 700;
     padding: 12px 16px;
@@ -67,58 +167,12 @@ label {
     position: sticky;
     top: 0;
     z-index: 1000;
-    border-bottom: 2px solid #cc9900;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 /* =========================================================
-   New form additions for count + movement pages
-   Add to: static/styles/form.css
+   Denomination / counter-related additions
    ========================================================= */
-
-.main-form {
-    display: grid;
-    gap: 1rem;
-}
-
-.form-row {
-    display: grid;
-    gap: 0.4rem;
-}
-
-.form-row label {
-    font-weight: 600;
-}
-
-.main-form input,
-.main-form select,
-.main-form textarea {
-    width: 100%;
-    padding: 0.75rem 0.9rem;
-    border-radius: 10px;
-    box-sizing: border-box;
-    font: inherit;
-}
-
-.main-form textarea {
-    min-height: 96px;
-    resize: vertical;
-}
-
-.form-actions {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-top: 0.25rem;
-}
-
-.secondary-link {
-    display: inline-flex;
-    align-items: center;
-    text-decoration: none;
-    font-weight: 600;
-}
 
 .denomination-block h3 {
     margin: 0 0 0.75rem;
@@ -134,11 +188,16 @@ label {
     display: grid;
     gap: 0.35rem;
     font-weight: 500;
+    margin-bottom: 0;
 }
 
 .denomination-grid input {
     min-width: 0;
 }
+
+/* =========================================================
+   Responsive
+   ========================================================= */
 
 @media (max-width: 900px) {
     .denomination-grid {
@@ -150,10 +209,4 @@ label {
     .denomination-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-}
-.main-form button,
-.action-row button {
-    padding: 0.75rem 1rem;
-    border-radius: 10px;
-    font-weight: 600;
 }
