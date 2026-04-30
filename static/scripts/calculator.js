@@ -92,7 +92,7 @@ export function initCalculator(options) {
         }
 
         const inputValue = parseFloat(rawValue);
-        if (isNaN(inputValue)) {
+        if (Number.isNaN(inputValue)) {
             return;
         }
 
@@ -123,7 +123,21 @@ export function initCalculator(options) {
         render();
     }
 
-    function applyResultToForm(value) {
+    function scrollIfNeeded(element) {
+        const rect = element.getBoundingClientRect();
+        const isVisible =
+            rect.top >= 0 &&
+            rect.bottom <= window.innerHeight;
+
+        if (!isVisible) {
+            element.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+        }
+    }
+
+    function applyResultToForm(value, highlight = false, scrollToField = false) {
         const targetInput = getFormAmountTarget();
         if (!targetInput) {
             return;
@@ -133,14 +147,23 @@ export function initCalculator(options) {
         targetInput.dispatchEvent(new Event("input", { bubbles: true }));
         targetInput.dispatchEvent(new Event("change", { bubbles: true }));
 
-        targetInput.style.border = "2px solid #28a745";
-        setTimeout(() => {
-            targetInput.style.border = "";
-        }, 600);
+        if (scrollToField) {
+            scrollIfNeeded(targetInput);
+            targetInput.focus();
+        }
+
+        if (highlight) {
+            targetInput.style.border = "2px solid #28a745";
+            setTimeout(() => {
+                targetInput.style.border = "";
+            }, 600);
+        }
     }
 
     function applyResultToCalculator(value) {
-        if (!calcInput) return;
+        if (!calcInput) {
+            return;
+        }
 
         switchMode("calculator");
 
@@ -186,7 +209,7 @@ export function initCalculator(options) {
             const quantity = parseInt(input.value || "0", 10);
             const denominationValue = parseFloat(input.dataset.value || "0");
 
-            if (!isNaN(quantity) && !isNaN(denominationValue)) {
+            if (!Number.isNaN(quantity) && !Number.isNaN(denominationValue)) {
                 total += quantity * denominationValue;
             }
         });
@@ -198,18 +221,37 @@ export function initCalculator(options) {
         return total;
     }
 
+    function syncHiddenDenominationFields() {
+        denominationInputs.forEach((input) => {
+            const hiddenField = document.getElementById(`hidden_${input.id}`);
+            if (!hiddenField) {
+                return;
+            }
+            hiddenField.value = input.value || "";
+        });
+    }
+
     function changeDenominationValue(inputId, delta) {
         const input = document.getElementById(inputId);
-        if (!input) return;
+        if (!input) {
+            return;
+        }
 
         let value = parseInt(input.value || "0", 10);
-        if (isNaN(value)) value = 0;
+        if (Number.isNaN(value)) {
+            value = 0;
+        }
 
         value += delta;
-        if (value < 0) value = 0;
+        if (value < 0) {
+            value = 0;
+        }
 
         input.value = value;
-        calculateCashCounterTotal();
+
+        syncHiddenDenominationFields();
+        const total = calculateCashCounterTotal();
+        applyResultToForm(total, false, false);
     }
 
     function clearCashCounter() {
@@ -217,15 +259,8 @@ export function initCalculator(options) {
             input.value = "";
         });
         syncHiddenDenominationFields();
-        calculateCashCounterTotal();
-    }
-
-    function syncHiddenDenominationFields() {
-        denominationInputs.forEach((input) => {
-            const hiddenField = document.getElementById(`hidden_${input.id}`);
-            if (!hiddenField) return;
-            hiddenField.value = input.value || "";
-        });
+        const total = calculateCashCounterTotal();
+        applyResultToForm(total, false, false);
     }
 
     function bindEvents() {
@@ -249,7 +284,7 @@ export function initCalculator(options) {
 
         if (applyToFormButton) {
             applyToFormButton.addEventListener("click", function () {
-                applyResultToForm(loadTotal());
+                applyResultToForm(loadTotal(), true, true);
             });
         }
 
@@ -277,14 +312,15 @@ export function initCalculator(options) {
         denominationInputs.forEach((input) => {
             input.addEventListener("input", function () {
                 syncHiddenDenominationFields();
-                calculateCashCounterTotal();
+                const total = calculateCashCounterTotal();
+                applyResultToForm(total, false, false);
             });
         });
 
         if (applyCashCounterToFormButton) {
             applyCashCounterToFormButton.addEventListener("click", function () {
                 syncHiddenDenominationFields();
-                applyResultToForm(calculateCashCounterTotal());
+                applyResultToForm(calculateCashCounterTotal(), true, true);
             });
         }
 
@@ -299,19 +335,19 @@ export function initCalculator(options) {
                 clearCashCounter();
             });
         }
+
+        document.querySelectorAll(".plus-btn").forEach((btn) => {
+            btn.addEventListener("click", function () {
+                changeDenominationValue(btn.dataset.target, 1);
+            });
+        });
+
+        document.querySelectorAll(".minus-btn").forEach((btn) => {
+            btn.addEventListener("click", function () {
+                changeDenominationValue(btn.dataset.target, -1);
+            });
+        });
     }
-
-    document.querySelectorAll(".plus-btn").forEach((btn) => {
-        btn.addEventListener("click", function () {
-            changeDenominationValue(btn.dataset.target, 1);
-        });
-    });
-
-    document.querySelectorAll(".minus-btn").forEach((btn) => {
-        btn.addEventListener("click", function () {
-            changeDenominationValue(btn.dataset.target, -1);
-        });
-    });
 
     clearOnReloadIfNeeded();
     bindEvents();
