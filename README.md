@@ -128,17 +128,19 @@ Movement: Bar → Runner (50€)
 
 ### Windows
 
+```
 pyinstaller --onedir --name Kassensturz \
   --icon=assets/cash.ico \
   --add-data "templates:templates" \
   --add-data "static:static" \
   --noconfirm \
   app.py
+```
 
 Output:
-
+```
 dist/Kassensturz/
-
+```
 Run:
 
 Kassensturz.exe
