@@ -11,6 +11,8 @@ It is designed for simple, reliable tracking of:
 - current balances per cash box
 
 ---
+[Changelog](docs/CHANGELOG.md)
+---
 
 ## 🧠 Core Concept
 
