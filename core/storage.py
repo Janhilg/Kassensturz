@@ -249,6 +249,11 @@ def eur_to_cents(value) -> int:
 def row_values(record: dict, columns: list[str]) -> list:
     return [record.get(column) for column in columns]
 
+def require_cash_account_by_name(db_path: Path, name: str) -> dict:
+    account = fetch_cash_account_by_name(db_path, name)
+    if not account:
+        raise ValueError(f"Required cash account not found: {name}")
+    return account
 
 # ============================================================================
 # Denomination helpers

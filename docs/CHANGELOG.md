@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 ## [0.2.1] - 2026-04-30
 
+
+### ✨ Added
+- Automation/Business logic
+When you record a movement:
+
+Runner Float → Supplier / Drinks Purchase
+
+the service will:
+
+save the supplier purchase movement
+update balances
+check the remaining balance of Runner Float
+if there is money left, automatically create:
+Runner Float → Bar Cash Box
+
+for the remaining amount
+
+That resets the runner float back to zero.
+
 ### 🔄 Changed
 
 - Cash counter UX improvements

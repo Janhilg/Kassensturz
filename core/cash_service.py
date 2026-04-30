@@ -263,10 +263,9 @@ def record_cash_movement_and_sync(
     sync_state_file: Path,
     config,
 
-    amount_cents: int,
     from_account_id: str | None = None,
     to_account_id: str | None = None,
-
+    amount_cents: int,
     context_label: str = "",
     actor: str = "",
     reference: str = "",
@@ -274,8 +273,10 @@ def record_cash_movement_and_sync(
     denominations: dict | None = None,
 ):
     logger.info(
-        "Recording cash movement | amount=%s context=%s",
+        "Recording cash movement | amount=%s from=%s to=%s context=%s",
         amount_cents,
+        from_account_id,
+        to_account_id,
         context_label,
     )
 
@@ -320,6 +321,31 @@ def record_cash_movement_and_sync(
         amount_cents,
     )
 
+    auto_return_result = None
+
+    try:
+        runner_account = storage.fetch_cash_account_by_name(db_path, "Runner Float")
+        supplier_account = storage.fetch_cash_account_by_name(
+            db_path,
+            "Supplier / Drinks Purchase",
+        )
+
+        if (
+            runner_account
+            and supplier_account
+            and from_account_id == runner_account["id"]
+            and to_account_id == supplier_account["id"]
+        ):
+            auto_return_result = _maybe_auto_return_runner_change(
+                db_path=db_path,
+                context_label=context_label,
+                actor=actor,
+                reference=reference,
+            )
+    except Exception:
+        logger.exception("Failed during automatic runner change return")
+        raise
+
     sync_result = _run_full_sync_pipeline(
         db_path=db_path,
         excel_path=excel_path,
@@ -329,9 +355,77 @@ def record_cash_movement_and_sync(
         config=config,
     )
 
+
+
     return {
         "movement_id": movement_id,
+        "auto_return": auto_return_result,
         **sync_result,
+    }
+
+def _maybe_auto_return_runner_change(
+    *,
+    db_path: Path,
+    context_label: str,
+    actor: str,
+    reference: str,
+):
+    """
+    Business rule:
+    After a supplier purchase from Runner Float, automatically return any
+    remaining Runner Float balance back to Bar Cash Box.
+    """
+    runner_account = storage.require_cash_account_by_name(db_path, "Runner Float")
+    bar_account = storage.require_cash_account_by_name(db_path, "Bar Cash Box")
+
+    runner_balance_cents = int(runner_account.get("current_balance_cents") or 0)
+
+    if runner_balance_cents <= 0:
+        logger.info(
+            "No runner change to return | runner_balance_cents=%s",
+            runner_balance_cents,
+        )
+        return None
+
+    logger.info(
+        "Auto-returning runner change | amount_cents=%s",
+        runner_balance_cents,
+    )
+
+    auto_movement_id = storage.create_cash_movement(
+        db_path=db_path,
+        from_account_id=runner_account["id"],
+        to_account_id=bar_account["id"],
+        amount_cents=runner_balance_cents,
+        context_label=context_label,
+        actor=actor,
+        reference=reference,
+        note="Auto-return of remaining runner float after supplier purchase",
+        denominations=None,
+    )
+
+    storage.adjust_cash_account_balance_cents(
+        db_path=db_path,
+        account_id=runner_account["id"],
+        delta_cents=-runner_balance_cents,
+    )
+    storage.adjust_cash_account_balance_cents(
+        db_path=db_path,
+        account_id=bar_account["id"],
+        delta_cents=runner_balance_cents,
+    )
+
+    logger.info(
+        "Auto-return movement created | id=%s from=%s to=%s amount_cents=%s",
+        auto_movement_id,
+        runner_account["id"],
+        bar_account["id"],
+        runner_balance_cents,
+    )
+
+    return {
+        "movement_id": auto_movement_id,
+        "amount_cents": runner_balance_cents,
     }
 
 def rebuild_exports_and_sync(
@@ -352,3 +446,4 @@ def rebuild_exports_and_sync(
         sync_state_file=sync_state_file,
         config=config,
     )
+

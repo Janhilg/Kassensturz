@@ -196,14 +196,17 @@ def cash_movement():
                 denominations=denominations,
             )
 
-            flash(
-                (
-                    f"Cash movement recorded. "
-                    f"Imported counts: {result['imported_counts']}, "
-                    f"imported movements: {result['imported_movements']}."
-                ),
-                "movement_success",
+            message = (
+                f"Cash movement recorded. "
+                f"Imported counts: {result['imported_counts']}, "
+                f"imported movements: {result['imported_movements']}."
             )
+
+            if result.get("auto_return"):
+                returned_eur = result["auto_return"]["amount_cents"] / 100
+                message += f" Auto-returned € {returned_eur:.2f} from Runner Float to Bar Cash Box."
+
+            flash(message, "movement_success")
             return redirect(url_for("cash_movement"))
 
         except Exception as exc:
