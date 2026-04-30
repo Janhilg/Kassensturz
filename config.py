@@ -38,3 +38,13 @@ class Config:
     # unused - does require to get a valid cert
     NEXTCLOUD_CA_CERT_PATH = ""
     NEXTCLOUD_VERIFY = "false"
+
+    # =========================
+    # Flask Key
+    # =========================
+    SECRET_KEY = ""
+
+    # =========================
+    # Admin page password
+    # =========================
+    ADMIN_PASSWORD = ""
