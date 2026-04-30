@@ -233,3 +233,12 @@ body[data-theme="dark"] .nav-button:hover {
     font-size: 0.9rem;
     line-height: 1.4;
 }
+body[data-theme="light"] .admin-data-card-negative {
+    border: 2px solid #e57373;
+    background: #fff5f5;
+}
+
+body[data-theme="dark"] .admin-data-card-negative {
+    border: 2px solid #b33939;
+    background: #2b1414;
+}

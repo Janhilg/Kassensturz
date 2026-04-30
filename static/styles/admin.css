@@ -135,6 +135,27 @@
     opacity: 0.72;
     font-size: 0.92rem;
 }
+.balance-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-top: 4px;
+}
+
+.balance-positive {
+    color: #1f7a1f;
+}
+
+.balance-zero {
+    opacity: 0.8;
+}
+
+.balance-negative {
+    color: #c62828;
+}
+
+.admin-data-card-negative {
+    border-width: 2px;
+}
 
 /* =========================================================
    Backup list

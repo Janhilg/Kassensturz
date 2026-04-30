@@ -255,6 +255,30 @@ def require_cash_account_by_name(db_path: Path, name: str) -> dict:
         raise ValueError(f"Required cash account not found: {name}")
     return account
 
+def fetch_cash_accounts_by_type(
+    db_path: Path,
+    account_type: str,
+    active_only: bool = True,
+) -> list[dict]:
+    ensure_db_file(db_path)
+
+    query = """
+        SELECT *
+        FROM cash_accounts
+        WHERE account_type = ?
+    """
+
+    params = [account_type]
+
+    if active_only:
+        query += " AND is_active = 1"
+
+    query += " ORDER BY sort_order ASC, name ASC"
+
+    with get_connection(db_path) as conn:
+        rows = conn.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
 # ============================================================================
 # Denomination helpers
 # ============================================================================

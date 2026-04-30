@@ -12,10 +12,31 @@
         {% if balances %}
             <div class="admin-data-list">
                 {% for row in balances %}
-                    <div class="admin-data-card">
+                    <div class="
+                        admin-data-card
+                        {% if row.balance_cents < 0 %}
+                            admin-data-card-negative
+                        {% endif %}
+                    ">
                         <strong>{{ row.name }}</strong>
                         <div>{{ row.account_type }}</div>
-                        <div>€ {{ "%.2f"|format(row.balance_cents / 100) }}</div>
+                        <div class="
+                            balance-value
+                            {% if row.balance_cents < 0 %}
+                                balance-negative
+                            {% elif row.balance_cents == 0 %}
+                                balance-zero
+                            {% else %}
+                                balance-positive
+                            {% endif %}
+                        ">
+                            € {{ "%.2f"|format(row.balance_cents / 100) }}
+                            {% if row.balance_cents < 0 %}
+                                <div class="admin-muted">
+                                    Reimbursement owed
+                                </div>
+                            {% endif %}
+                        </div>
                         <div class="admin-muted">
                             {% if row.is_active %}Active{% else %}Inactive{% endif %}
                         </div>

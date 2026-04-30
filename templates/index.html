@@ -29,7 +29,7 @@
                 <label for="cash_account_id" id="cash_account_label">Cash account</label>
                 <select id="cash_account_id" name="cash_account_id" required>
                     <option value="">Select account</option>
-                    {% for account in cash_accounts %}
+                    {% for account in cash_box_accounts %}
                         <option value="{{ account.id }}">{{ account.name }} ({{ account.account_type }})</option>
                     {% endfor %}
                 </select>
