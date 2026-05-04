@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.32] - 2026-05-04
+
+### Added
+
+- Added a user-facing how-to-use guide focused on app usage: counts,
+  movements, balances, admin workflows, sync, backups, and troubleshooting.
+
 ## [0.2.31] - 2026-05-04
 
 ### Changed

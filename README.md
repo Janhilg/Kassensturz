@@ -1,6 +1,6 @@
 # Kassensturz
 
-![Version](https://img.shields.io/badge/version-v0.2.31-blue)
+![Version](https://img.shields.io/badge/version-v0.2.32-blue)
 ![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
@@ -85,6 +85,7 @@ for accounts, contexts, counts, movements, and backups.
 More detail:
 
 - [Developer context](docs/DEV_CONTEXT.md)
+- [How to use Kassensturz](docs/HOW_TO_USE.md)
 - [Import paths](docs/import_paths.md)
 - [Data flow](docs/dataflow.md)
 - [Configuration and deployment](docs/configuration.md)
