@@ -1,5 +1,7 @@
 # How to Use Kassensturz
 
+German version: [HOW_TO_USE_DE.md](HOW_TO_USE_DE.md)
+
 This guide is for the person using Kassensturz during an event or venue cash
 workflow. It focuses on the app itself: what to enter, where to look, and what
 each action means.

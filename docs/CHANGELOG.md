@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.33] - 2026-05-04
+
+### Added
+
+- Added a German translation of the user-facing how-to-use guide and linked it
+  from the README and English guide.
+
 ## [0.2.32] - 2026-05-04
 
 ### Added
