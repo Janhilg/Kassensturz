@@ -3,10 +3,11 @@ from pathlib import Path
 import pytest
 
 import app as app_module
-from core import storage
 from core.cash.cash_service import CashService
 from core.cash.cash_sync_context import CashSyncContext
 from core.cash_export_service import CashExportService
+from core.storage_accounts import fetch_cash_account_by_name, seed_default_cash_accounts
+from core.storage_migrations import ensure_db_file
 from core.storage_objects.cash_storage import CashStorage
 from core.sync_state_store import SyncStateStore
 
@@ -46,35 +47,35 @@ def sync_state_file(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def seeded_db(db_path: Path) -> Path:
-    storage.ensure_db_file(db_path)
-    storage.seed_default_cash_accounts(db_path)
+    ensure_db_file(db_path)
+    seed_default_cash_accounts(db_path)
     return db_path
 
 
 @pytest.fixture
 def bar_account_id(seeded_db: Path) -> str:
-    account = storage.fetch_cash_account_by_name(seeded_db, "Bar Cash Box")
+    account = fetch_cash_account_by_name(seeded_db, "Bar Cash Box")
     assert account is not None
     return account["id"]
 
 
 @pytest.fixture
 def entrance_account_id(seeded_db: Path) -> str:
-    account = storage.fetch_cash_account_by_name(seeded_db, "Entrance Cash Box")
+    account = fetch_cash_account_by_name(seeded_db, "Entrance Cash Box")
     assert account is not None
     return account["id"]
 
 
 @pytest.fixture
 def runner_account_id(seeded_db: Path) -> str:
-    account = storage.fetch_cash_account_by_name(seeded_db, "Runner Float")
+    account = fetch_cash_account_by_name(seeded_db, "Runner Float")
     assert account is not None
     return account["id"]
 
 
 @pytest.fixture
 def supplier_account_id(seeded_db: Path) -> str:
-    account = storage.fetch_cash_account_by_name(seeded_db, "Supplier / Drinks Purchase")
+    account = fetch_cash_account_by_name(seeded_db, "Supplier / Drinks Purchase")
     assert account is not None
     return account["id"]
 

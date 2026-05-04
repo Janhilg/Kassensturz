@@ -2,19 +2,20 @@ import sqlite3
 
 import pytest
 
-from core import storage
+from core.storage_accounts import fetch_cash_account_by_id
+from core.storage_migrations import SCHEMA_VERSION, ensure_db_file, get_schema_version
 from core.version import APP_VERSION, DB_SCHEMA_VERSION
 
 
 def test_version_module_exports_app_and_schema_versions():
     assert APP_VERSION
-    assert DB_SCHEMA_VERSION == storage.SCHEMA_VERSION
+    assert DB_SCHEMA_VERSION == SCHEMA_VERSION
 
 
 def test_ensure_db_file_sets_schema_version_for_new_database(db_path):
-    storage.ensure_db_file(db_path)
+    ensure_db_file(db_path)
 
-    assert storage.get_schema_version(db_path) == DB_SCHEMA_VERSION
+    assert get_schema_version(db_path) == DB_SCHEMA_VERSION
 
 
 def test_ensure_db_file_migrates_unversioned_account_table(tmp_path):
@@ -35,10 +36,10 @@ def test_ensure_db_file_migrates_unversioned_account_table(tmp_path):
         )
         conn.commit()
 
-    storage.ensure_db_file(db_path)
+    ensure_db_file(db_path)
 
-    assert storage.get_schema_version(db_path) == DB_SCHEMA_VERSION
-    account = storage.fetch_cash_account_by_id(db_path, "legacy-account")
+    assert get_schema_version(db_path) == DB_SCHEMA_VERSION
+    account = fetch_cash_account_by_id(db_path, "legacy-account")
     assert account["name"] == "Legacy Cash Box"
     assert account["account_type"] == "cash_box"
     assert account["current_balance_cents"] == 0
@@ -54,4 +55,4 @@ def test_ensure_db_file_rejects_newer_schema_version(tmp_path):
         conn.commit()
 
     with pytest.raises(RuntimeError, match="newer than this app supports"):
-        storage.ensure_db_file(db_path)
+        ensure_db_file(db_path)

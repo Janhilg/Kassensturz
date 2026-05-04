@@ -567,6 +567,17 @@ def test_storage_repositories_use_direct_storage_modules():
         assert "import core.storage" not in source
 
 
+def test_storage_domain_tests_use_direct_storage_modules():
+    tests_dir = Path(__file__).resolve().parent
+    storage_test_files = sorted(tests_dir.glob("test_storage_*.py"))
+
+    assert storage_test_files
+    for storage_test_file in storage_test_files:
+        source = storage_test_file.read_text(encoding="utf-8")
+        assert "from core import storage" not in source
+        assert "import core.storage" not in source
+
+
 def test_legacy_append_and_sync_raises_clear_error():
     import core.service
 

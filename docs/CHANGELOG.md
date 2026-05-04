@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.11] - 2026-05-04
+
+### Changed
+
+- Storage-focused tests and shared storage fixtures now import focused storage
+  modules directly instead of using the `core.storage` compatibility facade.
+- Added a regression test to keep storage-domain tests on direct storage
+  imports, while preserving the small `core.storage` compatibility test.
+
 ## [0.2.10] - 2026-05-04
 
 ### Changed

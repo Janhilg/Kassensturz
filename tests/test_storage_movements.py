@@ -1,4 +1,9 @@
-from core import storage
+from core.storage_movements import (
+    create_cash_movement,
+    fetch_all_cash_movements,
+    merge_imported_cash_movements_append_only,
+)
+from core.storage_schema import DENOM_FIELDS
 
 
 def test_create_cash_movement_persists_movement(
@@ -6,7 +11,7 @@ def test_create_cash_movement_persists_movement(
     bar_account_id,
     runner_account_id,
 ):
-    movement_id = storage.create_cash_movement(
+    movement_id = create_cash_movement(
         db_path=seeded_db,
         from_account_id=bar_account_id,
         to_account_id=runner_account_id,
@@ -22,7 +27,7 @@ def test_create_cash_movement_persists_movement(
         },
     )
 
-    movements = storage.fetch_all_cash_movements(seeded_db)
+    movements = fetch_all_cash_movements(seeded_db)
     row = next(row for row in movements if row["id"] == movement_id)
 
     assert row["from_account_id"] == bar_account_id
@@ -42,7 +47,7 @@ def test_merge_imported_cash_movements_append_only(
     bar_account_id,
     runner_account_id,
 ):
-    existing_id = storage.create_cash_movement(
+    existing_id = create_cash_movement(
         db_path=seeded_db,
         from_account_id=bar_account_id,
         to_account_id=runner_account_id,
@@ -63,7 +68,7 @@ def test_merge_imported_cash_movements_append_only(
             "actor": "",
             "reference": "",
             "note": "",
-            **{field: None for field in storage.DENOM_FIELDS},
+            **{field: None for field in DENOM_FIELDS},
         },
         {
             "id": "mov-2",
@@ -77,16 +82,16 @@ def test_merge_imported_cash_movements_append_only(
             "actor": "",
             "reference": "",
             "note": "",
-            **{field: None for field in storage.DENOM_FIELDS},
+            **{field: None for field in DENOM_FIELDS},
             "from_account_name": "Bar Cash Box",
             "to_account_name": "Runner Float",
         },
     ]
 
-    result = storage.merge_imported_cash_movements_append_only(seeded_db, imported)
+    result = merge_imported_cash_movements_append_only(seeded_db, imported)
 
     assert result["imported"] == 1
     assert result["skipped"] == 1
 
-    movements = storage.fetch_all_cash_movements(seeded_db)
+    movements = fetch_all_cash_movements(seeded_db)
     assert len(movements) == 2

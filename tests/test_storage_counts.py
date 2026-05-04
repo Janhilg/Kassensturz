@@ -1,8 +1,14 @@
-from core import storage
+from core.storage_connection import calculate_total_cents_from_denominations
+from core.storage_counts import (
+    create_cash_count,
+    fetch_all_cash_counts,
+    merge_imported_cash_counts_append_only,
+)
+from core.storage_schema import DENOM_FIELDS
 
 
 def test_create_cash_count_persists_count(seeded_db, bar_account_id):
-    count_id = storage.create_cash_count(
+    count_id = create_cash_count(
         db_path=seeded_db,
         cash_account_id=bar_account_id,
         counted_by="Jan",
@@ -17,7 +23,7 @@ def test_create_cash_count_persists_count(seeded_db, bar_account_id):
         },
     )
 
-    counts = storage.fetch_all_cash_counts(seeded_db)
+    counts = fetch_all_cash_counts(seeded_db)
     row = next(row for row in counts if row["id"] == count_id)
 
     assert row["cash_account_id"] == bar_account_id
@@ -32,7 +38,7 @@ def test_create_cash_count_persists_count(seeded_db, bar_account_id):
 
 
 def test_calculate_total_cents_from_denominations():
-    total = storage.calculate_total_cents_from_denominations(
+    total = calculate_total_cents_from_denominations(
         {
             "denom_20": 2,  # 40.00
             "denom_1": 3,  # 3.00
@@ -46,7 +52,7 @@ def test_calculate_total_cents_from_denominations():
 
 
 def test_merge_imported_cash_counts_append_only(seeded_db, bar_account_id):
-    count_id = storage.create_cash_count(
+    count_id = create_cash_count(
         db_path=seeded_db,
         cash_account_id=bar_account_id,
         counted_by="Jan",
@@ -66,7 +72,7 @@ def test_merge_imported_cash_counts_append_only(seeded_db, bar_account_id):
             "counted_by": "Jan",
             "total_cents": 10000,
             "note": "",
-            **{field: None for field in storage.DENOM_FIELDS},
+            **{field: None for field in DENOM_FIELDS},
         },
         {
             "id": "count-2",
@@ -78,15 +84,15 @@ def test_merge_imported_cash_counts_append_only(seeded_db, bar_account_id):
             "counted_by": "Jan",
             "total_cents": 15000,
             "note": "",
-            **{field: None for field in storage.DENOM_FIELDS},
+            **{field: None for field in DENOM_FIELDS},
             "cash_account_name": "Bar Cash Box",
         },
     ]
 
-    result = storage.merge_imported_cash_counts_append_only(seeded_db, imported)
+    result = merge_imported_cash_counts_append_only(seeded_db, imported)
 
     assert result["imported"] == 1
     assert result["skipped"] == 1
 
-    counts = storage.fetch_all_cash_counts(seeded_db)
+    counts = fetch_all_cash_counts(seeded_db)
     assert len(counts) == 2
