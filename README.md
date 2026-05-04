@@ -1,6 +1,6 @@
 # Kassensturz
 
-![Version](https://img.shields.io/badge/version-v0.2.6-blue)
+![Version](https://img.shields.io/badge/version-v0.2.7-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
@@ -83,7 +83,7 @@ More detail:
 
 `config.py` is tracked and should contain structure plus safe defaults only. Real
 secrets must come from environment variables, local ignored files, or the
-temporary PyInstaller bundled config workflow.
+temporary PyInstaller secrets-module workflow.
 
 Configuration priority:
 
@@ -91,17 +91,20 @@ Configuration priority:
 2. `KASSENSTURZ_ENV_FILE`, source/dev runs only
 3. `kassensturz.env`, source/dev runs only
 4. `.env`, source/dev runs only
-5. Bundled PyInstaller config from `kassensturz_secrets.py`, frozen builds only
+5. Ignored secrets module from `kassensturz_secrets.py`, source/debug and frozen builds
 6. Safe defaults from `config.py`
 
 For local development, copy `.env.example` to `kassensturz.env` and fill in the
-real values.
+real values. The debug server can also read an ignored `kassensturz_secrets.py`
+fallback, which is useful while the PyInstaller workaround is still in use.
 
 For Docker, inject the same `KASSENSTURZ_*` values through the container
 environment or the server platform's secret management.
 
-For the temporary PyInstaller build, generate an ignored bundled config module
-before building. This lets the portable app run without a visible config file:
+For the temporary PyInstaller build, generate an ignored secrets module before
+building. The same module is also read by the local debug server, and real
+environment variables still override it. This lets the portable app run without
+a visible config file:
 
 ```powershell
 python tools/create_bundled_config.py kassensturz.env
@@ -183,8 +186,7 @@ Or run the combined local check script:
 ```
 
 The suite covers storage behavior, schema migrations, service workflows, route
-wiring, export/import roundtrips, config loading, and bundled PyInstaller config
-generation.
+wiring, export/import roundtrips, config loading, and secrets-module generation.
 
 ## Portable Build
 

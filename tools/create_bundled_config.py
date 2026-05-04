@@ -84,7 +84,7 @@ def render_module(values: dict[str, str]) -> str:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Create ignored bundled config for PyInstaller builds."
+        description="Create ignored secrets module for source runs and PyInstaller builds."
     )
     parser.add_argument(
         "env_file",
@@ -95,7 +95,7 @@ def main():
     parser.add_argument(
         "--output",
         default="kassensturz_secrets.py",
-        help="Output Python module included by Kassensturz.spec when present.",
+        help="Output Python module read by source runs and included by Kassensturz.spec when present.",
     )
     args = parser.parse_args()
 
@@ -107,7 +107,7 @@ def main():
 
     values = read_env_file(env_file)
     output.write_text(render_module(values), encoding="utf-8")
-    print(f"Wrote {output} with {len(values)} bundled config values.")
+    print(f"Wrote {output} with {len(values)} secrets-module values.")
 
 
 if __name__ == "__main__":

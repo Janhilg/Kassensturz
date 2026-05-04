@@ -267,7 +267,7 @@ Runtime configuration priority:
 2. `KASSENSTURZ_ENV_FILE`, source/dev only
 3. `kassensturz.env`, source/dev only
 4. `.env`, source/dev only
-5. bundled PyInstaller config from `kassensturz_secrets.py`, frozen builds only
+5. ignored secrets module from `kassensturz_secrets.py`, source/debug and frozen builds
 6. safe defaults from `config.py`
 
 Never commit:
@@ -278,17 +278,20 @@ Never commit:
 - real Nextcloud credentials
 - real Flask or admin secrets
 
-For source development, use `kassensturz.env`.
+For source development, use `kassensturz.env` or the ignored
+`kassensturz_secrets.py` fallback. Real environment variables override both.
 
-For the temporary PyInstaller build, generate an ignored bundled config module:
+For the temporary PyInstaller build, generate an ignored secrets module:
 
 ```powershell
 python tools/create_bundled_config.py kassensturz.env
 pyinstaller Kassensturz.spec
 ```
 
-This hides secrets from casual viewing and keeps them out of Git. It is practical
-obscurity for trusted users, not a security boundary against reverse engineering.
+The same module is read by source/debug runs and included by `Kassensturz.spec`
+when present. This hides secrets from casual viewing and keeps them out of Git.
+It is practical obscurity for trusted users, not a security boundary against
+reverse engineering.
 
 For the intended Docker/server deployment, inject secrets through environment
 variables or the server platform's secret management.
@@ -359,7 +362,7 @@ Current coverage focus:
 - Flask route parsing and wrapper calls
 - export/import roundtrip
 - config loading
-- bundled PyInstaller config generation
+- secrets-module generation
 - legacy guard behavior
 
 Tooling files:
@@ -407,7 +410,7 @@ For config changes:
   accounts that do not exist locally.
 - Schema changes need a registered migration and upgrade tests.
 - Do not reintroduce secrets into `config.py`.
-- Do not make the PyInstaller bundled config sound cryptographically secure.
+- Do not make the PyInstaller secrets-module workflow sound cryptographically secure.
 - Do not move route parsing assertions into service tests; keep layers separate.
 - Do not reintroduce path-heavy service wrappers; pass request objects and a
   `CashSyncContext` instead.

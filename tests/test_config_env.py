@@ -66,7 +66,7 @@ def test_load_local_env_files_skips_all_files_for_frozen_app(tmp_path, monkeypat
     assert "KASSENSTURZ_SECRET_KEY" not in os.environ
 
 
-def test_load_bundled_config_reads_generated_module_only_when_frozen(monkeypatch):
+def test_load_bundled_config_reads_generated_module_for_source_run(monkeypatch):
     fake_module = SimpleNamespace(
         BUNDLED_CONFIG={
             "KASSENSTURZ_ADMIN_PASSWORD": "bundled-admin",
@@ -74,7 +74,7 @@ def test_load_bundled_config_reads_generated_module_only_when_frozen(monkeypatch
         }
     )
     monkeypatch.setitem(sys.modules, "kassensturz_secrets", fake_module)
-    monkeypatch.setattr(config_module.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(config_module.sys, "frozen", False, raising=False)
 
     assert config_module.load_bundled_config() == {"KASSENSTURZ_ADMIN_PASSWORD": "bundled-admin"}
 

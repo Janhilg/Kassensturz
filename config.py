@@ -95,9 +95,7 @@ BUNDLED_CONFIG = {}
 
 
 def load_bundled_config() -> dict[str, str]:
-    if not _is_frozen():
-        return {}
-
+    """Load ignored local secrets shared by source runs and PyInstaller builds."""
     try:
         module = importlib.import_module("kassensturz_secrets")
     except Exception:

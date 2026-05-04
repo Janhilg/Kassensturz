@@ -1,4 +1,4 @@
-APP_VERSION = "0.2.6"
+APP_VERSION = "0.2.7"
 DB_SCHEMA_VERSION = 1
 
 __version__ = APP_VERSION

@@ -1,6 +1,9 @@
 from base64 import b64decode
 from binascii import Error as BinasciiError
 
+# Copy or generate this file as ignored kassensturz_secrets.py for local
+# source/debug runs and the temporary PyInstaller build.
+
 
 def _d(*chunks: str) -> str:
     value = "".join(chunks)

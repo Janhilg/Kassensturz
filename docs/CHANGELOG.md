@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.7] - 2026-05-04
+
+### Changed
+
+- Debug/source runs now read the ignored `kassensturz_secrets.py` fallback, so
+  the local server and temporary PyInstaller build can share the same secrets
+  module.
+- Environment variables still take priority over the ignored secrets module for
+  Docker/server deployment.
+
 ## [0.2.6] - 2026-05-04
 
 ### Added
@@ -70,7 +80,7 @@ All notable changes to this project will be documented in this file.
 - Added `requirements-dev.txt` for pytest, Ruff, and PyInstaller tooling.
 - Added `tools/check.ps1` to run tests, linting, and format checks locally.
 - Added Docker draft setup with `Dockerfile`, tracked `.dockerignore`, `docker-compose.yml`, and `docker.env.example`.
-- Extended tests for object-oriented services, bound storage, config loading, and bundled config generation.
+- Extended tests for object-oriented services, bound storage, config loading, and secrets-module generation.
 
 ### Changed
 

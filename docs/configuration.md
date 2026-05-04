@@ -10,7 +10,7 @@ Configuration is resolved in this order:
 2. `KASSENSTURZ_ENV_FILE`, source/dev runs only
 3. `kassensturz.env`, source/dev runs only
 4. `.env`, source/dev runs only
-5. Bundled PyInstaller config from `kassensturz_secrets.py`, frozen builds only
+5. Ignored secrets module from `kassensturz_secrets.py`, source/debug and frozen builds
 6. Safe defaults from `config.py`
 
 Environment variables always win.
@@ -22,7 +22,7 @@ These files are safe to commit:
 - `config.py`: structure and safe defaults only
 - `.env.example`: names of supported settings and placeholder values
 - `docker.env.example`: Docker-oriented placeholder settings
-- `kassensturz_secrets.example.py`: example bundled config module with placeholder values
+- `kassensturz_secrets.example.py`: example ignored secrets module with placeholder values
 - `tools/create_bundled_config.py`: generator for local PyInstaller builds
 
 These files must not be committed:
@@ -59,30 +59,43 @@ Copy-Item .env.example kassensturz.env
 
 Then fill in the real values in `kassensturz.env`.
 
-The app loads `kassensturz.env` automatically when running from source. Real environment variables override values from the file.
+The app loads `kassensturz.env` automatically when running from source. Real
+environment variables override values from the file.
+
+The local debug server also reads an ignored `kassensturz_secrets.py` module as a
+fallback. This lets the source run and the temporary PyInstaller build share one
+local secrets setup while Docker remains environment-driven.
 
 ## Temporary PyInstaller Build
 
-The PyInstaller build should work out of the box without a visible config file next to the executable.
+The PyInstaller build should work out of the box without a visible config file
+next to the executable.
 
-Generate the ignored bundled config module before building:
+Generate the ignored secrets module before building:
 
 ```powershell
 python tools/create_bundled_config.py kassensturz.env
 pyinstaller Kassensturz.spec
 ```
 
-`Kassensturz.spec` includes `kassensturz_secrets.py` only when that ignored local file exists.
+The debug server can read `kassensturz_secrets.py` directly when running from
+source. `Kassensturz.spec` includes the same file only when that ignored local
+file exists.
 
-The generated module stores values base64-encoded. This prevents casual viewing in a plain config file and keeps secrets out of Git. It is not cryptographic protection against reverse engineering.
+The generated module stores values base64-encoded. This prevents casual viewing
+in a plain config file and keeps secrets out of Git. It is not cryptographic
+protection against reverse engineering.
 
-Use this for the current trusted-user portable app workaround. The long-term server deployment should use environment variables or secret management instead.
+Use this for the current trusted-user portable app workaround. The long-term
+server deployment should use environment variables or secret management instead.
 
 ## Docker Deployment
 
-For Docker, do not use bundled PyInstaller config.
+For Docker, do not use the local `kassensturz_secrets.py` workflow.
 
-Inject settings through the container environment, an `env_file`, or the server platform's secret management.
+Inject settings through the container environment, an `env_file`, or the server
+platform's secret management. Real environment variables override any local
+secrets module if one is present.
 
 Local draft setup:
 
@@ -135,7 +148,8 @@ services:
       KASSENSTURZ_ADMIN_PASSWORD: ${KASSENSTURZ_ADMIN_PASSWORD}
 ```
 
-In the Docker/server scenario, the server owns the secrets. Users should not receive them in a desktop bundle.
+In the Docker/server scenario, the server owns the secrets. Users should not
+receive them in a desktop bundle.
 
 ## Practical Security Model
 
