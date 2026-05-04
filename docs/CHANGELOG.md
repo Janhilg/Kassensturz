@@ -1,6 +1,42 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [0.2.2] - 2026-05-04
+
+### Added
+
+- Introduced `KassensturzWebApp`, `AppPaths`, `create_web_app()`, and `create_app()` for explicit app construction.
+- Added request/result objects for cash workflows:
+  - `CashCountRequest`
+  - `CashMovementRequest`
+  - `CashSyncContext`
+  - `SyncResult`
+- Added bound storage repositories through `CashStorage(db_path)`:
+  - accounts
+  - contexts
+  - movements
+  - counts
+  - backups
+- Added environment-based configuration with source/dev env-file loading.
+- Added temporary PyInstaller bundled config support via ignored `kassensturz_secrets.py`.
+- Added `tools/create_bundled_config.py` to generate bundled config from a local env file.
+- Added Ruff configuration in `pyproject.toml`.
+- Extended tests for object-oriented services, bound storage, config loading, and bundled config generation.
+
+### Changed
+
+- Flask routes now build request objects and call app-level service wrappers instead of passing path/config keyword arguments through each route.
+- `CashService` now owns a `CashSyncContext` and returns typed result objects, while compatibility wrappers still return dictionaries for older call sites.
+- `config.py` is tracked again and contains only structure plus safe defaults.
+- Docker/server deployments are documented as environment-driven, while PyInstaller is documented as a trusted-user portable workaround.
+
+### Security
+
+- Removed hard-coded Nextcloud and Flask secrets from tracked config.
+- Added `.env.example` for local setup without committing real values.
+- Added `kassensturz_secrets.py` to `.gitignore`.
+
 ## [0.2.1] - 2026-04-30
 
 
