@@ -171,10 +171,10 @@ Storage is split between function modules and one-class modules:
 New code should import direct modules and classes instead of reaching through
 compatibility facades. For example, prefer
 `from core.storage_objects.cash_storage import CashStorage` and
-`from core.storage_counts import create_cash_count`. Existing
-`from core import storage` call sites can move gradually. When touching tests or
-internal code near a facade import, update only the imports in that local area;
-do not turn a small change into a repo-wide import rewrite.
+`from core.storage_counts import create_cash_count`. Internal implementation and
+tests are guarded against new compatibility-facade imports. `core.storage`
+remains only as a compatibility module for older external imports and the small
+compatibility test that proves those imports still resolve.
 
 Prefer this style in new code:
 
@@ -200,8 +200,9 @@ Bound repositories:
 - `CashCountRepository`
 - `CashBackupRepository`
 
-Do not remove facade exports casually. They are still useful for preserving
-older call sites while the refactor settles.
+Do not add new internal dependencies on facade exports. If a facade export is
+removed, first verify no repo-internal callers still use it and keep a
+compatibility test for any legacy import path that remains intentionally public.
 
 ## Versioning and Migrations
 
@@ -421,7 +422,8 @@ For a storage change:
 
 1. Put new function behavior in the focused `core/storage_*.py` module.
 2. Add or update the relevant bound repository method.
-3. Re-export through `core/storage.py` only when older call sites still need it.
+3. Re-export through `core/storage.py` only when an intentional compatibility
+   path needs to remain public.
 4. Cover both persistence behavior and any merge/import edge cases.
 
 For a schema change:

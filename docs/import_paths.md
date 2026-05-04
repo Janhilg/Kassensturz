@@ -1,7 +1,8 @@
 # Import Paths
 
 New code should import the direct module that owns the implementation.
-Compatibility facades remain in place so older call sites can migrate gradually.
+Compatibility facades remain only for older external imports and explicit
+compatibility tests.
 
 ## Preferred Imports
 
@@ -49,8 +50,8 @@ Avoid importing new code through package-level facades such as `core.cash`,
 
 ## Compatibility Facades
 
-These imports still work, but new code should avoid adding more dependencies on
-them:
+These imports still work, but internal implementation code and tests should not
+depend on them:
 
 ```python
 from core import storage
@@ -59,8 +60,8 @@ from core.storage_objects import CashStorage
 from core.cash import CashCountRequest
 ```
 
-Use facades when preserving old code is the goal. Use direct modules when adding
-or changing implementation code.
+Use facades only when preserving external legacy imports is the goal. Use direct
+modules when adding or changing implementation code.
 
 Implementation files are guarded by `tests/test_import_paths.py` and should not
 import `core.storage` or other compatibility facades. Keep facade coverage in
@@ -68,9 +69,9 @@ small compatibility tests only.
 
 ## Migration Rule
 
-When touching an internal file or test that already uses a facade, prefer moving
-only the imports you are actively working near. Do not turn a small behavior
-change into a broad import rewrite.
+When touching internal code or tests, use direct imports. Compatibility imports
+belong in small tests that prove old paths still resolve, not in normal feature
+or persistence tests.
 
 Good cleanup targets:
 

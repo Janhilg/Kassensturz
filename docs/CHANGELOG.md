@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.22] - 2026-05-04
+
+### Changed
+
+- Refreshed import-path and development docs to state that `core.storage` is
+  compatibility-only, not an active internal migration path.
+
 ## [0.2.21] - 2026-05-04
 
 ### Changed
