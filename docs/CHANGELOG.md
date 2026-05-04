@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.19] - 2026-05-04
+
+### Added
+
+- Added focused `CashServiceStorage` tests for bound storage repositories and
+  unbound storage repositories that need `db_path` injection.
+
 ## [0.2.18] - 2026-05-04
 
 ### Changed
