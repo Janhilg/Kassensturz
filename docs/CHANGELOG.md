@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-05-04
+
+### Added
+
+- Added `core/version.py` as the central source for app and database schema versions.
+- Added SQLite schema versioning through `PRAGMA user_version`.
+- Added a baseline schema migration/repair path for unversioned local databases.
+- Added admin status metadata for app version and database schema version.
+- Added migration tests for fresh databases, unversioned legacy databases, and newer unsupported schema versions.
+
+### Changed
+
+- Removed the old path-heavy cash service compatibility wrappers after moving routes and tests to request/context-based calls.
+- `storage.ensure_db_file()` now runs the migration layer before storage operations continue.
+
 ## [0.2.2] - 2026-05-04
 
 ### Added
@@ -31,7 +46,6 @@ All notable changes to this project will be documented in this file.
 
 - Flask routes now build request objects and call app-level service methods instead of passing path/config keyword arguments through each route.
 - `CashService` now owns a `CashSyncContext` and returns typed result objects.
-- Removed the old path-heavy cash service compatibility wrappers after moving routes and tests to request/context-based calls.
 - `config.py` is tracked again and contains only structure plus safe defaults.
 - Docker/server deployments are documented as environment-driven, while PyInstaller is documented as a trusted-user portable workaround.
 

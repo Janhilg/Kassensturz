@@ -65,6 +65,7 @@ core/
   sync_state.py
   admin_service.py
   service.py
+  version.py
 ```
 
 `core/service.py` is a legacy guard module. It exists to fail loudly if older
@@ -154,6 +155,30 @@ Bound repositories:
 
 Do not remove the module-level functions casually. They are still useful for
 tests and for preserving older call sites while the refactor settles.
+
+## Versioning and Migrations
+
+Application and database schema versions are centralized in `core/version.py`:
+
+- `APP_VERSION`
+- `DB_SCHEMA_VERSION`
+
+SQLite uses `PRAGMA user_version` for database schema state. `storage.ensure_db_file()`
+runs `migrate_database()` before normal storage operations continue.
+
+Current schema version:
+
+- `1`: baseline cash accounts, contexts, movements, counts, denominations, and
+  append-only sync columns
+
+Migration rules:
+
+- New DBs must end up at `DB_SCHEMA_VERSION`.
+- Unversioned older DBs are treated as baseline candidates and repaired
+  idempotently where possible.
+- DBs with a schema version newer than the running app fail loudly.
+- Future schema changes should add a new migration function, register it in
+  `SCHEMA_MIGRATIONS`, increment `DB_SCHEMA_VERSION`, and add upgrade tests.
 
 ## Export and Sync
 
@@ -326,6 +351,14 @@ For a storage change:
 2. Add or update the relevant bound repository method.
 3. Cover both persistence behavior and any merge/import edge cases.
 
+For a schema change:
+
+1. Increment `DB_SCHEMA_VERSION` in `core/version.py`.
+2. Add a migration function in `core/storage.py`.
+3. Register the migration in `SCHEMA_MIGRATIONS`.
+4. Update `CASH_*_COLUMNS` or repository methods if the public data shape changes.
+5. Add tests for fresh DB creation and upgrade from the previous schema.
+
 For config changes:
 
 1. Keep `config.py` safe to commit.
@@ -337,7 +370,7 @@ For config changes:
 
 - Foreign key errors usually mean account IDs changed or remote data references
   accounts that do not exist locally.
-- Schema changes need a migration plan or a deliberate dev DB reset.
+- Schema changes need a registered migration and upgrade tests.
 - Do not reintroduce secrets into `config.py`.
 - Do not make the PyInstaller bundled config sound cryptographically secure.
 - Do not move route parsing assertions into service tests; keep layers separate.

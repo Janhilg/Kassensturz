@@ -17,6 +17,7 @@ from core.cash_service import (
 from core.export_utils import CashExportService
 from core.logging_config import setup_logging
 from core.nextcloud_sync import NextcloudClient
+from core.version import APP_VERSION, DB_SCHEMA_VERSION
 
 mimetypes.add_type("application/javascript", ".js")
 
@@ -474,6 +475,9 @@ class KassensturzWebApp:
             **self._common_template_context(),
             "available_backups": self.storage.list_backups(self.paths.backup_dir),
             "sync_state_data": self.sync_state.load_sync_state(self.paths.sync_state_file),
+            "app_version": APP_VERSION,
+            "db_schema_version": self.storage.get_schema_version(self.paths.db_file),
+            "supported_db_schema_version": DB_SCHEMA_VERSION,
             "row_counts": {
                 "cash_accounts": self.storage.get_row_count(
                     "cash_accounts",

@@ -134,6 +134,10 @@ class AdminRecordingStorage:
             "cash_counts": 4,
         }[table_name]
 
+    def get_schema_version(self, db_path):
+        self.calls.append(("get_schema_version", db_path))
+        return 1
+
     def list_backups(self, backup_dir):
         self.calls.append(("list_backups", backup_dir))
         backup_dir.mkdir(parents=True, exist_ok=True)
@@ -471,6 +475,9 @@ def test_admin_status_snapshot_reports_row_counts(tmp_path, config_stub):
     }
     assert snapshot["backup_count"] == 1
     assert snapshot["nextcloud_configured"] is False
+    assert snapshot["app_version"]
+    assert snapshot["db_schema_version"] == 1
+    assert snapshot["supported_db_schema_version"] == 1
     assert ("nextcloud_configured",) in calls
 
 

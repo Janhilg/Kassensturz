@@ -4,6 +4,7 @@ from core.export_utils import CashExportService
 from core.nextcloud_sync import NextcloudClient
 from core.storage import CashStorage
 from core.sync_state import SyncStateStore
+from core.version import APP_VERSION, DB_SCHEMA_VERSION
 
 
 class AdminMaintenanceService:
@@ -68,6 +69,9 @@ class AdminMaintenanceService:
             "db_size_human": (
                 self.human_size(db_path.stat().st_size) if db_path.exists() else "0 B"
             ),
+            "app_version": APP_VERSION,
+            "db_schema_version": self.storage.get_schema_version(db_path),
+            "supported_db_schema_version": DB_SCHEMA_VERSION,
             "excel_exists": excel_path.exists(),
             "excel_path": excel_path,
             "excel_size_human": (

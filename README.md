@@ -1,6 +1,6 @@
 # Kassensturz
 
-![Version](https://img.shields.io/badge/version-v0.2.2-blue)
+![Version](https://img.shields.io/badge/version-v0.2.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
@@ -138,6 +138,18 @@ Run the app:
 
 By default, development data is stored under `data/debug/`.
 
+## Versioning and Migrations
+
+Application and database schema versions live in `core/version.py`.
+
+SQLite schema migrations use `PRAGMA user_version`. `core/storage.py` currently
+defines schema version `1` as the baseline schema and `ensure_db_file()` migrates
+or repairs a database before normal reads and writes continue.
+
+When a schema change is needed, add a new migration function, increment
+`DB_SCHEMA_VERSION`, and cover both fresh databases and upgraded databases in
+tests.
+
 ## Tests
 
 Run the full test suite:
@@ -159,8 +171,9 @@ Or run the combined local check script:
 .\tools\check.ps1
 ```
 
-The suite covers storage behavior, service workflows, route wiring, export/import
-roundtrips, config loading, and bundled PyInstaller config generation.
+The suite covers storage behavior, schema migrations, service workflows, route
+wiring, export/import roundtrips, config loading, and bundled PyInstaller config
+generation.
 
 ## Portable Build
 
