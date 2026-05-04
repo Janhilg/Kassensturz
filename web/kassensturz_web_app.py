@@ -14,7 +14,7 @@ from core.logging_config import setup_logging
 from core.nextcloud_client import NextcloudClient
 from core.sync_state_store import SyncStateStore
 from core.version import APP_VERSION, DB_SCHEMA_VERSION
-from web.app_paths import AppPaths, default_base_dir
+from web.app_paths import AppPaths, bundled_resource_base_dir, default_base_dir
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +69,8 @@ class KassensturzWebApp:
     def _create_flask_app(self) -> Flask:
         flask_app = Flask(
             __name__,
-            template_folder=str(self.paths.base_dir / "templates"),
-            static_folder=str(self.paths.base_dir / "static"),
+            template_folder=str(bundled_resource_base_dir() / "templates"),
+            static_folder=str(bundled_resource_base_dir() / "static"),
         )
         flask_app.config.from_object(self.config)
         flask_app.secret_key = self.config.SECRET_KEY

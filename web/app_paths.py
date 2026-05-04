@@ -10,6 +10,13 @@ def default_base_dir() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def bundled_resource_base_dir() -> Path:
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS).resolve()
+
+    return Path(__file__).resolve().parent.parent
+
+
 @dataclass
 class AppPaths:
     base_dir: Path
