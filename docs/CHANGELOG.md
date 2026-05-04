@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.25] - 2026-05-04
+
+### Added
+
+- Added offline `nextcloud_sync` unit tests for WebDAV URL construction,
+  verification settings, folder creation, downloads, uploads, and wrapper
+  behavior to raise measured coverage.
+
 ## [0.2.24] - 2026-05-04
 
 ### Added
