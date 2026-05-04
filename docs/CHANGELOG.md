@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.28] - 2026-05-04
+
+### Added
+
+- Added export/import edge-case tests for missing files, sparse modern sheets,
+  legacy blank rows, numeric Excel dates/times, invalid legacy timestamps, and
+  invalid legacy currency values.
+
 ## [0.2.27] - 2026-05-04
 
 ### Added
