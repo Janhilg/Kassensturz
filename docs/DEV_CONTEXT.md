@@ -121,6 +121,7 @@ Main data objects in `core/cash/`:
 - `CashSyncContext`
 - `CashCountRequest`
 - `CashMovementRequest`
+- `CashServiceStorage`
 - `SyncResult`
 - `CashCountResult`
 - `CashMovementResult`
@@ -142,6 +143,9 @@ New application code should call:
 
 The old path-heavy compatibility wrappers were removed. Typed result objects
 expose `to_dict()` for route flash messages and any adapter-style test doubles.
+`CashServiceStorage` is the adapter between `CashService` and storage
+repositories; keep bound/unbound DB-path plumbing there instead of adding
+string-based dispatch back into the service workflows.
 
 ## Storage Layer
 

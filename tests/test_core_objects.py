@@ -578,6 +578,14 @@ def test_storage_domain_tests_use_direct_storage_modules():
         assert "import core.storage" not in source
 
 
+def test_cash_service_uses_explicit_storage_adapter():
+    service_file = Path(__file__).resolve().parents[1] / "core" / "cash" / "cash_service.py"
+    source = service_file.read_text(encoding="utf-8")
+
+    assert "_storage_call" not in source
+    assert "getattr(self.storage" not in source
+
+
 def test_legacy_append_and_sync_raises_clear_error():
     import core.service
 

@@ -6,6 +6,7 @@ from core.cash.cash_count_request import CashCountRequest
 from core.cash.cash_count_result import CashCountResult
 from core.cash.cash_movement_request import CashMovementRequest
 from core.cash.cash_movement_result import CashMovementResult
+from core.cash.cash_service_storage import CashServiceStorage
 from core.cash.cash_sync_context import CashSyncContext
 from core.cash.remote_bootstrap_result import RemoteBootstrapResult
 from core.cash.sync_result import SyncResult
@@ -42,27 +43,15 @@ class CashService:
 
         return resolved
 
-    def _storage_has_bound_db(self) -> bool:
-        return bool(getattr(self.storage, "db_path", None))
-
-    def _storage_call(
-        self,
-        method_name: str,
-        sync_context: CashSyncContext,
-        *args,
-        **kwargs,
-    ):
-        method = getattr(self.storage, method_name)
-        if self._storage_has_bound_db():
-            return method(*args, **kwargs)
-
-        return method(*args, db_path=sync_context.db_path, **kwargs)
+    def _storage_for(self, sync_context: CashSyncContext) -> CashServiceStorage:
+        return CashServiceStorage(self.storage, sync_context)
 
     def _validate_movement(
         self,
         amount_cents: int,
         from_account_id: str | None,
         to_account_id: str | None,
+        storage: CashServiceStorage,
         denominations: dict | None = None,
     ):
         if amount_cents <= 0:
@@ -75,7 +64,7 @@ class CashService:
             raise ValueError("Source and target account cannot be the same")
 
         if denominations:
-            calc = self.storage.calculate_total_cents_from_denominations(denominations)
+            calc = storage.calculate_total_cents_from_denominations(denominations)
             if calc != amount_cents:
                 self.logger.warning(
                     "Movement denomination mismatch | calculated=%s total=%s difference=%s",
@@ -87,13 +76,14 @@ class CashService:
     def _validate_count(
         self,
         total_cents: int,
+        storage: CashServiceStorage,
         denominations: dict | None,
     ):
         if total_cents < 0:
             raise ValueError("Count total cannot be negative")
 
         if denominations:
-            calc = self.storage.calculate_total_cents_from_denominations(denominations)
+            calc = storage.calculate_total_cents_from_denominations(denominations)
             if calc != total_cents:
                 self.logger.warning(
                     "Denomination mismatch | calculated=%s total=%s difference=%s",
@@ -104,14 +94,11 @@ class CashService:
 
     def _run_full_sync_pipeline(self, sync_context: CashSyncContext | None = None):
         sync_context = self._context(sync_context)
+        storage = self._storage_for(sync_context)
         start_time = time.time()
         self.logger.info("Sync pipeline started | db=%s", sync_context.db_path)
 
-        backup_file = self._storage_call(
-            "create_backup",
-            sync_context,
-            backup_dir=sync_context.backup_dir,
-        )
+        backup_file = storage.create_backup(sync_context.backup_dir)
         self.logger.info("Backup created | file=%s", backup_file)
 
         self.export_service.export_all(
@@ -147,27 +134,19 @@ class CashService:
                 remote_count_counts,
                 remote_count_movements,
             )
-            accounts_result = self._storage_call(
-                "merge_imported_cash_accounts_append_only",
-                sync_context,
+            accounts_result = storage.merge_imported_cash_accounts_append_only(
                 imported_accounts=remote_data.get("cash_accounts", []),
             )
 
-            contexts_result = self._storage_call(
-                "merge_imported_cash_contexts_append_only",
-                sync_context,
+            contexts_result = storage.merge_imported_cash_contexts_append_only(
                 imported_contexts=remote_data.get("cash_contexts", []),
             )
 
-            counts_result = self._storage_call(
-                "merge_imported_cash_counts_append_only",
-                sync_context,
+            counts_result = storage.merge_imported_cash_counts_append_only(
                 imported_counts=remote_data.get("cash_counts", []),
             )
 
-            movements_result = self._storage_call(
-                "merge_imported_cash_movements_append_only",
-                sync_context,
+            movements_result = storage.merge_imported_cash_movements_append_only(
                 imported_movements=remote_data.get("cash_movements", []),
             )
 
@@ -233,27 +212,19 @@ class CashService:
         )
 
     def _cash_activity_count(self, sync_context: CashSyncContext) -> int:
-        return self._storage_call(
-            "get_row_count",
-            sync_context,
-            table_name="cash_counts",
-        ) + self._storage_call(
-            "get_row_count",
-            sync_context,
-            table_name="cash_movements",
-        )
+        storage = self._storage_for(sync_context)
+        return storage.get_row_count("cash_counts") + storage.get_row_count("cash_movements")
 
     def _set_balances_from_latest_counts(self, sync_context: CashSyncContext):
+        storage = self._storage_for(sync_context)
         latest_counts_by_account = {}
-        for count in self._storage_call("fetch_all_cash_counts", sync_context):
+        for count in storage.fetch_all_cash_counts():
             account_id = count.get("cash_account_id")
             if account_id:
                 latest_counts_by_account[account_id] = count
 
         for account_id, count in latest_counts_by_account.items():
-            self._storage_call(
-                "set_cash_account_balance_cents",
-                sync_context,
+            storage.set_cash_account_balance_cents(
                 account_id=account_id,
                 balance_cents=int(count["total_cents"]),
             )
@@ -287,6 +258,7 @@ class CashService:
         sync_context: CashSyncContext | None = None,
     ) -> RemoteBootstrapResult:
         sync_context = self._context(sync_context)
+        storage = self._storage_for(sync_context)
         if getattr(sync_context.config, "MODE", "") != "production":
             return RemoteBootstrapResult(
                 imported_counts=0,
@@ -325,24 +297,16 @@ class CashService:
         remote_data = self.export_service.import_all_from_excel(sync_context.excel_path)
         source_format = str(remote_data.get("source_format") or "")
 
-        accounts_result = self._storage_call(
-            "merge_imported_cash_accounts_append_only",
-            sync_context,
+        accounts_result = storage.merge_imported_cash_accounts_append_only(
             imported_accounts=remote_data.get("cash_accounts", []),
         )
-        contexts_result = self._storage_call(
-            "merge_imported_cash_contexts_append_only",
-            sync_context,
+        contexts_result = storage.merge_imported_cash_contexts_append_only(
             imported_contexts=remote_data.get("cash_contexts", []),
         )
-        counts_result = self._storage_call(
-            "merge_imported_cash_counts_append_only",
-            sync_context,
+        counts_result = storage.merge_imported_cash_counts_append_only(
             imported_counts=remote_data.get("cash_counts", []),
         )
-        movements_result = self._storage_call(
-            "merge_imported_cash_movements_append_only",
-            sync_context,
+        movements_result = storage.merge_imported_cash_movements_append_only(
             imported_movements=remote_data.get("cash_movements", []),
         )
 
@@ -383,6 +347,7 @@ class CashService:
         sync_context: CashSyncContext | None = None,
     ) -> CashCountResult:
         sync_context = self._context(sync_context)
+        storage = self._storage_for(sync_context)
         self.logger.info(
             "Recording cash count | account=%s counted_by=%s total_cents=%s type=%s context=%s",
             request.cash_account_id,
@@ -392,16 +357,14 @@ class CashService:
             request.context_label,
         )
 
-        self._validate_count(request.total_cents, request.denominations)
+        self._validate_count(request.total_cents, storage, request.denominations)
 
         if request.denominations:
             denoms = {k: v for k, v in request.denominations.items() if v not in (None, 0, "")}
             if denoms:
                 self.logger.debug("Count denominations | %s", denoms)
 
-        count_id = self._storage_call(
-            "create_cash_count",
-            sync_context,
+        count_id = storage.create_cash_count(
             cash_account_id=request.cash_account_id,
             counted_by=request.counted_by,
             total_cents=request.total_cents,
@@ -411,9 +374,7 @@ class CashService:
             denominations=request.denominations,
         )
 
-        self._storage_call(
-            "set_cash_account_balance_cents",
-            sync_context,
+        storage.set_cash_account_balance_cents(
             account_id=request.cash_account_id,
             balance_cents=request.total_cents,
         )
@@ -436,6 +397,7 @@ class CashService:
         sync_context: CashSyncContext | None = None,
     ) -> CashMovementResult:
         sync_context = self._context(sync_context)
+        storage = self._storage_for(sync_context)
         self.logger.info(
             "Recording cash movement | amount=%s from=%s to=%s context=%s",
             request.amount_cents,
@@ -448,12 +410,11 @@ class CashService:
             request.amount_cents,
             request.from_account_id,
             request.to_account_id,
+            storage,
             request.denominations,
         )
 
-        movement_id = self._storage_call(
-            "create_cash_movement",
-            sync_context,
+        movement_id = storage.create_cash_movement(
             amount_cents=request.amount_cents,
             from_account_id=request.from_account_id,
             to_account_id=request.to_account_id,
@@ -465,17 +426,13 @@ class CashService:
         )
 
         if request.from_account_id:
-            self._storage_call(
-                "adjust_cash_account_balance_cents",
-                sync_context,
+            storage.adjust_cash_account_balance_cents(
                 account_id=request.from_account_id,
                 delta_cents=-request.amount_cents,
             )
 
         if request.to_account_id:
-            self._storage_call(
-                "adjust_cash_account_balance_cents",
-                sync_context,
+            storage.adjust_cash_account_balance_cents(
                 account_id=request.to_account_id,
                 delta_cents=request.amount_cents,
             )
@@ -491,16 +448,8 @@ class CashService:
         auto_return_result = None
 
         try:
-            runner_account = self._storage_call(
-                "fetch_cash_account_by_name",
-                sync_context,
-                name="Runner Float",
-            )
-            supplier_account = self._storage_call(
-                "fetch_cash_account_by_name",
-                sync_context,
-                name="Supplier / Drinks Purchase",
-            )
+            runner_account = storage.fetch_cash_account_by_name("Runner Float")
+            supplier_account = storage.fetch_cash_account_by_name("Supplier / Drinks Purchase")
 
             if (
                 runner_account
@@ -538,17 +487,10 @@ class CashService:
         remaining Runner Float balance back to Bar Cash Box.
         """
         sync_context = self._context(sync_context)
+        storage = self._storage_for(sync_context)
 
-        runner_account = self._storage_call(
-            "require_cash_account_by_name",
-            sync_context,
-            name="Runner Float",
-        )
-        bar_account = self._storage_call(
-            "require_cash_account_by_name",
-            sync_context,
-            name="Bar Cash Box",
-        )
+        runner_account = storage.require_cash_account_by_name("Runner Float")
+        bar_account = storage.require_cash_account_by_name("Bar Cash Box")
 
         runner_balance_cents = int(runner_account.get("current_balance_cents") or 0)
 
@@ -564,9 +506,7 @@ class CashService:
             runner_balance_cents,
         )
 
-        auto_movement_id = self._storage_call(
-            "create_cash_movement",
-            sync_context,
+        auto_movement_id = storage.create_cash_movement(
             from_account_id=runner_account["id"],
             to_account_id=bar_account["id"],
             amount_cents=runner_balance_cents,
@@ -577,15 +517,11 @@ class CashService:
             denominations=None,
         )
 
-        self._storage_call(
-            "adjust_cash_account_balance_cents",
-            sync_context,
+        storage.adjust_cash_account_balance_cents(
             account_id=runner_account["id"],
             delta_cents=-runner_balance_cents,
         )
-        self._storage_call(
-            "adjust_cash_account_balance_cents",
-            sync_context,
+        storage.adjust_cash_account_balance_cents(
             account_id=bar_account["id"],
             delta_cents=runner_balance_cents,
         )

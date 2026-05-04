@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.18] - 2026-05-04
+
+### Changed
+
+- Added a `CashServiceStorage` adapter so `CashService` can use explicit
+  storage operations instead of string-based `_storage_call(...)` dispatch.
+- Kept support for bound `CashStorage(db_path)` and unbound storage test
+  doubles inside the adapter rather than in service workflow code.
+
 ## [0.2.17] - 2026-05-04
 
 ### Changed
