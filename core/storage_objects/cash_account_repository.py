@@ -1,3 +1,20 @@
+from core.storage_accounts import (
+    adjust_cash_account_balance_cents,
+    fetch_all_cash_accounts,
+    fetch_cash_account_balances,
+    fetch_cash_account_by_id,
+    fetch_cash_account_by_name,
+    fetch_cash_account_statement,
+    fetch_cash_accounts_by_type,
+    get_cash_account_balance_cents,
+    insert_cash_account,
+    merge_imported_cash_accounts_append_only,
+    require_cash_account_by_name,
+    seed_default_cash_accounts,
+    set_cash_account_balance_cents,
+    update_cash_account_active_state,
+)
+from core.storage_counts import fetch_latest_cash_count_for_account
 from core.storage_objects.bound_repository import _BoundRepository
 
 
@@ -12,9 +29,7 @@ class CashAccountRepository(_BoundRepository):
         sort_order: int = 0,
         account_id: str | None = None,
     ) -> str:
-        from core import storage
-
-        return storage.insert_cash_account(
+        return insert_cash_account(
             db_path=self.db_path,
             name=name,
             account_type=account_type,
@@ -25,78 +40,50 @@ class CashAccountRepository(_BoundRepository):
         )
 
     def all(self, *, active_only: bool = False) -> list[dict]:
-        from core import storage
-
-        return storage.fetch_all_cash_accounts(self.db_path, active_only=active_only)
+        return fetch_all_cash_accounts(self.db_path, active_only=active_only)
 
     def by_type(self, account_type: str, *, active_only: bool = True) -> list[dict]:
-        from core import storage
-
-        return storage.fetch_cash_accounts_by_type(
+        return fetch_cash_accounts_by_type(
             self.db_path,
             account_type,
             active_only=active_only,
         )
 
     def by_id(self, account_id: str) -> dict | None:
-        from core import storage
-
-        return storage.fetch_cash_account_by_id(self.db_path, account_id)
+        return fetch_cash_account_by_id(self.db_path, account_id)
 
     def by_name(self, name: str) -> dict | None:
-        from core import storage
-
-        return storage.fetch_cash_account_by_name(self.db_path, name)
+        return fetch_cash_account_by_name(self.db_path, name)
 
     def require_by_name(self, name: str) -> dict:
-        from core import storage
-
-        return storage.require_cash_account_by_name(self.db_path, name)
+        return require_cash_account_by_name(self.db_path, name)
 
     def update_active_state(self, account_id: str, is_active: bool):
-        from core import storage
-
-        return storage.update_cash_account_active_state(self.db_path, account_id, is_active)
+        return update_cash_account_active_state(self.db_path, account_id, is_active)
 
     def seed_defaults(self):
-        from core import storage
-
-        return storage.seed_default_cash_accounts(self.db_path)
+        return seed_default_cash_accounts(self.db_path)
 
     def set_balance_cents(self, account_id: str, balance_cents: int):
-        from core import storage
-
-        return storage.set_cash_account_balance_cents(self.db_path, account_id, balance_cents)
+        return set_cash_account_balance_cents(self.db_path, account_id, balance_cents)
 
     def adjust_balance_cents(self, account_id: str, delta_cents: int):
-        from core import storage
-
-        return storage.adjust_cash_account_balance_cents(self.db_path, account_id, delta_cents)
+        return adjust_cash_account_balance_cents(self.db_path, account_id, delta_cents)
 
     def balance_cents(self, account_id: str) -> int:
-        from core import storage
-
-        return storage.get_cash_account_balance_cents(self.db_path, account_id)
+        return get_cash_account_balance_cents(self.db_path, account_id)
 
     def balances(self) -> list[dict]:
-        from core import storage
-
-        return storage.fetch_cash_account_balances(self.db_path)
+        return fetch_cash_account_balances(self.db_path)
 
     def latest_count(self, account_id: str) -> dict | None:
-        from core import storage
-
-        return storage.fetch_latest_cash_count_for_account(self.db_path, account_id)
+        return fetch_latest_cash_count_for_account(self.db_path, account_id)
 
     def statement(self, account_id: str) -> dict:
-        from core import storage
-
-        return storage.fetch_cash_account_statement(self.db_path, account_id)
+        return fetch_cash_account_statement(self.db_path, account_id)
 
     def merge_imported_append_only(self, imported_accounts: list[dict]):
-        from core import storage
-
-        return storage.merge_imported_cash_accounts_append_only(
+        return merge_imported_cash_accounts_append_only(
             db_path=self.db_path,
             imported_accounts=imported_accounts,
         )

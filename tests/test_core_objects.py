@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from core.admin_service import AdminMaintenanceService
@@ -552,6 +554,17 @@ def test_legacy_core_modules_are_import_safe():
     )
     assert core.storage.create_cash_count is core.storage_counts.create_cash_count
     assert core.storage.create_cash_movement is core.storage_movements.create_cash_movement
+
+
+def test_storage_repositories_use_direct_storage_modules():
+    repository_dir = Path(__file__).resolve().parents[1] / "core" / "storage_objects"
+    repository_files = sorted(repository_dir.glob("*_repository.py"))
+
+    assert repository_files
+    for repository_file in repository_files:
+        source = repository_file.read_text(encoding="utf-8")
+        assert "from core import storage" not in source
+        assert "import core.storage" not in source
 
 
 def test_legacy_append_and_sync_raises_clear_error():

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.10] - 2026-05-04
+
+### Changed
+
+- Storage repository classes now call the focused storage implementation modules
+  directly instead of going through the `core.storage` compatibility facade.
+- Added a regression test to keep repository classes off the storage facade.
+
 ## [0.2.9] - 2026-05-04
 
 ### Changed
