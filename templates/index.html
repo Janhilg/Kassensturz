@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+
 {% block title %}Kassensturz{% endblock %}
 
 {% block page_content %}
@@ -28,9 +29,9 @@
             <div class="form-row">
                 <label for="cash_account_id" id="cash_account_label">Cash account</label>
                 <select id="cash_account_id" name="cash_account_id" required>
-                    <option value="">Select account</option>
+                    <option value=""  id="cash_account_placeholder">Select account</option>
                     {% for account in cash_box_accounts %}
-                        <option value="{{ account.id }}">{{ account.name }} ({{ account.account_type }})</option>
+                        <option value="{{ account.id }}" data-i18n="{{ account.i18n_key }}">{{ account.name }}</option>
                     {% endfor %}
                 </select>
             </div>

@@ -19,6 +19,22 @@ def test_seed_default_cash_accounts_is_idempotent(seeded_db):
     assert len(before) == len(after)
 
 
+def test_seed_default_cash_accounts_repairs_translation_key_names(db_path):
+    storage.ensure_db_file(db_path)
+    storage.insert_cash_account(
+        db_path=db_path,
+        account_id="acc_bar_cash_box",
+        name="account_bar_cash_box",
+        account_type=config.Config.ACCOUNT_TYPE_CASH_BOX,
+        sort_order=20,
+    )
+
+    storage.seed_default_cash_accounts(db_path)
+
+    account = storage.fetch_cash_account_by_id(db_path, "acc_bar_cash_box")
+    assert account["name"] == "Bar Cash Box"
+
+
 def test_set_cash_account_balance_cents(seeded_db, bar_account_id):
     storage.set_cash_account_balance_cents(seeded_db, bar_account_id, 12345)
 

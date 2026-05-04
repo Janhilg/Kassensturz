@@ -70,15 +70,27 @@ def _parse_cents_from_form_amount(raw_value: str) -> int:
 
 
 def _common_template_context():
-    return {
-        "cash_accounts": storage.fetch_all_cash_accounts(LOCAL_DB_FILE, active_only=True),
-        "cash_box_accounts": storage.fetch_cash_accounts_by_type(
+    cash_accounts = _with_account_translation_keys(
+        storage.fetch_all_cash_accounts(
+            LOCAL_DB_FILE,
+            active_only=True,
+        )
+    )
+    cash_box_accounts = _with_account_translation_keys(
+        storage.fetch_cash_accounts_by_type(
             LOCAL_DB_FILE,
             Config.ACCOUNT_TYPE_CASH_BOX,
             active_only=True,
-        ),
+        )
+    )
+
+    return {
+        "cash_accounts": cash_accounts,
+        "cash_box_accounts": cash_box_accounts,
+        "grouped_cash_accounts": _group_accounts_for_select(cash_accounts),
         "recent_contexts": storage.fetch_recent_cash_contexts(LOCAL_DB_FILE, limit=20),
         "latest_context_label": storage.get_latest_cash_context_label(LOCAL_DB_FILE),
+        "count_types": Config.COUNT_TYPES,
         "denom_fields": storage.DENOM_FIELDS,
         "mode": Config.MODE,
     }
@@ -88,10 +100,72 @@ def _get_denominations_from_request_form():
     return storage.get_denomination_values_from_form(request.form)
 
 
+def _account_translation_key(account: dict) -> str:
+    name = str(account.get("name") or "")
+    account_id = str(account.get("id") or "")
+
+    if name.startswith("account_"):
+        return name
+
+    if account_id.startswith("acc_"):
+        return f"account_{account_id.removeprefix('acc_')}"
+
+    return name
+
+
+def _with_account_translation_keys(accounts: list[dict]) -> list[dict]:
+    return [
+        {
+            **account,
+            "i18n_key": _account_translation_key(account),
+        }
+        for account in accounts
+    ]
+
+
+def _group_accounts_for_select(accounts: list[dict]) -> list[dict]:
+    groups = {
+        Config.ACCOUNT_TYPE_CASH_BOX: [],
+        Config.ACCOUNT_TYPE_FLOAT: [],
+        Config.ACCOUNT_TYPE_EXTERNAL_SINK: [],
+        Config.ACCOUNT_TYPE_BANK: [],
+    }
+
+    for account in accounts:
+        account_type = account.get("account_type")
+        if account_type in groups:
+            groups[account_type].append(account)
+
+    ordered = [
+        {
+            "type": Config.ACCOUNT_TYPE_CASH_BOX,
+            "accounts": groups[Config.ACCOUNT_TYPE_CASH_BOX],
+        },
+        {
+            "type": Config.ACCOUNT_TYPE_FLOAT,
+            "accounts": groups[Config.ACCOUNT_TYPE_FLOAT],
+        },
+        {
+            "type": Config.ACCOUNT_TYPE_EXTERNAL_SINK,
+            "accounts": groups[Config.ACCOUNT_TYPE_EXTERNAL_SINK],
+        },
+        {
+            "type": Config.ACCOUNT_TYPE_BANK,
+            "accounts": groups[Config.ACCOUNT_TYPE_BANK],
+        },
+    ]
+
+    return [group for group in ordered if group["accounts"]]
 
 # ============================================================================
 # Main count route
 # ============================================================================
+@app.context_processor
+def inject_global_template_vars():
+    return {
+        "mode": Config.MODE,
+        "config": Config,
+    }
 
 @app.route("/", methods=["GET", "POST"])
 def index():

@@ -5,7 +5,9 @@ const translations = {
         html_lang: "en",
         form_title: "Cash Count",
         date_prefix: "Date: ",
+
         event_name: "Event",
+        event_name_label: "Event Name",
         event_name_placeholder: "Enter event name",
 
         counted_by: "Counted by",
@@ -17,6 +19,9 @@ const translations = {
         event_state: "Event status",
         event_state_opening: "Opening",
         event_state_closing: "Closing",
+        event_state_spot_check: "Spot check",
+        event_state_reconciliation: "Reconciliation",
+        count_type_placeholder: "Select type",
 
         comment: "Comment (optional)",
         comment_placeholder: "Enter comment (optional)",
@@ -58,8 +63,9 @@ const translations = {
 
         bills: "Bills",
         coins: "Coins",
-        admin_title: "Admin",
+        rolls_label: "Rolls",
 
+        admin_title: "Admin",
         admin_back_to_app: "Back to app",
         admin_access_active: "Admin access active",
         admin_logout_button: "Logout",
@@ -81,10 +87,15 @@ const translations = {
         admin_no_backups_text: "No backups available.",
         admin_login_title: "Admin Login",
         admin_login_button: "Login",
+        admin_restore_backup_label: "Available backups",
+        admin_restore_backup_button: "Restore selected backup",
+        admin_sync_state_title: "Sync State",
+
         cash_account_label: "Cash account",
+        cash_account_placeholder: "Select account",
+
         movement_title: "Move Cash",
         movement_subtitle: "Transfer cash between accounts or record payments",
-        event_name_label: "Event Name",
         amount_label: "Amount (€)",
         from_account_label: "From account",
         to_account_label: "To account",
@@ -102,11 +113,17 @@ const translations = {
         apply_to_form: "Apply result to form",
         send_to_calculator: "Send total to calculator",
 
-        rolls_label: "Rolls",
+        cash_boxes_group: "Cash Boxes",
+        floats_group: "Floats",
+        external_sinks_group: "External / Sinks",
+        bank_group: "Bank",
 
-        admin_restore_backup_label: "Available backups",
-        admin_restore_backup_button: "Restore selected backup",
-        admin_sync_state_title: "Sync State",
+        account_bar_cash_box: "Bar Cash Box",
+        account_entrance_cash_box: "Entrance Cash Box",
+        account_runner_float: "Runner Float",
+        account_supplier_drinks: "Supplier / Drinks Purchase",
+        account_handout: "Cash Handout",
+        account_bank: "Bank",
     },
 
     de: {
@@ -115,6 +132,7 @@ const translations = {
         date_prefix: "Datum: ",
 
         event_name: "Veranstaltung",
+        event_name_label: "Veranstaltungsname",
         event_name_placeholder: "Veranstaltung eingeben",
 
         counted_by: "Gezählt von",
@@ -126,6 +144,9 @@ const translations = {
         event_state: "Status",
         event_state_opening: "Öffnung",
         event_state_closing: "Schließung",
+        event_state_spot_check: "Zwischenzählung",
+        event_state_reconciliation: "Abgleich",
+        count_type_placeholder: "Typ auswählen",
 
         comment: "Kommentar (optional)",
         comment_placeholder: "Kommentar eingeben (optional)",
@@ -167,6 +188,7 @@ const translations = {
 
         bills: "Scheine",
         coins: "Münzen",
+        rolls_label: "Rollen",
 
         admin_title: "Admin",
         admin_back_to_app: "Zur App",
@@ -190,11 +212,15 @@ const translations = {
         admin_no_backups_text: "Keine Backups verfügbar.",
         admin_login_title: "Admin-Anmeldung",
         admin_login_button: "Anmelden",
-        event_name_label: "Veranstaltungsname",
+        admin_restore_backup_label: "Verfügbare Backups",
+        admin_restore_backup_button: "Ausgewähltes Backup wiederherstellen",
+        admin_sync_state_title: "Sync-Status",
+
         cash_account_label: "Kasse",
+        cash_account_placeholder: "Konto auswählen",
+
         movement_title: "Geld bewegen",
         movement_subtitle: "Geld zwischen Konten verschieben oder Ausgaben erfassen",
-
         amount_label: "Betrag (€)",
         from_account_label: "Von Kasse",
         to_account_label: "Zu Kasse",
@@ -209,15 +235,20 @@ const translations = {
 
         active_label: "Aktiv",
         inactive_label: "Inaktiv",
-
         apply_to_form: "Ergebnis ins Formular übernehmen",
         send_to_calculator: "Zum Rechner senden",
 
-        rolls_label: "Rollen",
+        cash_boxes_group: "Kassen",
+        floats_group: "Wechselgeld",
+        external_sinks_group: "Extern / Senken",
+        bank_group: "Bank",
 
-        admin_restore_backup_label: "Verfügbare Backups",
-        admin_restore_backup_button: "Ausgewähltes Backup wiederherstellen",
-        admin_sync_state_title: "Sync-Status",
+        account_bar_cash_box: "Theke Kasse",
+        account_entrance_cash_box: "Eingangskasse",
+        account_runner_float: "Läufergeld",
+        account_supplier_drinks: "Lieferant / Getränke",
+        account_handout: "Geldausgabe",
+        account_bank: "Bank",
     }
 };
 
@@ -237,6 +268,29 @@ function setText(id, value) {
     }
 }
 
+function translateDataI18n(translate) {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.dataset.i18n;
+        el.textContent = translate(key);
+    });
+}
+
+function translateAccountTypeGroups(lang) {
+    const mapping = {
+        cash_box: translations[lang].cash_boxes_group,
+        float: translations[lang].floats_group,
+        external_sink: translations[lang].external_sinks_group,
+        bank: translations[lang].bank_group,
+    };
+
+    document.querySelectorAll("optgroup[data-account-type]").forEach((group) => {
+        const accountType = group.dataset.accountType;
+        if (mapping[accountType]) {
+            group.label = mapping[accountType];
+        }
+    });
+}
+
 export function formatDate(date) {
     const lang = getCurrentLanguage();
     return date.toLocaleDateString(lang === "de" ? "de-DE" : "en-US", {
@@ -249,7 +303,6 @@ export function formatDate(date) {
 export function setCurrentDate() {
     const el = document.getElementById("current_date");
     if (!el) return;
-
     el.textContent = t("date_prefix") + formatDate(new Date());
 }
 
@@ -264,15 +317,19 @@ export function updateLanguageButtons() {
 
 export function applyTranslations() {
     const lang = getCurrentLanguage();
+
     document.documentElement.lang = translations[lang].html_lang;
 
     setText("form_title", t("form_title"));
-    setText("label_event_name", t("event_name"));
+    setText("label_event_name", t("event_name_label"));
     setText("label_counted_by", t("counted_by"));
     setText("label_cash_sum", t("cash_sum"));
     setText("label_event_state", t("event_state"));
     setText("event_state_opening_label", t("event_state_opening"));
     setText("event_state_closing_label", t("event_state_closing"));
+    setText("event_state_spot_check_label", t("event_state_spot_check"));
+    setText("event_state_reconciliation_label", t("event_state_reconciliation"));
+    setText("count_type_placeholder", t("count_type_placeholder"));
     setText("label_comment", t("comment"));
     setText("confirm_button", t("confirm"));
 
@@ -302,12 +359,11 @@ export function applyTranslations() {
     setText("cash_counter_title", t("cash_counter_title"));
     setText("cash_counter_total_label", t("cash_counter_total"));
     setText("clear_cash_counter_button", t("clear_cash_counter"));
-
     setText("apply_cash_counter_to_form_button", t("apply_cash_counter_to_form"));
     setText("apply_cash_counter_to_calculator_button", t("apply_cash_counter_to_calculator"));
-
     setText("bills_label", t("bills"));
     setText("coins_label", t("coins"));
+    setText("rolls_label", t("rolls_label"));
 
     setText("admin_title", t("admin_title"));
     setText("admin_back_to_app", t("admin_back_to_app"));
@@ -331,8 +387,14 @@ export function applyTranslations() {
     setText("admin_no_backups_text", t("admin_no_backups_text"));
     setText("admin_login_title", t("admin_login_title"));
     setText("admin_login_button", t("admin_login_button"));
+    setText("admin_restore_backup_label", t("admin_restore_backup_label"));
+    setText("admin_restore_backup_button", t("admin_restore_backup_button"));
+    setText("admin_sync_state_title", t("admin_sync_state_title"));
 
-    setText("label_event_name", t("event_name_label"));
+    setText("cash_account_label", t("cash_account_label"));
+    setText("cash_account_placeholder", t("cash_account_placeholder"));
+
+    setText("movement_title", t("movement_title"));
     setText("amount_label", t("amount_label"));
     setText("from_account_label", t("from_account_label"));
     setText("to_account_label", t("to_account_label"));
@@ -341,34 +403,26 @@ export function applyTranslations() {
     setText("context_label", t("context_label"));
     setText("note_label", t("note_label"));
 
-    setText("movement_title", t("movement_title"));
     setText("balances_title", t("balances_title"));
     setText("recent_counts_title", t("recent_counts_title"));
     setText("recent_movements_title", t("recent_movements_title"));
 
-    setText("rolls_label", t("rolls_label"));
-
-    setText("admin_restore_backup_label", t("admin_restore_backup_label"));
-    setText("admin_restore_backup_button", t("admin_restore_backup_button"));
-    setText("admin_sync_state_title", t("admin_sync_state_title"));
-
     const adminPasswordInput = document.getElementById("admin_password_shared");
     const loginPasswordInput = document.getElementById("password");
-
-    if (adminPasswordInput) adminPasswordInput.placeholder = t("admin_password_label");
-    if (loginPasswordInput) loginPasswordInput.placeholder = t("admin_password_label");
-
-
-
     const textInput = document.getElementById("text_input");
     const countedByInput = document.getElementById("counted_by_input");
     const numberInput = document.getElementById("number_input");
     const commentInput = document.getElementById("comment_input");
 
+    if (adminPasswordInput) adminPasswordInput.placeholder = t("admin_password_label");
+    if (loginPasswordInput) loginPasswordInput.placeholder = t("admin_password_label");
     if (textInput) textInput.placeholder = t("event_name_placeholder");
     if (countedByInput) countedByInput.placeholder = t("counted_by_placeholder");
     if (numberInput) numberInput.placeholder = t("cash_sum_placeholder");
     if (commentInput) commentInput.placeholder = t("comment_placeholder");
+
+    translateAccountTypeGroups(lang);
+    translateDataI18n(t);
 }
 
 export function setCurrentLanguage(lang, callback) {

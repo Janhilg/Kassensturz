@@ -408,17 +408,60 @@ def update_cash_account_active_state(
         conn.commit()
 
 
+def _default_account_translation_key(account_id: str) -> str:
+    if account_id.startswith("acc_"):
+        return f"account_{account_id.removeprefix('acc_')}"
+
+    return account_id
+
+
+def _repair_default_account_name_if_needed(
+    db_path: Path,
+    account_id: str,
+    expected_name: str,
+    current_name: str,
+) -> bool:
+    if current_name != _default_account_translation_key(account_id):
+        return False
+
+    if current_name == expected_name:
+        return False
+
+    with get_connection(db_path) as conn:
+        conn.execute(
+            "UPDATE cash_accounts SET name = ? WHERE id = ?",
+            (expected_name, account_id),
+        )
+        conn.commit()
+
+    logger.info(
+        "Repaired default cash account name | id=%s old_name=%s new_name=%s",
+        account_id,
+        current_name,
+        expected_name,
+    )
+    return True
+
+
 def seed_default_cash_accounts(db_path: Path):
     ensure_db_file(db_path)
 
-    existing_ids = {
-        row["id"]
+    existing_accounts = {
+        row["id"]: row
         for row in fetch_all_cash_accounts(db_path, active_only=False)
     }
 
     created = 0
+    repaired = 0
     for account_id, name, account_type, sort_order in Config.DEFAULT_CASH_ACCOUNTS:
-        if account_id in existing_ids:
+        if account_id in existing_accounts:
+            if _repair_default_account_name_if_needed(
+                db_path=db_path,
+                account_id=account_id,
+                expected_name=name,
+                current_name=existing_accounts[account_id]["name"],
+            ):
+                repaired += 1
             continue
 
         insert_cash_account(
@@ -430,7 +473,7 @@ def seed_default_cash_accounts(db_path: Path):
         )
         created += 1
 
-    logger.info("Seeded default cash accounts | created=%s", created)
+    logger.info("Seeded default cash accounts | created=%s repaired=%s", created, repaired)
 
 
 # ============================================================================

@@ -26,8 +26,15 @@
                 <label for="from_account_id" id="from_account_label">From account</label>
                 <select id="from_account_id" name="from_account_id">
                     <option value="">—</option>
-                    {% for account in cash_accounts %}
-                        <option value="{{ account.id }}">{{ account.name }} ({{ account.account_type }})</option>
+                    {% for group in grouped_cash_accounts %}
+                        <optgroup
+                            data-account-type="{{ group.type }}"
+                            label="{% if group.type == config.ACCOUNT_TYPE_CASH_BOX %}Cash Boxes{% elif group.type == config.ACCOUNT_TYPE_FLOAT %}Floats{% elif group.type == config.ACCOUNT_TYPE_EXTERNAL_SINK %}External / Sinks{% elif group.type == config.ACCOUNT_TYPE_BANK %}Bank{% else %}Other{% endif %}"
+                        >
+                            {% for account in group.accounts %}
+                                <option value="{{ account.id }}" data-i18n="{{ account.i18n_key }}">{{ account.name }}</option>
+                            {% endfor %}
+                        </optgroup>
                     {% endfor %}
                 </select>
             </div>
@@ -36,8 +43,15 @@
                 <label for="to_account_id" id="to_account_label">To account</label>
                 <select id="to_account_id" name="to_account_id">
                     <option value="">—</option>
-                    {% for account in cash_accounts %}
-                        <option value="{{ account.id }}">{{ account.name }} ({{ account.account_type }})</option>
+                    {% for group in grouped_cash_accounts %}
+                        <optgroup
+                            data-account-type="{{ group.type }}"
+                            label="{% if group.type == config.ACCOUNT_TYPE_CASH_BOX %}Cash Boxes{% elif group.type == config.ACCOUNT_TYPE_FLOAT %}Floats{% elif group.type == config.ACCOUNT_TYPE_EXTERNAL_SINK %}External / Sinks{% elif group.type == config.ACCOUNT_TYPE_BANK %}Bank{% else %}Other{% endif %}"
+                        >
+                            {% for account in group.accounts %}
+                                <option value="{{ account.id }}" data-i18n="{{ account.i18n_key }}">{{ account.name }}</option>
+                            {% endfor %}
+                        </optgroup>
                     {% endfor %}
                 </select>
             </div>

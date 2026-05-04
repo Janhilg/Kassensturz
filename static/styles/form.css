@@ -77,6 +77,11 @@ label,
     min-height: 96px;
 }
 
+select optgroup {
+    font-style: normal;
+    font-weight: 600;
+}
+
 /* =========================================================
    Form actions
    ========================================================= */
@@ -194,6 +199,8 @@ label,
 .denomination-grid input {
     min-width: 0;
 }
+
+
 
 /* =========================================================
    Responsive
