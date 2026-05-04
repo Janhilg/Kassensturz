@@ -1,5 +1,6 @@
 from datetime import date, time
 
+import pytest
 from openpyxl import Workbook
 
 from core.cash.cash_sync_context import CashSyncContext
@@ -85,6 +86,26 @@ class CopyingNextcloudClient:
 class MissingNextcloudClient:
     def download_remote_excel_if_exists(self, *, local_excel_path, config):
         return False
+
+
+class FailingNextcloudClient:
+    def download_remote_excel_if_exists(self, **kwargs):
+        raise AssertionError("Nextcloud should not be called")
+
+    def upload_files(self, **kwargs):
+        raise AssertionError("Nextcloud should not be called")
+
+
+class ExistingActivityStorage:
+    def __init__(self, calls):
+        self.calls = calls
+
+    def get_row_count(self, db_path, table_name):
+        self.calls.append(("get_row_count", table_name))
+        return {
+            "cash_counts": 1,
+            "cash_movements": 0,
+        }[table_name]
 
 
 class ProductionConfig:
@@ -255,3 +276,106 @@ def test_production_bootstrap_records_missing_remote_status(
     assert state["bootstrap_last_check"]["status"] == "skipped"
     assert state["bootstrap_last_check"]["reason"] == "remote_missing"
     assert "bootstrap_last_import" not in state
+
+
+def test_bootstrap_skips_without_state_update_outside_production(
+    seeded_db,
+    excel_path,
+    text_path,
+    backup_dir,
+    sync_state_file,
+    config_stub,
+):
+    calls = []
+    sync_context = CashSyncContext(
+        db_path=seeded_db,
+        excel_path=excel_path,
+        text_path=text_path,
+        backup_dir=backup_dir,
+        sync_state_file=sync_state_file,
+        config=config_stub,
+    )
+    service = CashSyncService(
+        storage_repo=ExistingActivityStorage(calls),
+        nextcloud_client=FailingNextcloudClient(),
+        sync_state_store=RecordingSyncStateStore(calls),
+        sync_context=sync_context,
+    )
+
+    result = service.bootstrap_remote_import_if_empty()
+
+    assert result.skipped is True
+    assert result.reason == "not_production"
+    assert calls == []
+    assert load_sync_state(sync_state_file) == {}
+
+
+def test_bootstrap_records_database_not_empty_skip_before_remote_download(
+    seeded_db,
+    excel_path,
+    text_path,
+    backup_dir,
+    sync_state_file,
+):
+    calls = []
+    sync_context = CashSyncContext(
+        db_path=seeded_db,
+        excel_path=excel_path,
+        text_path=text_path,
+        backup_dir=backup_dir,
+        sync_state_file=sync_state_file,
+        config=ProductionConfig,
+    )
+    service = CashSyncService(
+        storage_repo=ExistingActivityStorage(calls),
+        nextcloud_client=FailingNextcloudClient(),
+        sync_state_store=RecordingSyncStateStore(calls),
+        sync_context=sync_context,
+    )
+
+    result = service.bootstrap_remote_import_if_empty()
+
+    assert result.skipped is True
+    assert result.reason == "database_not_empty"
+    assert [call[0] for call in calls] == [
+        "get_row_count",
+        "get_row_count",
+        "update_sync_state",
+    ]
+    assert calls[0] == ("get_row_count", "cash_counts")
+    assert calls[1] == ("get_row_count", "cash_movements")
+    assert calls[2][2]["bootstrap_last_check"]["status"] == "skipped"
+    assert calls[2][2]["bootstrap_last_check"]["reason"] == "database_not_empty"
+
+
+def test_cash_sync_service_requires_context_for_rebuild_and_bootstrap():
+    service = CashSyncService()
+
+    with pytest.raises(ValueError, match="CashSyncContext is required"):
+        service.rebuild_exports()
+
+    with pytest.raises(ValueError, match="CashSyncContext is required"):
+        service.bootstrap_remote_import_if_empty()
+
+
+def test_cash_sync_service_can_configure_context_after_construction(
+    seeded_db,
+    excel_path,
+    text_path,
+    backup_dir,
+    sync_state_file,
+    config_stub,
+):
+    sync_context = CashSyncContext(
+        db_path=seeded_db,
+        excel_path=excel_path,
+        text_path=text_path,
+        backup_dir=backup_dir,
+        sync_state_file=sync_state_file,
+        config=config_stub,
+    )
+    service = CashSyncService()
+
+    service.configure_sync_context(sync_context)
+
+    assert service.sync_context is sync_context

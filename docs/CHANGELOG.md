@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.27] - 2026-05-04
+
+### Added
+
+- Added `CashSyncService` skip and missing-context tests for debug-mode
+  bootstrap, non-empty production databases, and required sync context errors.
+
 ## [0.2.26] - 2026-05-04
 
 ### Added
