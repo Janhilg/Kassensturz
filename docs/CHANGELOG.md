@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.30] - 2026-05-04
+
+### Added
+
+- Added storage merge idempotency tests for accounts, contexts, counts, and
+  movements, including remote-to-local account remapping behavior.
+
 ## [0.2.29] - 2026-05-04
 
 ### Added
