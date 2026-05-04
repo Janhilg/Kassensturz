@@ -163,7 +163,9 @@ New code should import direct modules and classes instead of reaching through
 compatibility facades. For example, prefer
 `from core.storage_objects.cash_storage import CashStorage` and
 `from core.storage_counts import create_cash_count`. Existing
-`from core import storage` call sites can move gradually.
+`from core import storage` call sites can move gradually. When touching tests or
+internal code near a facade import, update only the imports in that local area;
+do not turn a small change into a repo-wide import rewrite.
 
 Prefer this style in new code:
 

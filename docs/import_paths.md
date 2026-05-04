@@ -1,9 +1,11 @@
 # Import Paths
 
-New code should import the module that owns the implementation. Compatibility
-facades remain in place so older call sites can migrate gradually.
+New code should import the direct module that owns the implementation.
+Compatibility facades remain in place so older call sites can migrate gradually.
 
 ## Preferred Imports
+
+Prefer direct class modules:
 
 ```python
 from web.app_paths import AppPaths
@@ -26,6 +28,10 @@ from core.storage_counts import create_cash_count
 from core.storage_movements import create_cash_movement
 from core.storage_migrations import ensure_db_file
 ```
+
+Avoid importing new code through package-level facades such as `core.cash`,
+`core.storage_objects`, or legacy compatibility modules such as
+`core.cash_service`.
 
 ## Storage Function Modules
 
@@ -54,3 +60,21 @@ from core.cash import CashCountRequest
 
 Use facades when preserving old code is the goal. Use direct modules when adding
 or changing implementation code.
+
+## Migration Rule
+
+When touching an internal file or test that already uses a facade, prefer moving
+only the imports you are actively working near. Do not turn a small behavior
+change into a broad import rewrite.
+
+Good cleanup targets:
+
+- tests that exercise a specific storage domain can import that domain directly,
+  such as `from core.storage_counts import create_cash_count`
+- service or web code should import request/result/service classes from their
+  one-class modules
+- repository classes should move away from `from core import storage` as their
+  implementation modules settle
+
+Keep compatibility-path tests intentionally small. They should prove old imports
+still resolve, not encourage new code to use them.
