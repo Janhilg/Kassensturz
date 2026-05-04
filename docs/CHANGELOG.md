@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.31] - 2026-05-04
+
+### Changed
+
+- Refreshed the README with the current sync-service responsibilities,
+  production bootstrap support, and coverage-enabled test checkpoint.
+
 ## [0.2.30] - 2026-05-04
 
 ### Added

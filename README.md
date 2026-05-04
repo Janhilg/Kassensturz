@@ -1,6 +1,7 @@
 # Kassensturz
 
-![Version](https://img.shields.io/badge/version-v0.2.30-blue)
+![Version](https://img.shields.io/badge/version-v0.2.31-blue)
+![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
@@ -38,6 +39,8 @@ Result:   Bar Cash Box = 150.00 EUR
 - Group records by free-text context, such as an event name.
 - Export the full dataset to Excel and plain text.
 - Optionally sync through Nextcloud WebDAV with append-only remote imports.
+- Bootstrap an empty production database from the configured remote workbook,
+  including the legacy cash-count spreadsheet format.
 - Restore local SQLite backups through the admin view.
 - Use English or German UI text with dark and light themes.
 
@@ -55,7 +58,7 @@ web/
   kassensturz_web_app.py    KassensturzWebApp
 
 core/
-  cash/                cash workflow request/result/service classes
+  cash/                cash request/result, business, and sync service classes
   storage_objects/     bound storage and repository classes
   storage_accounts.py
   storage_contexts.py
@@ -74,9 +77,10 @@ core/
 ```
 
 Routes create request objects such as `CashCountRequest` and
-`CashMovementRequest`. `CashService` applies business rules and runs the sync
-pipeline. `CashStorage(db_path)` exposes bound repositories for accounts,
-contexts, counts, movements, and backups.
+`CashMovementRequest`. `CashService` applies cash count and movement business
+rules. `CashSyncService` owns backup/export/import/upload orchestration and
+production remote bootstrap. `CashStorage(db_path)` exposes bound repositories
+for accounts, contexts, counts, movements, and backups.
 
 More detail:
 
@@ -174,7 +178,7 @@ tests.
 
 ## Tests
 
-Run the full test suite:
+Run the full test suite directly:
 
 ```powershell
 .\venv\Scripts\python.exe -m pytest tests
@@ -193,8 +197,22 @@ Or run the combined local check script:
 .\tools\check.ps1
 ```
 
-The suite covers storage behavior, schema migrations, service workflows, route
-wiring, export/import roundtrips, config loading, and secrets-module generation.
+`tools/check.ps1` runs tests through coverage, prints a missing-line coverage
+report, then runs Ruff linting and formatting checks.
+
+Current checkpoint:
+
+- `116` tests passing
+- `87%` total coverage
+- `CashSyncService`: `100%`
+- `AdminMaintenanceService`: `100%`
+- `export_utils`: `91%`
+- `nextcloud_sync`: `94%`
+- `web/kassensturz_web_app.py`: `89%`
+
+The suite covers storage merge/idempotency behavior, schema migrations, service
+workflows, admin and cash routes, export/import edge cases, Nextcloud WebDAV
+wrappers, config loading, and secrets-module generation.
 
 ## Portable Build
 
