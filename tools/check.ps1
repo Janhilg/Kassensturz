@@ -9,7 +9,13 @@ if (-not (Test-Path $python)) {
 
 Push-Location $repoRoot
 try {
-    & $python -m pytest tests
+    & $python -m coverage erase
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    & $python -m coverage run --source=app,core,web -m pytest tests
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    & $python -m coverage report --show-missing
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     & $python -m ruff check .

@@ -1,6 +1,6 @@
 # Kassensturz
 
-![Version](https://img.shields.io/badge/version-v0.2.23-blue)
+![Version](https://img.shields.io/badge/version-v0.2.24-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 

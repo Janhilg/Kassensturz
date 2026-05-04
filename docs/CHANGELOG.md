@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.24] - 2026-05-04
+
+### Added
+
+- Run tests through `coverage` in `tools/check.ps1` and ignore generated
+  coverage artifacts.
+
 ## [0.2.23] - 2026-05-04
 
 ### Added
