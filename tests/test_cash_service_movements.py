@@ -1,7 +1,11 @@
 import pytest
 
-from core import storage
 from core.cash.cash_movement_request import CashMovementRequest
+from core.storage_accounts import (
+    fetch_cash_account_by_id,
+    set_cash_account_balance_cents,
+)
+from core.storage_movements import fetch_all_cash_movements
 
 
 def _record_movement(cash_service_instance, **kwargs):
@@ -14,8 +18,8 @@ def test_record_cash_movement_adjusts_balances(
     runner_account_id,
     cash_service_instance,
 ):
-    storage.set_cash_account_balance_cents(seeded_db, bar_account_id, 20000)
-    storage.set_cash_account_balance_cents(seeded_db, runner_account_id, 1000)
+    set_cash_account_balance_cents(seeded_db, bar_account_id, 20000)
+    set_cash_account_balance_cents(seeded_db, runner_account_id, 1000)
 
     _record_movement(
         cash_service_instance,
@@ -29,8 +33,8 @@ def test_record_cash_movement_adjusts_balances(
         denominations={"denom_20": 1, "denom_10": 1},
     )
 
-    bar = storage.fetch_cash_account_by_id(seeded_db, bar_account_id)
-    runner = storage.fetch_cash_account_by_id(seeded_db, runner_account_id)
+    bar = fetch_cash_account_by_id(seeded_db, bar_account_id)
+    runner = fetch_cash_account_by_id(seeded_db, runner_account_id)
 
     assert bar["current_balance_cents"] == 15000
     assert runner["current_balance_cents"] == 6000
@@ -54,8 +58,8 @@ def test_runner_purchase_auto_returns_remaining_change_to_bar(
     supplier_account_id,
     cash_service_instance,
 ):
-    storage.set_cash_account_balance_cents(seeded_db, bar_account_id, 10000)
-    storage.set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
+    set_cash_account_balance_cents(seeded_db, bar_account_id, 10000)
+    set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
 
     _record_movement(
         cash_service_instance,
@@ -84,15 +88,15 @@ def test_runner_purchase_auto_returns_remaining_change_to_bar(
     assert result.auto_return is not None
     assert result.auto_return["amount_cents"] == 1300
 
-    bar = storage.fetch_cash_account_by_id(seeded_db, bar_account_id)
-    runner = storage.fetch_cash_account_by_id(seeded_db, runner_account_id)
-    supplier = storage.fetch_cash_account_by_id(seeded_db, supplier_account_id)
+    bar = fetch_cash_account_by_id(seeded_db, bar_account_id)
+    runner = fetch_cash_account_by_id(seeded_db, runner_account_id)
+    supplier = fetch_cash_account_by_id(seeded_db, supplier_account_id)
 
     assert bar["current_balance_cents"] == 6300
     assert runner["current_balance_cents"] == 0
     assert supplier["current_balance_cents"] == 3700
 
-    movements = storage.fetch_all_cash_movements(seeded_db)
+    movements = fetch_all_cash_movements(seeded_db)
     assert len(movements) == 3
 
     auto_return = [
@@ -113,8 +117,8 @@ def test_runner_purchase_with_exact_amount_creates_no_auto_return(
     supplier_account_id,
     cash_service_instance,
 ):
-    storage.set_cash_account_balance_cents(seeded_db, bar_account_id, 10000)
-    storage.set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
+    set_cash_account_balance_cents(seeded_db, bar_account_id, 10000)
+    set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
 
     _record_movement(
         cash_service_instance,
@@ -142,15 +146,15 @@ def test_runner_purchase_with_exact_amount_creates_no_auto_return(
 
     assert result.auto_return is None
 
-    bar = storage.fetch_cash_account_by_id(seeded_db, bar_account_id)
-    runner = storage.fetch_cash_account_by_id(seeded_db, runner_account_id)
-    supplier = storage.fetch_cash_account_by_id(seeded_db, supplier_account_id)
+    bar = fetch_cash_account_by_id(seeded_db, bar_account_id)
+    runner = fetch_cash_account_by_id(seeded_db, runner_account_id)
+    supplier = fetch_cash_account_by_id(seeded_db, supplier_account_id)
 
     assert bar["current_balance_cents"] == 5000
     assert runner["current_balance_cents"] == 0
     assert supplier["current_balance_cents"] == 5000
 
-    movements = storage.fetch_all_cash_movements(seeded_db)
+    movements = fetch_all_cash_movements(seeded_db)
     assert len(movements) == 2
 
 
@@ -161,8 +165,8 @@ def test_runner_purchase_auto_returns_remaining_balance_after_purchase(
     supplier_account_id,
     cash_service_instance,
 ):
-    storage.set_cash_account_balance_cents(seeded_db, bar_account_id, 20000)
-    storage.set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
+    set_cash_account_balance_cents(seeded_db, bar_account_id, 20000)
+    set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
 
     _record_movement(
         cash_service_instance,
@@ -191,15 +195,15 @@ def test_runner_purchase_auto_returns_remaining_balance_after_purchase(
     assert result.auto_return is not None
     assert result.auto_return["amount_cents"] == 7000
 
-    bar = storage.fetch_cash_account_by_id(seeded_db, bar_account_id)
-    runner = storage.fetch_cash_account_by_id(seeded_db, runner_account_id)
-    supplier = storage.fetch_cash_account_by_id(seeded_db, supplier_account_id)
+    bar = fetch_cash_account_by_id(seeded_db, bar_account_id)
+    runner = fetch_cash_account_by_id(seeded_db, runner_account_id)
+    supplier = fetch_cash_account_by_id(seeded_db, supplier_account_id)
 
     assert bar["current_balance_cents"] == 17000
     assert runner["current_balance_cents"] == 0
     assert supplier["current_balance_cents"] == 3000
 
-    movements = storage.fetch_all_cash_movements(seeded_db)
+    movements = fetch_all_cash_movements(seeded_db)
     assert len(movements) == 3
 
 
@@ -210,8 +214,8 @@ def test_runner_purchase_can_overspend_and_leave_negative_runner_balance(
     supplier_account_id,
     cash_service_instance,
 ):
-    storage.set_cash_account_balance_cents(seeded_db, bar_account_id, 10000)
-    storage.set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
+    set_cash_account_balance_cents(seeded_db, bar_account_id, 10000)
+    set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
 
     _record_movement(
         cash_service_instance,
@@ -239,15 +243,15 @@ def test_runner_purchase_can_overspend_and_leave_negative_runner_balance(
 
     assert result.auto_return is None
 
-    bar = storage.fetch_cash_account_by_id(seeded_db, bar_account_id)
-    runner = storage.fetch_cash_account_by_id(seeded_db, runner_account_id)
-    supplier = storage.fetch_cash_account_by_id(seeded_db, supplier_account_id)
+    bar = fetch_cash_account_by_id(seeded_db, bar_account_id)
+    runner = fetch_cash_account_by_id(seeded_db, runner_account_id)
+    supplier = fetch_cash_account_by_id(seeded_db, supplier_account_id)
 
     assert bar["current_balance_cents"] == 5000
     assert runner["current_balance_cents"] == -1000
     assert supplier["current_balance_cents"] == 6000
 
-    movements = storage.fetch_all_cash_movements(seeded_db)
+    movements = fetch_all_cash_movements(seeded_db)
     assert len(movements) == 2
 
 
@@ -258,8 +262,8 @@ def test_runner_can_be_reimbursed_after_overspending(
     supplier_account_id,
     cash_service_instance,
 ):
-    storage.set_cash_account_balance_cents(seeded_db, bar_account_id, 10000)
-    storage.set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
+    set_cash_account_balance_cents(seeded_db, bar_account_id, 10000)
+    set_cash_account_balance_cents(seeded_db, runner_account_id, 0)
 
     _record_movement(
         cash_service_instance,
@@ -297,9 +301,9 @@ def test_runner_can_be_reimbursed_after_overspending(
         denominations=None,
     )
 
-    bar = storage.fetch_cash_account_by_id(seeded_db, bar_account_id)
-    runner = storage.fetch_cash_account_by_id(seeded_db, runner_account_id)
-    supplier = storage.fetch_cash_account_by_id(seeded_db, supplier_account_id)
+    bar = fetch_cash_account_by_id(seeded_db, bar_account_id)
+    runner = fetch_cash_account_by_id(seeded_db, runner_account_id)
+    supplier = fetch_cash_account_by_id(seeded_db, supplier_account_id)
 
     assert bar["current_balance_cents"] == 4000
     assert runner["current_balance_cents"] == 0

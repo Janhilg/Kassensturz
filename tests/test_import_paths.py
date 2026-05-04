@@ -7,6 +7,7 @@ IMPLEMENTATION_ROOTS = [
     REPO_ROOT / "core",
     REPO_ROOT / "web",
 ]
+TEST_ROOT = REPO_ROOT / "tests"
 
 COMPATIBILITY_IMPORTS = {
     "core.cash",
@@ -17,6 +18,9 @@ COMPATIBILITY_IMPORTS = {
 }
 
 COMPATIBILITY_IMPORT_ALLOWLIST = {}
+TEST_COMPATIBILITY_IMPORT_ALLOWLIST = {
+    Path("tests/test_core_objects.py"): {"core.service", "core.storage"},
+}
 
 
 def _implementation_files() -> list[Path]:
@@ -60,6 +64,20 @@ def test_implementation_files_do_not_add_compatibility_imports():
     for path in _implementation_files():
         relative_path = path.relative_to(REPO_ROOT)
         allowed_imports = COMPATIBILITY_IMPORT_ALLOWLIST.get(relative_path, set())
+        disallowed_imports = _compatibility_imports(path) - allowed_imports
+        if disallowed_imports:
+            formatted_imports = ", ".join(sorted(disallowed_imports))
+            violations.append(f"{relative_path}: {formatted_imports}")
+
+    assert violations == []
+
+
+def test_tests_only_use_storage_facade_for_compatibility_coverage():
+    violations = []
+
+    for path in sorted(TEST_ROOT.rglob("test_*.py")):
+        relative_path = path.relative_to(REPO_ROOT)
+        allowed_imports = TEST_COMPATIBILITY_IMPORT_ALLOWLIST.get(relative_path, set())
         disallowed_imports = _compatibility_imports(path) - allowed_imports
         if disallowed_imports:
             formatted_imports = ", ".join(sorted(disallowed_imports))

@@ -2,10 +2,12 @@ from datetime import date, time
 
 from openpyxl import Workbook
 
-from core import storage, sync_state
+from core import sync_state
 from core.cash.cash_service import CashService
 from core.cash.cash_sync_context import CashSyncContext
 from core.cash_export_service import CashExportService
+from core.storage_accounts import fetch_cash_account_by_name
+from core.storage_counts import fetch_all_cash_counts
 from core.storage_objects.cash_storage import CashStorage
 from core.sync_state_store import SyncStateStore
 
@@ -92,12 +94,12 @@ def test_production_bootstrap_imports_legacy_remote_counts(
     assert result.imported_counts == 1
     assert result.imported_movements == 0
 
-    counts = storage.fetch_all_cash_counts(seeded_db)
+    counts = fetch_all_cash_counts(seeded_db)
     assert len(counts) == 1
     assert counts[0]["context_label"] == "Friday Bar"
     assert counts[0]["total_cents"] == 25000
 
-    bar_account = storage.fetch_cash_account_by_name(seeded_db, "Bar Cash Box")
+    bar_account = fetch_cash_account_by_name(seeded_db, "Bar Cash Box")
     assert bar_account["current_balance_cents"] == 25000
     assert excel_path.exists()
     assert text_path.exists()

@@ -3,7 +3,9 @@ from pathlib import Path
 
 from openpyxl import Workbook
 
-from core import export_utils, storage
+from core import export_utils
+from core.storage_counts import create_cash_count
+from core.storage_movements import create_cash_movement
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -15,7 +17,7 @@ def test_export_and_import_roundtrip(
     bar_account_id,
     runner_account_id,
 ):
-    storage.create_cash_count(
+    create_cash_count(
         db_path=seeded_db,
         cash_account_id=bar_account_id,
         counted_by="Jan",
@@ -25,7 +27,7 @@ def test_export_and_import_roundtrip(
         denominations={"roll_2": 1},
     )
 
-    storage.create_cash_movement(
+    create_cash_movement(
         db_path=seeded_db,
         from_account_id=bar_account_id,
         to_account_id=runner_account_id,

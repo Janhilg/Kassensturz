@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.17] - 2026-05-04
+
+### Changed
+
+- Updated service, export, and route tests to use focused storage modules
+  instead of the `core.storage` compatibility facade.
+- Added a test import-path guard so `core.storage` is only imported by explicit
+  compatibility coverage.
+
 ## [0.2.16] - 2026-05-04
 
 ### Changed

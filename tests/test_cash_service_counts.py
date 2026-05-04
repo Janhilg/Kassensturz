@@ -1,5 +1,6 @@
-from core import storage, sync_state
+from core import sync_state
 from core.cash.cash_count_request import CashCountRequest
+from core.storage_accounts import fetch_cash_account_by_id
 
 
 def test_record_cash_count_sets_account_balance(
@@ -20,7 +21,7 @@ def test_record_cash_count_sets_account_balance(
         )
     )
 
-    account = storage.fetch_cash_account_by_id(seeded_db, bar_account_id)
+    account = fetch_cash_account_by_id(seeded_db, bar_account_id)
     assert account["current_balance_cents"] == 22222
     assert result.count_id
 
@@ -45,5 +46,5 @@ def test_record_cash_count_allows_denomination_mismatch(
         )
     )
 
-    account = storage.fetch_cash_account_by_id(seeded_db, bar_account_id)
+    account = fetch_cash_account_by_id(seeded_db, bar_account_id)
     assert account["current_balance_cents"] == 20000

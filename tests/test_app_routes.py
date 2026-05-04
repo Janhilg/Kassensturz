@@ -1,4 +1,5 @@
 import app as app_module
+from core.storage_accounts import fetch_cash_account_by_name
 
 
 def test_index_get(client):
@@ -32,7 +33,7 @@ def test_cash_movement_renders_account_translation_keys_for_both_selects(client)
 
 
 def test_index_post_uses_web_app_count_service(client, monkeypatch):
-    account = app_module.storage.fetch_cash_account_by_name(
+    account = fetch_cash_account_by_name(
         app_module.LOCAL_DB_FILE,
         "Bar Cash Box",
     )
@@ -67,11 +68,11 @@ def test_index_post_uses_web_app_count_service(client, monkeypatch):
 
 
 def test_cash_movement_post_uses_web_app_movement_service(client, monkeypatch):
-    from_account = app_module.storage.fetch_cash_account_by_name(
+    from_account = fetch_cash_account_by_name(
         app_module.LOCAL_DB_FILE,
         "Bar Cash Box",
     )
-    to_account = app_module.storage.fetch_cash_account_by_name(
+    to_account = fetch_cash_account_by_name(
         app_module.LOCAL_DB_FILE,
         "Runner Float",
     )
