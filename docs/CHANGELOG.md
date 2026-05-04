@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.14] - 2026-05-04
+
+### Fixed
+
+- Configured pytest to use a repo-local temp directory so Windows does not
+  resolve pytest's `tmp_path` helper links under an untrusted user temp mount.
+- Ignored local pytest and Ruff cache directories.
+
 ## [0.2.13] - 2026-05-04
 
 ### Changed
