@@ -7,7 +7,24 @@ from pathlib import Path
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.datetime import from_excel
 
-from core import storage
+from core.storage_accounts import fetch_all_cash_accounts, fetch_cash_account_balances
+from core.storage_connection import (
+    cents_to_eur,
+    normalize_context_label,
+    normalize_optional_text,
+    now_iso,
+)
+from core.storage_contexts import fetch_recent_cash_contexts
+from core.storage_counts import fetch_all_cash_counts
+from core.storage_migrations import ensure_db_file
+from core.storage_movements import fetch_all_cash_movements
+from core.storage_schema import (
+    CASH_ACCOUNT_COLUMNS,
+    CASH_CONTEXT_COLUMNS,
+    CASH_COUNT_COLUMNS,
+    CASH_MOVEMENT_COLUMNS,
+    DENOM_FIELDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +195,7 @@ def _legacy_counted_at(raw_date, raw_timestamp) -> str:
     if parsed_date:
         return datetime.combine(parsed_date, time()).isoformat(timespec="seconds")
 
-    return storage.now_iso()
+    return now_iso()
 
 
 def _parse_legacy_cash_sum(value) -> int:
@@ -214,7 +231,7 @@ def _parse_legacy_cash_sum(value) -> int:
 
 
 def _normalize_legacy_count_type(value) -> str:
-    raw_value = storage.normalize_optional_text(value)
+    raw_value = normalize_optional_text(value)
     if not raw_value:
         return "reconciliation"
 
@@ -282,7 +299,7 @@ def _import_legacy_cash_count_workbook(workbook) -> dict | None:
                     legacy_row.get("date"),
                     legacy_row.get("timestamp"),
                 )
-                context_label = storage.normalize_context_label(legacy_row.get("context_label"))
+                context_label = normalize_context_label(legacy_row.get("context_label"))
                 context_id = None
                 if context_label:
                     context_id = _legacy_uuid("context", context_label)
@@ -318,12 +335,12 @@ def _import_legacy_cash_count_workbook(workbook) -> dict | None:
                     "cash_account_name": "Bar Cash Box",
                     "counted_at": counted_at,
                     "count_type": _normalize_legacy_count_type(legacy_row.get("count_type")),
-                    "counted_by": storage.normalize_optional_text(legacy_row.get("counted_by")),
+                    "counted_by": normalize_optional_text(legacy_row.get("counted_by")),
                     "total_cents": _parse_legacy_cash_sum(legacy_row.get("cash_sum")),
-                    "note": storage.normalize_optional_text(legacy_row.get("note")),
+                    "note": normalize_optional_text(legacy_row.get("note")),
                 }
 
-                for field in storage.DENOM_FIELDS:
+                for field in DENOM_FIELDS:
                     count_record[field] = None
 
                 imported_counts.append(count_record)
@@ -346,27 +363,27 @@ def _format_cents(cents) -> str:
 
 
 def export_excel(db_path: Path, excel_path: Path):
-    storage.ensure_db_file(db_path)
+    ensure_db_file(db_path)
     _ensure_parent_dir(excel_path)
 
     wb = Workbook()
     default_sheet = wb.active
     wb.remove(default_sheet)
 
-    accounts = storage.fetch_all_cash_accounts(db_path, active_only=False)
-    contexts = storage.fetch_recent_cash_contexts(db_path, limit=10000)
-    movements = storage.fetch_all_cash_movements(db_path)
-    counts = storage.fetch_all_cash_counts(db_path)
-    balances = storage.fetch_cash_account_balances(db_path)
+    accounts = fetch_all_cash_accounts(db_path, active_only=False)
+    contexts = fetch_recent_cash_contexts(db_path, limit=10000)
+    movements = fetch_all_cash_movements(db_path)
+    counts = fetch_all_cash_counts(db_path)
+    balances = fetch_cash_account_balances(db_path)
 
     ws_accounts = wb.create_sheet(SHEET_CASH_ACCOUNTS)
-    _write_sheet(ws_accounts, storage.CASH_ACCOUNT_COLUMNS, accounts)
+    _write_sheet(ws_accounts, CASH_ACCOUNT_COLUMNS, accounts)
 
     ws_contexts = wb.create_sheet(SHEET_CASH_CONTEXTS)
-    _write_sheet(ws_contexts, storage.CASH_CONTEXT_COLUMNS, contexts)
+    _write_sheet(ws_contexts, CASH_CONTEXT_COLUMNS, contexts)
 
     movement_export_columns = [
-        *storage.CASH_MOVEMENT_COLUMNS,
+        *CASH_MOVEMENT_COLUMNS,
         "from_account_name",
         "to_account_name",
         "amount_eur",
@@ -376,7 +393,7 @@ def export_excel(db_path: Path, excel_path: Path):
         movement_export_rows.append(
             {
                 **row,
-                "amount_eur": storage.cents_to_eur(int(row["amount_cents"])),
+                "amount_eur": cents_to_eur(int(row["amount_cents"])),
             }
         )
 
@@ -384,7 +401,7 @@ def export_excel(db_path: Path, excel_path: Path):
     _write_sheet(ws_movements, movement_export_columns, movement_export_rows)
 
     count_export_columns = [
-        *storage.CASH_COUNT_COLUMNS,
+        *CASH_COUNT_COLUMNS,
         "cash_account_name",
         "total_eur",
     ]
@@ -393,7 +410,7 @@ def export_excel(db_path: Path, excel_path: Path):
         count_export_rows.append(
             {
                 **row,
-                "total_eur": storage.cents_to_eur(int(row["total_cents"])),
+                "total_eur": cents_to_eur(int(row["total_cents"])),
             }
         )
 
@@ -425,13 +442,13 @@ def export_excel(db_path: Path, excel_path: Path):
 
 
 def export_text(db_path: Path, text_path: Path):
-    storage.ensure_db_file(db_path)
+    ensure_db_file(db_path)
     _ensure_parent_dir(text_path)
 
-    accounts = storage.fetch_all_cash_accounts(db_path, active_only=False)
-    balances = storage.fetch_cash_account_balances(db_path)
-    movements = storage.fetch_all_cash_movements(db_path)
-    counts = storage.fetch_all_cash_counts(db_path)
+    accounts = fetch_all_cash_accounts(db_path, active_only=False)
+    balances = fetch_cash_account_balances(db_path)
+    movements = fetch_all_cash_movements(db_path)
+    counts = fetch_all_cash_counts(db_path)
 
     lines = []
 
@@ -467,7 +484,7 @@ def export_text(db_path: Path, text_path: Path):
     lines.append("=== CASH MOVEMENTS ===")
     for row in movements:
         denom_summary = []
-        for field in storage.DENOM_FIELDS:
+        for field in DENOM_FIELDS:
             value = row.get(field)
             if value not in (None, "", 0):
                 denom_summary.append(f"{field}={value}")
@@ -493,7 +510,7 @@ def export_text(db_path: Path, text_path: Path):
     lines.append("=== CASH COUNTS ===")
     for row in counts:
         denom_summary = []
-        for field in storage.DENOM_FIELDS:
+        for field in DENOM_FIELDS:
             value = row.get(field)
             if value not in (None, "", 0):
                 denom_summary.append(f"{field}={value}")
@@ -564,25 +581,19 @@ def import_all_from_excel(excel_path: Path) -> dict:
 
     imported_accounts = []
     for row in account_rows:
-        imported_accounts.append(
-            {column: row.get(column) for column in storage.CASH_ACCOUNT_COLUMNS}
-        )
+        imported_accounts.append({column: row.get(column) for column in CASH_ACCOUNT_COLUMNS})
 
     imported_contexts = []
     for row in context_rows:
-        imported_contexts.append(
-            {column: row.get(column) for column in storage.CASH_CONTEXT_COLUMNS}
-        )
+        imported_contexts.append({column: row.get(column) for column in CASH_CONTEXT_COLUMNS})
 
     imported_movements = []
     for row in movement_rows:
-        imported_movements.append(
-            {column: row.get(column) for column in storage.CASH_MOVEMENT_COLUMNS}
-        )
+        imported_movements.append({column: row.get(column) for column in CASH_MOVEMENT_COLUMNS})
 
     imported_counts = []
     for row in count_rows:
-        imported_counts.append({column: row.get(column) for column in storage.CASH_COUNT_COLUMNS})
+        imported_counts.append({column: row.get(column) for column in CASH_COUNT_COLUMNS})
 
     logger.info(
         "Excel import completed | path=%s accounts=%s contexts=%s movements=%s counts=%s",

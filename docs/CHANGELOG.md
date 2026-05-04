@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.13] - 2026-05-04
+
+### Changed
+
+- Export utilities now import focused storage implementation modules directly
+  instead of using the `core.storage` compatibility facade.
+- Tightened the compatibility-import allowlist after moving exports off the
+  storage facade.
+
 ## [0.2.12] - 2026-05-04
 
 ### Added
