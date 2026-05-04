@@ -1,3 +1,6 @@
+import hashlib
+import re
+import shutil
 from pathlib import Path
 
 import pytest
@@ -18,6 +21,16 @@ class NoopNextcloudClient:
 
     def upload_files(self, *, excel_path, text_path, config):
         return {"uploaded": False}
+
+
+@pytest.fixture
+def tmp_path(request, tmp_path_factory) -> Path:
+    safe_name = re.sub(r"[\W]+", "_", request.node.name).strip("_")[:30] or "test"
+    node_hash = hashlib.sha256(request.node.nodeid.encode("utf-8")).hexdigest()[:8]
+    path = tmp_path_factory.getbasetemp() / f"{safe_name}_{node_hash}"
+    shutil.rmtree(path, ignore_errors=True)
+    path.mkdir(parents=True)
+    return path
 
 
 @pytest.fixture

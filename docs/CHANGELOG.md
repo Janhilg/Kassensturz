@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.15] - 2026-05-04
+
+### Fixed
+
+- Overrode the test `tmp_path` fixture to create plain per-test directories
+  without pytest's Windows-problematic `*current` symlinks.
+
 ## [0.2.14] - 2026-05-04
 
 ### Fixed
