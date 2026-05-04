@@ -71,16 +71,12 @@ class AdminMaintenanceService:
             "excel_exists": excel_path.exists(),
             "excel_path": excel_path,
             "excel_size_human": (
-                self.human_size(excel_path.stat().st_size)
-                if excel_path.exists()
-                else "0 B"
+                self.human_size(excel_path.stat().st_size) if excel_path.exists() else "0 B"
             ),
             "text_exists": text_path.exists(),
             "text_path": text_path,
             "text_size_human": (
-                self.human_size(text_path.stat().st_size)
-                if text_path.exists()
-                else "0 B"
+                self.human_size(text_path.stat().st_size) if text_path.exists() else "0 B"
             ),
             "backup_dir": backup_dir,
             "backup_count": len(backups),
@@ -90,8 +86,7 @@ class AdminMaintenanceService:
             "remote_dir": getattr(config, "NEXTCLOUD_REMOTE_DIR", ""),
             "remote_file": getattr(config, "NEXTCLOUD_REMOTE_FILE", ""),
             "backups": [
-                {**backup, "size_human": self.human_size(backup["size"])}
-                for backup in backups
+                {**backup, "size_human": self.human_size(backup["size"])} for backup in backups
             ],
         }
 
@@ -127,10 +122,9 @@ class AdminMaintenanceService:
             text_path=text_path,
         )
 
-        uploaded_total_rows = (
-            self.storage.get_row_count(db_path, "cash_counts")
-            + self.storage.get_row_count(db_path, "cash_movements")
-        )
+        uploaded_total_rows = self.storage.get_row_count(
+            db_path, "cash_counts"
+        ) + self.storage.get_row_count(db_path, "cash_movements")
 
         upload_result = {"uploaded": False, "reason": "nextcloud_not_configured"}
         if self.nextcloud_client.nextcloud_configured(config):

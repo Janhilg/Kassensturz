@@ -1,7 +1,7 @@
+import logging
 import shutil
 import sqlite3
 import uuid
-import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -45,7 +45,6 @@ DENOM_VALUE_CENTS = {
     "roll_1": 2500,
     "roll_050": 2000,
 }
-
 
 
 CASH_ACCOUNT_COLUMNS = [
@@ -187,10 +186,10 @@ CREATE TABLE IF NOT EXISTS cash_counts (
 """
 
 
-
 # ============================================================================
 # Generic helpers
 # ============================================================================
+
 
 def now_iso() -> str:
     return datetime.now().isoformat(timespec="seconds")
@@ -249,11 +248,13 @@ def eur_to_cents(value) -> int:
 def row_values(record: dict, columns: list[str]) -> list:
     return [record.get(column) for column in columns]
 
+
 def require_cash_account_by_name(db_path: Path, name: str) -> dict:
     account = fetch_cash_account_by_name(db_path, name)
     if not account:
         raise ValueError(f"Required cash account not found: {name}")
     return account
+
 
 def fetch_cash_accounts_by_type(
     db_path: Path,
@@ -279,15 +280,14 @@ def fetch_cash_accounts_by_type(
         rows = conn.execute(query, params).fetchall()
         return [dict(row) for row in rows]
 
+
 # ============================================================================
 # Denomination helpers
 # ============================================================================
 
+
 def get_denomination_values_from_form(form) -> dict:
-    return {
-        field: parse_optional_int(form.get(field, ""))
-        for field in DENOM_FIELDS
-    }
+    return {field: parse_optional_int(form.get(field, "")) for field in DENOM_FIELDS}
 
 
 def calculate_total_cents_from_denominations(denoms: dict) -> int:
@@ -307,6 +307,7 @@ def denominations_match_total_cents(denoms: dict, total_cents: int) -> bool:
 # ============================================================================
 # Accounts
 # ============================================================================
+
 
 def insert_cash_account(
     db_path: Path,
@@ -447,8 +448,7 @@ def seed_default_cash_accounts(db_path: Path):
     ensure_db_file(db_path)
 
     existing_accounts = {
-        row["id"]: row
-        for row in fetch_all_cash_accounts(db_path, active_only=False)
+        row["id"]: row for row in fetch_all_cash_accounts(db_path, active_only=False)
     }
 
     created = 0
@@ -479,6 +479,7 @@ def seed_default_cash_accounts(db_path: Path):
 # ============================================================================
 # Contexts
 # ============================================================================
+
 
 def insert_cash_context(
     db_path: Path,
@@ -607,6 +608,7 @@ def get_or_create_cash_context(
 # ============================================================================
 # Movements
 # ============================================================================
+
 
 def build_cash_movement_record(
     amount_cents: int,
@@ -793,8 +795,7 @@ def merge_imported_cash_movements_append_only(
 
     with get_connection(db_path) as conn:
         existing_ids = {
-            row["id"]
-            for row in conn.execute("SELECT id FROM cash_movements").fetchall()
+            row["id"] for row in conn.execute("SELECT id FROM cash_movements").fetchall()
         }
 
         account_name_to_id = {
@@ -803,8 +804,7 @@ def merge_imported_cash_movements_append_only(
         }
 
         existing_context_ids = {
-            row["id"]
-            for row in conn.execute("SELECT id FROM cash_contexts").fetchall()
+            row["id"] for row in conn.execute("SELECT id FROM cash_contexts").fetchall()
         }
 
         placeholders = ", ".join("?" for _ in CASH_MOVEMENT_COLUMNS)
@@ -844,12 +844,14 @@ def merge_imported_cash_movements_append_only(
                 )
             except sqlite3.IntegrityError:
                 logger.exception(
-                    f"Failed to import cash movement | id={normalized.get("id")}"
-                    f" from_id={normalized.get("from_account_id")}"
-                    f" from_name={normalized.get("from_account_name")}"
-                    f" to_id={normalized.get("to_account_id")}"
-                    f" to_name={normalized.get("to_account_name")}"
-                    f" context_id={normalized.get("context_id")}"
+                    "Failed to import cash movement | id=%s from_id=%s from_name=%s "
+                    "to_id=%s to_name=%s context_id=%s",
+                    normalized.get("id"),
+                    normalized.get("from_account_id"),
+                    normalized.get("from_account_name"),
+                    normalized.get("to_account_id"),
+                    normalized.get("to_account_name"),
+                    normalized.get("context_id"),
                 )
                 raise
 
@@ -873,6 +875,7 @@ def merge_imported_cash_movements_append_only(
         "total": len(imported_movements),
     }
 
+
 def merge_imported_cash_contexts_append_only(
     db_path: Path,
     imported_contexts: list[dict],
@@ -884,8 +887,7 @@ def merge_imported_cash_contexts_append_only(
 
     with get_connection(db_path) as conn:
         existing_ids = {
-            row["id"]
-            for row in conn.execute("SELECT id FROM cash_contexts").fetchall()
+            row["id"] for row in conn.execute("SELECT id FROM cash_contexts").fetchall()
         }
 
         placeholders = ", ".join("?" for _ in CASH_CONTEXT_COLUMNS)
@@ -949,12 +951,10 @@ def merge_imported_cash_accounts_append_only(
 
     with get_connection(db_path) as conn:
         existing_ids = {
-            row["id"]
-            for row in conn.execute("SELECT id FROM cash_accounts").fetchall()
+            row["id"] for row in conn.execute("SELECT id FROM cash_accounts").fetchall()
         }
         existing_names = {
-            row["name"]
-            for row in conn.execute("SELECT name FROM cash_accounts").fetchall()
+            row["name"] for row in conn.execute("SELECT name FROM cash_accounts").fetchall()
         }
 
         placeholders = ", ".join("?" for _ in CASH_ACCOUNT_COLUMNS)
@@ -1031,10 +1031,7 @@ def merge_imported_cash_counts_append_only(
     remapped_count = 0
 
     with get_connection(db_path) as conn:
-        existing_ids = {
-            row["id"]
-            for row in conn.execute("SELECT id FROM cash_counts").fetchall()
-        }
+        existing_ids = {row["id"] for row in conn.execute("SELECT id FROM cash_counts").fetchall()}
 
         account_name_to_id = {
             row["name"]: row["id"]
@@ -1042,8 +1039,7 @@ def merge_imported_cash_counts_append_only(
         }
 
         existing_context_ids = {
-            row["id"]
-            for row in conn.execute("SELECT id FROM cash_contexts").fetchall()
+            row["id"] for row in conn.execute("SELECT id FROM cash_contexts").fetchall()
         }
 
         placeholders = ", ".join("?" for _ in CASH_COUNT_COLUMNS)
@@ -1103,9 +1099,11 @@ def merge_imported_cash_counts_append_only(
         "total": len(imported_counts),
     }
 
+
 # ============================================================================
 # Counts
 # ============================================================================
+
 
 def build_cash_count_record(
     cash_account_id: str,
@@ -1274,56 +1272,10 @@ def fetch_recent_cash_counts(
         return dicts_from_rows(rows)
 
 
-def merge_imported_cash_counts_append_only(
-    db_path: Path,
-    imported_counts: list[dict],
-):
-    ensure_db_file(db_path)
-
-    imported_count = 0
-    skipped_count = 0
-
-    with get_connection(db_path) as conn:
-        existing_ids = {
-            row["id"]
-            for row in conn.execute("SELECT id FROM cash_counts").fetchall()
-        }
-
-        placeholders = ", ".join("?" for _ in CASH_COUNT_COLUMNS)
-        columns_sql = ", ".join(CASH_COUNT_COLUMNS)
-
-        for count_record in imported_counts:
-            count_id = str(count_record.get("id", "")).strip()
-            if not count_id or count_id in existing_ids:
-                skipped_count += 1
-                continue
-
-            conn.execute(
-                f"INSERT INTO cash_counts ({columns_sql}) VALUES ({placeholders})",
-                row_values(count_record, CASH_COUNT_COLUMNS),
-            )
-            existing_ids.add(count_id)
-            imported_count += 1
-
-        conn.commit()
-
-    logger.info(
-        "Cash count merge completed | imported=%s skipped=%s total_remote=%s",
-        imported_count,
-        skipped_count,
-        len(imported_counts),
-    )
-
-    return {
-        "imported": imported_count,
-        "skipped": skipped_count,
-        "total": len(imported_counts),
-    }
-
-
 # ============================================================================
 # Balance helpers
 # ============================================================================
+
 
 def _build_account_id_map_by_name(db_path: Path) -> dict[str, str]:
     accounts = fetch_all_cash_accounts(db_path, active_only=False)
@@ -1370,6 +1322,7 @@ def adjust_cash_account_balance_cents(db_path: Path, account_id: str, delta_cent
         account_id,
         delta_cents,
     )
+
 
 def get_cash_account_balance_cents(db_path: Path, account_id: str) -> int:
     ensure_db_file(db_path)
@@ -1505,9 +1458,11 @@ def get_latest_cash_context_label(db_path: Path) -> str:
 
     return str(row["label"]).strip() if row and row["label"] else ""
 
+
 # ============================================================================
 # Counts and totals
 # ============================================================================
+
 
 def get_row_count(db_path: Path, table_name: str) -> int:
     ensure_db_file(db_path)
@@ -1529,6 +1484,7 @@ def get_row_count(db_path: Path, table_name: str) -> int:
 # ============================================================================
 # Backup
 # ============================================================================
+
 
 def create_backup(db_path: Path, backup_dir: Path, max_backups: int = 25):
     ensure_db_file(db_path)
@@ -1553,6 +1509,7 @@ def create_backup(db_path: Path, backup_dir: Path, max_backups: int = 25):
     logger.info("Backup created | file=%s", backup_file)
 
     return backup_file
+
 
 def list_backups(backup_dir: Path) -> list[Path]:
     backup_dir.mkdir(parents=True, exist_ok=True)
@@ -2150,4 +2107,3 @@ class CashStorage:
             db_path = None
 
         return restore_backup(self._path(db_path), Path(backup_file))
-

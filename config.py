@@ -1,6 +1,6 @@
+import importlib
 import os
 import sys
-import importlib
 from pathlib import Path
 
 
@@ -131,10 +131,14 @@ class Config:
     # App Mode / Mode-based path
     # =========================
     _requested_mode = config_value("KASSENSTURZ_MODE", "").strip().lower()
-    _production_mode = config_value(
-        "KASSENSTURZ_PRODUCTION_MODE",
-        "false",
-    ).strip().lower()
+    _production_mode = (
+        config_value(
+            "KASSENSTURZ_PRODUCTION_MODE",
+            "false",
+        )
+        .strip()
+        .lower()
+    )
 
     # =========================
     # App Mode PyInstaller build
@@ -145,9 +149,7 @@ class Config:
         MODE = "debug"
 
     PRODUCTION_MODE = "true" if MODE == "production" else "false"
-    _default_remote_dir = (
-        "Apps/Kassensturz" if MODE == "production" else "Apps/Kassensturz/Debug"
-    )
+    _default_remote_dir = "Apps/Kassensturz" if MODE == "production" else "Apps/Kassensturz/Debug"
     NEXTCLOUD_REMOTE_DIR = config_value(
         "KASSENSTURZ_NEXTCLOUD_REMOTE_DIR",
         _default_remote_dir,

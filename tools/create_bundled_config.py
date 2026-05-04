@@ -2,7 +2,6 @@ import argparse
 from base64 import b64encode
 from pathlib import Path
 
-
 CONFIG_KEYS = [
     "KASSENSTURZ_MODE",
     "KASSENSTURZ_PRODUCTION_MODE",

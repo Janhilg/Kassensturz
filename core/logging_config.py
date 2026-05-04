@@ -10,9 +10,7 @@ def setup_logging(base_dir: Path, debug: bool):
     log_file = log_dir / "kassensturz.log"
     log_level = logging.DEBUG if debug else logging.INFO
 
-    formatter = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
     logger = logging.getLogger()
     logger.setLevel(log_level)

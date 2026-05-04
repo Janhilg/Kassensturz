@@ -41,10 +41,7 @@ def nextcloud_configured(config) -> bool:
 
 def build_webdav_url(base_url: str, username: str, path: str) -> str:
     encoded_path = "/".join(quote(part) for part in path.strip("/").split("/"))
-    return (
-        f"{base_url.rstrip('/')}/remote.php/dav/files/"
-        f"{quote(username)}/{encoded_path}"
-    )
+    return f"{base_url.rstrip('/')}/remote.php/dav/files/{quote(username)}/{encoded_path}"
 
 
 def ensure_nextcloud_folder(config, base_dir: Path):
@@ -115,8 +112,7 @@ def download_remote_excel_to_temp(config, base_dir: Path, temp_path: Path) -> bo
         return False
 
     raise RuntimeError(
-        "Failed to download Excel file from Nextcloud: "
-        f"{response.status_code} {response.text}"
+        f"Failed to download Excel file from Nextcloud: {response.status_code} {response.text}"
     )
 
 
@@ -132,7 +128,9 @@ def download_remote_excel_if_exists(local_excel_path: Path, config) -> bool:
         False if no remote file exists or Nextcloud is not configured.
     """
     base_dir = _default_base_dir()
-    temp_path = local_excel_path.parent / f".{local_excel_path.stem}.remote.tmp{local_excel_path.suffix}"
+    temp_path = (
+        local_excel_path.parent / f".{local_excel_path.stem}.remote.tmp{local_excel_path.suffix}"
+    )
 
     try:
         downloaded = download_remote_excel_to_temp(
@@ -220,8 +218,7 @@ def upload_file_to_nextcloud(
             response.text,
         )
         raise RuntimeError(
-            "Failed to upload file to Nextcloud: "
-            f"{response.status_code} {response.text}"
+            f"Failed to upload file to Nextcloud: {response.status_code} {response.text}"
         )
 
     logger.info(
@@ -245,10 +242,7 @@ def upload_excel_file_to_nextcloud(config, base_dir: Path, file_path: Path):
         base_dir=base_dir,
         file_path=file_path,
         remote_filename=config.NEXTCLOUD_REMOTE_FILE,
-        content_type=(
-            "application/vnd.openxmlformats-officedocument."
-            "spreadsheetml.sheet"
-        ),
+        content_type=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
     )
 
 

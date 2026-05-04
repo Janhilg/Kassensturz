@@ -76,9 +76,7 @@ def test_load_bundled_config_reads_generated_module_only_when_frozen(monkeypatch
     monkeypatch.setitem(sys.modules, "kassensturz_secrets", fake_module)
     monkeypatch.setattr(config_module.sys, "frozen", True, raising=False)
 
-    assert config_module.load_bundled_config() == {
-        "KASSENSTURZ_ADMIN_PASSWORD": "bundled-admin"
-    }
+    assert config_module.load_bundled_config() == {"KASSENSTURZ_ADMIN_PASSWORD": "bundled-admin"}
 
 
 def test_config_value_prefers_environment_over_bundled_config(monkeypatch):

@@ -117,6 +117,13 @@ python -m venv venv
 .\venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
+For development, tests, linting, and PyInstaller builds, install the dev
+dependencies instead:
+
+```powershell
+.\venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+```
+
 Create local configuration:
 
 ```powershell
@@ -137,6 +144,19 @@ Run the full test suite:
 
 ```powershell
 .\venv\Scripts\python.exe -m pytest tests
+```
+
+Run linting and formatting checks:
+
+```powershell
+.\venv\Scripts\python.exe -m ruff check .
+.\venv\Scripts\python.exe -m ruff format --check .
+```
+
+Or run the combined local check script:
+
+```powershell
+.\tools\check.ps1
 ```
 
 The suite covers storage behavior, service workflows, route wiring, export/import

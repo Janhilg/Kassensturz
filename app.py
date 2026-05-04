@@ -1,14 +1,13 @@
-from dataclasses import dataclass
-from pathlib import Path
 import logging
 import mimetypes
 import sys
+from dataclasses import dataclass
+from pathlib import Path
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
 from config import Config
-from core import storage
-from core import sync_state
+from core import storage, sync_state
 from core.cash_service import (
     CashCountRequest,
     CashMovementRequest,
@@ -18,7 +17,6 @@ from core.cash_service import (
 from core.export_utils import CashExportService
 from core.logging_config import setup_logging
 from core.nextcloud_sync import NextcloudClient
-
 
 mimetypes.add_type("application/javascript", ".js")
 
@@ -123,9 +121,7 @@ class KassensturzWebApp:
         )
 
         self.record_cash_count_and_sync = self.cash_service.record_cash_count_and_sync
-        self.record_cash_movement_and_sync = (
-            self.cash_service.record_cash_movement_and_sync
-        )
+        self.record_cash_movement_and_sync = self.cash_service.record_cash_movement_and_sync
         self.rebuild_exports_and_sync = self.cash_service.rebuild_exports_and_sync
 
     def _create_flask_app(self) -> Flask:
@@ -426,7 +422,9 @@ class KassensturzWebApp:
 
                 if result.get("auto_return"):
                     returned_eur = result["auto_return"]["amount_cents"] / 100
-                    message += f" Auto-returned € {returned_eur:.2f} from Runner Float to Bar Cash Box."
+                    message += (
+                        f" Auto-returned € {returned_eur:.2f} from Runner Float to Bar Cash Box."
+                    )
 
                 flash(message, "movement_success")
                 return redirect(url_for("cash_movement"))
@@ -479,9 +477,7 @@ class KassensturzWebApp:
         context = {
             **self._common_template_context(),
             "available_backups": self.storage.list_backups(self.paths.backup_dir),
-            "sync_state_data": self.sync_state.load_sync_state(
-                self.paths.sync_state_file
-            ),
+            "sync_state_data": self.sync_state.load_sync_state(self.paths.sync_state_file),
             "row_counts": {
                 "cash_accounts": self.storage.get_row_count(
                     "cash_accounts",

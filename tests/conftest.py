@@ -1,10 +1,9 @@
 from pathlib import Path
 
 import pytest
+
 import app as app_module
-
 from core import storage
-
 
 
 @pytest.fixture
@@ -81,6 +80,7 @@ def config_stub():
         ADMIN_PASSWORD = "admin"
 
     return ConfigStub
+
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):

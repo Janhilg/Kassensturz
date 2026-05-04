@@ -41,7 +41,7 @@ def _read_sheet_rows(workbook, sheet_name: str) -> list[dict]:
         if raw_row is None:
             continue
 
-        row = dict(zip(header, raw_row))
+        row = dict(zip(header, raw_row, strict=False))
 
         if all(value is None for value in row.values()):
             continue
@@ -278,38 +278,24 @@ def import_all_from_excel(excel_path: Path) -> dict:
     imported_accounts = []
     for row in account_rows:
         imported_accounts.append(
-            {
-                column: row.get(column)
-                for column in storage.CASH_ACCOUNT_COLUMNS
-            }
+            {column: row.get(column) for column in storage.CASH_ACCOUNT_COLUMNS}
         )
 
     imported_contexts = []
     for row in context_rows:
         imported_contexts.append(
-            {
-                column: row.get(column)
-                for column in storage.CASH_CONTEXT_COLUMNS
-            }
+            {column: row.get(column) for column in storage.CASH_CONTEXT_COLUMNS}
         )
 
     imported_movements = []
     for row in movement_rows:
         imported_movements.append(
-            {
-                column: row.get(column)
-                for column in storage.CASH_MOVEMENT_COLUMNS
-            }
+            {column: row.get(column) for column in storage.CASH_MOVEMENT_COLUMNS}
         )
 
     imported_counts = []
     for row in count_rows:
-        imported_counts.append(
-            {
-                column: row.get(column)
-                for column in storage.CASH_COUNT_COLUMNS
-            }
-        )
+        imported_counts.append({column: row.get(column) for column in storage.CASH_COUNT_COLUMNS})
 
     logger.info(
         "Excel import completed | path=%s accounts=%s contexts=%s movements=%s counts=%s",

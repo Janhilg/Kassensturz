@@ -265,10 +265,29 @@ When changing account labels, keep the translation-key behavior in mind:
 
 ## Tests
 
-Run the full suite:
+Install dev dependencies:
+
+```powershell
+.\venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+```
+
+Run the full test suite:
 
 ```powershell
 .\venv\Scripts\python.exe -m pytest tests
+```
+
+Run lint and format checks:
+
+```powershell
+.\venv\Scripts\python.exe -m ruff check .
+.\venv\Scripts\python.exe -m ruff format --check .
+```
+
+Run everything locally:
+
+```powershell
+.\tools\check.ps1
 ```
 
 Current coverage focus:
@@ -283,8 +302,12 @@ Current coverage focus:
 - bundled PyInstaller config generation
 - legacy guard behavior
 
-Ruff config exists in `pyproject.toml`, but Ruff may not be installed in the
-local virtual environment yet.
+Tooling files:
+
+- `requirements.txt`: runtime dependencies
+- `requirements-dev.txt`: runtime plus pytest, Ruff, and PyInstaller
+- `pyproject.toml`: Ruff lint/format configuration
+- `tools/check.ps1`: local test/lint/format check script
 
 ## Common Change Patterns
 

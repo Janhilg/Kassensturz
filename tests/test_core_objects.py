@@ -51,9 +51,7 @@ class RecordingStorage:
         return "movement-1"
 
     def adjust_cash_account_balance_cents(self, **kwargs):
-        self.calls.append(
-            ("adjust_balance", kwargs["account_id"], kwargs["delta_cents"])
-        )
+        self.calls.append(("adjust_balance", kwargs["account_id"], kwargs["delta_cents"]))
 
     def fetch_cash_account_by_name(self, db_path, name):
         self.calls.append(("fetch_account_by_name", name))
@@ -160,9 +158,7 @@ def test_cash_storage_bound_repositories_hide_db_path(db_path):
     account = storage.accounts.by_name("Bar Cash Box")
     storage.accounts.set_balance_cents(account["id"], 12345)
 
-    assert storage.fetch_cash_account_by_id(account["id"])[
-        "current_balance_cents"
-    ] == 12345
+    assert storage.fetch_cash_account_by_id(account["id"])["current_balance_cents"] == 12345
     assert storage.accounts.balances()[0]["balance_eur"] >= 0
 
 
@@ -202,9 +198,9 @@ def test_cash_service_object_records_count(
     )
 
     assert result["count_id"]
-    assert storage.fetch_cash_account_by_id(db_path, account["id"])[
-        "current_balance_cents"
-    ] == 12345
+    assert (
+        storage.fetch_cash_account_by_id(db_path, account["id"])["current_balance_cents"] == 12345
+    )
 
 
 def test_cash_service_record_count_uses_bound_sync_context(
@@ -247,9 +243,7 @@ def test_cash_service_record_count_uses_bound_sync_context(
 
     assert result.count_id
     assert result.to_dict()["imported_counts"] == 0
-    assert storage.fetch_cash_account_by_id(account["id"])[
-        "current_balance_cents"
-    ] == 4321
+    assert storage.fetch_cash_account_by_id(account["id"])["current_balance_cents"] == 4321
 
 
 def test_cash_service_count_uses_dependencies_in_order(

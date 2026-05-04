@@ -1,7 +1,6 @@
 from core import cash_service, storage
 
 
-
 def test_record_cash_movement_adjusts_balances(
     seeded_db,
     excel_path,
@@ -91,16 +90,16 @@ def test_record_cash_movement_requires_source_or_target(
 
 
 def test_runner_purchase_auto_returns_remaining_change_to_bar(
-        seeded_db,
-        excel_path,
-        text_path,
-        backup_dir,
-        sync_state_file,
-        config_stub,
-        bar_account_id,
-        runner_account_id,
-        supplier_account_id,
-        monkeypatch,
+    seeded_db,
+    excel_path,
+    text_path,
+    backup_dir,
+    sync_state_file,
+    config_stub,
+    bar_account_id,
+    runner_account_id,
+    supplier_account_id,
+    monkeypatch,
 ):
     # Start with Bar = 100€, Runner = 0€
     storage.set_cash_account_balance_cents(seeded_db, bar_account_id, 10000)
@@ -178,13 +177,15 @@ def test_runner_purchase_auto_returns_remaining_change_to_bar(
     assert len(movements) == 3
 
     auto_return = [
-        m for m in movements
+        m
+        for m in movements
         if m["from_account_id"] == runner_account_id
-           and m["to_account_id"] == bar_account_id
-           and m["amount_cents"] == 1300
+        and m["to_account_id"] == bar_account_id
+        and m["amount_cents"] == 1300
     ]
     assert len(auto_return) == 1
     assert "Auto-return" in (auto_return[0]["note"] or "")
+
 
 def test_runner_purchase_with_exact_amount_creates_no_auto_return(
     seeded_db,
@@ -259,6 +260,7 @@ def test_runner_purchase_with_exact_amount_creates_no_auto_return(
     movements = storage.fetch_all_cash_movements(seeded_db)
     assert len(movements) == 2
 
+
 def test_runner_purchase_auto_returns_remaining_balance_after_purchase(
     seeded_db,
     excel_path,
@@ -332,6 +334,7 @@ def test_runner_purchase_auto_returns_remaining_balance_after_purchase(
 
     movements = storage.fetch_all_cash_movements(seeded_db)
     assert len(movements) == 3
+
 
 def test_runner_purchase_can_overspend_and_leave_negative_runner_balance(
     seeded_db,
@@ -408,6 +411,7 @@ def test_runner_purchase_can_overspend_and_leave_negative_runner_balance(
 
     movements = storage.fetch_all_cash_movements(seeded_db)
     assert len(movements) == 2
+
 
 def test_runner_can_be_reimbursed_after_overspending(
     seeded_db,

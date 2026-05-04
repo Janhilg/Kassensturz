@@ -34,11 +34,11 @@ def test_create_cash_count_persists_count(seeded_db, bar_account_id):
 def test_calculate_total_cents_from_denominations():
     total = storage.calculate_total_cents_from_denominations(
         {
-            "denom_20": 2,   # 40.00
-            "denom_1": 3,    # 3.00
+            "denom_20": 2,  # 40.00
+            "denom_1": 3,  # 3.00
             "denom_050": 4,  # 2.00
-            "roll_2": 1,     # 50.00
-            "roll_1": 1,     # 25.00
+            "roll_2": 1,  # 50.00
+            "roll_1": 1,  # 25.00
         }
     )
 

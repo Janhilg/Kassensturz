@@ -11,6 +11,7 @@ def test_seed_default_cash_accounts_creates_expected_accounts(seeded_db):
     for name, config_name in names - config_names:
         assert name == config_name
 
+
 def test_seed_default_cash_accounts_is_idempotent(seeded_db):
     before = storage.fetch_all_cash_accounts(seeded_db, active_only=False)
     storage.seed_default_cash_accounts(seeded_db)

@@ -2,7 +2,9 @@ import app as app_module
 
 
 def test_index_post_count(client):
-    account = app_module.storage.fetch_cash_account_by_name(app_module.LOCAL_DB_FILE, "Bar Cash Box")
+    account = app_module.storage.fetch_cash_account_by_name(
+        app_module.LOCAL_DB_FILE, "Bar Cash Box"
+    )
     assert account is not None
 
     response = client.post(
@@ -35,8 +37,12 @@ def test_index_post_count(client):
 
 
 def test_cash_movement_post(client):
-    from_account = app_module.storage.fetch_cash_account_by_name(app_module.LOCAL_DB_FILE, "Bar Cash Box")
-    to_account = app_module.storage.fetch_cash_account_by_name(app_module.LOCAL_DB_FILE, "Runner Float")
+    from_account = app_module.storage.fetch_cash_account_by_name(
+        app_module.LOCAL_DB_FILE, "Bar Cash Box"
+    )
+    to_account = app_module.storage.fetch_cash_account_by_name(
+        app_module.LOCAL_DB_FILE, "Runner Float"
+    )
     assert from_account is not None
     assert to_account is not None
 

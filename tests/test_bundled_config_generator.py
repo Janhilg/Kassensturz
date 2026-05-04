@@ -13,9 +13,7 @@ def test_read_env_file_keeps_only_kassensturz_config(tmp_path):
         encoding="utf-8",
     )
 
-    assert read_env_file(env_file) == {
-        "KASSENSTURZ_ADMIN_PASSWORD": "admin-secret"
-    }
+    assert read_env_file(env_file) == {"KASSENSTURZ_ADMIN_PASSWORD": "admin-secret"}
 
 
 def test_render_module_obscures_plain_values_but_loads_them():

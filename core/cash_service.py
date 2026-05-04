@@ -4,10 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from core import export_utils
-from core import nextcloud_sync
-from core import storage
-from core import sync_state
+from core import export_utils, nextcloud_sync, storage, sync_state
 
 logger = logging.getLogger(__name__)
 
@@ -212,9 +209,7 @@ class CashService:
         if remote_exists:
             self.logger.info("Remote Excel found, starting import")
 
-            remote_data = self.export_service.import_all_from_excel(
-                sync_context.excel_path
-            )
+            remote_data = self.export_service.import_all_from_excel(sync_context.excel_path)
             remote_count_counts = len(remote_data.get("cash_counts", []))
             remote_count_movements = len(remote_data.get("cash_movements", []))
 
@@ -326,9 +321,7 @@ class CashService:
         self._validate_count(request.total_cents, request.denominations)
 
         if request.denominations:
-            denoms = {
-                k: v for k, v in request.denominations.items() if v not in (None, 0, "")
-            }
+            denoms = {k: v for k, v in request.denominations.items() if v not in (None, 0, "")}
             if denoms:
                 self.logger.debug("Count denominations | %s", denoms)
 
