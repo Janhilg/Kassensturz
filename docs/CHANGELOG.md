@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.9] - 2026-05-04
+
+### Changed
+
+- Split the large storage function module into focused implementation modules
+  for connection helpers, migrations, accounts, contexts, counts, movements, and
+  backups.
+- Kept `core.storage` as a compatibility facade for older call sites.
+- Added import-path documentation that points new code to direct implementation
+  modules and classes.
+
 ## [0.2.8] - 2026-05-04
 
 ### Added

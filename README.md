@@ -1,6 +1,6 @@
 # Kassensturz
 
-![Version](https://img.shields.io/badge/version-v0.2.8-blue)
+![Version](https://img.shields.io/badge/version-v0.2.9-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
@@ -57,10 +57,16 @@ web/
 core/
   cash/                cash workflow request/result/service classes
   storage_objects/     bound storage and repository classes
+  storage_accounts.py
+  storage_contexts.py
+  storage_counts.py
+  storage_movements.py
+  storage_migrations.py
+  storage_connection.py
   cash_export_service.py
   nextcloud_client.py
   sync_state_store.py
-  storage.py           SQLite functions and compatibility exports
+  storage.py           compatibility facade for older storage imports
   export_utils.py      Excel and text import/export
   nextcloud_sync.py    WebDAV functions
   sync_state.py        sync metadata functions
@@ -75,6 +81,7 @@ contexts, counts, movements, and backups.
 More detail:
 
 - [Developer context](docs/DEV_CONTEXT.md)
+- [Import paths](docs/import_paths.md)
 - [Data flow](docs/dataflow.md)
 - [Configuration and deployment](docs/configuration.md)
 - [Changelog](docs/CHANGELOG.md)
@@ -151,9 +158,10 @@ By default, development data is stored under `data/debug/`.
 
 Application and database schema versions live in `core/version.py`.
 
-SQLite schema migrations use `PRAGMA user_version`. `core/storage.py` currently
-defines schema version `1` as the baseline schema and `ensure_db_file()` migrates
-or repairs a database before normal reads and writes continue.
+SQLite schema migrations use `PRAGMA user_version`. `core/storage_migrations.py`
+currently defines schema version `1` as the baseline schema and
+`ensure_db_file()` migrates or repairs a database before normal reads and writes
+continue.
 
 When production starts with no cash counts or movements, it can bootstrap from
 the configured remote Excel file. Both the current Kassensturz export format and

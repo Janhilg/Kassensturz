@@ -69,6 +69,13 @@ core/
   storage_objects/
     cash_storage.py
     one repository class per file
+  storage_accounts.py
+  storage_contexts.py
+  storage_counts.py
+  storage_movements.py
+  storage_migrations.py
+  storage_connection.py
+  storage_backups.py
   admin_maintenance_service.py
   cash_export_service.py
   nextcloud_client.py
@@ -140,9 +147,23 @@ expose `to_dict()` for route flash messages and any adapter-style test doubles.
 
 Storage is split between function modules and one-class modules:
 
-- `core/storage.py`: module-level SQLite functions and compatibility exports
+- `core/storage.py`: compatibility facade that re-exports old module-level
+  SQLite function paths
+- `core/storage_accounts.py`: account records, balances, and account statements
+- `core/storage_contexts.py`: reusable/free-text context records
+- `core/storage_counts.py`: cash count records and count imports
+- `core/storage_movements.py`: cash movement records and movement imports
+- `core/storage_migrations.py`: schema SQL, migrations, and DB initialization
+- `core/storage_connection.py`: low-level connection and value helpers
+- `core/storage_backups.py`: local backup create/list/restore helpers
 - `core/storage_objects/`: bound object/repository API for new
   object-oriented usage, one class per file
+
+New code should import direct modules and classes instead of reaching through
+compatibility facades. For example, prefer
+`from core.storage_objects.cash_storage import CashStorage` and
+`from core.storage_counts import create_cash_count`. Existing
+`from core import storage` call sites can move gradually.
 
 Prefer this style in new code:
 
@@ -168,8 +189,8 @@ Bound repositories:
 - `CashCountRepository`
 - `CashBackupRepository`
 
-Do not remove the module-level functions casually. They are still useful for
-tests and for preserving older call sites while the refactor settles.
+Do not remove facade exports casually. They are still useful for preserving
+older call sites while the refactor settles.
 
 ## Versioning and Migrations
 
@@ -387,14 +408,15 @@ For a new cash workflow:
 
 For a storage change:
 
-1. Keep module-level functions working.
+1. Put new function behavior in the focused `core/storage_*.py` module.
 2. Add or update the relevant bound repository method.
-3. Cover both persistence behavior and any merge/import edge cases.
+3. Re-export through `core/storage.py` only when older call sites still need it.
+4. Cover both persistence behavior and any merge/import edge cases.
 
 For a schema change:
 
 1. Increment `DB_SCHEMA_VERSION` in `core/version.py`.
-2. Add a migration function in `core/storage.py`.
+2. Add a migration function in `core/storage_migrations.py`.
 3. Register the migration in `SCHEMA_MIGRATIONS`.
 4. Update `CASH_*_COLUMNS` or repository methods if the public data shape changes.
 5. Add tests for fresh DB creation and upgrade from the previous schema.
@@ -420,6 +442,7 @@ For config changes:
 ## Useful Docs
 
 - [Data flow](dataflow.md)
+- [Import paths](import_paths.md)
 - [Configuration and deployment](configuration.md)
 - [Changelog](CHANGELOG.md)
 - [License](LICENSE)

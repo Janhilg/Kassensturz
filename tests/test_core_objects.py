@@ -535,9 +535,23 @@ def test_admin_restore_backup_restores_then_rebuilds_without_nextcloud_upload(
 def test_legacy_core_modules_are_import_safe():
     import core.admin_service
     import core.service
+    import core.storage
+    import core.storage_accounts
+    import core.storage_connection
+    import core.storage_contexts
+    import core.storage_counts
+    import core.storage_migrations
+    import core.storage_movements
 
     assert core.admin_service.AdminMaintenanceService
     assert core.service.LegacyEntrySyncService
+    assert core.storage.ensure_db_file is core.storage_migrations.ensure_db_file
+    assert (
+        core.storage.merge_imported_cash_accounts_append_only
+        is core.storage_accounts.merge_imported_cash_accounts_append_only
+    )
+    assert core.storage.create_cash_count is core.storage_counts.create_cash_count
+    assert core.storage.create_cash_movement is core.storage_movements.create_cash_movement
 
 
 def test_legacy_append_and_sync_raises_clear_error():
