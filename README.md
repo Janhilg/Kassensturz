@@ -1,6 +1,6 @@
 # Kassensturz
 
-![Version](https://img.shields.io/badge/version-v0.2.3-blue)
+![Version](https://img.shields.io/badge/version-v0.2.4-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
@@ -145,6 +145,11 @@ Application and database schema versions live in `core/version.py`.
 SQLite schema migrations use `PRAGMA user_version`. `core/storage.py` currently
 defines schema version `1` as the baseline schema and `ensure_db_file()` migrates
 or repairs a database before normal reads and writes continue.
+
+When production starts with no cash counts or movements, it can bootstrap from
+the configured remote Excel file. Both the current Kassensturz export format and
+the legacy cash-count columns (`Date`, `Timestamp`, `Event name`, `Counted by`,
+`Cash sum`, `Event status`, `Comment`) are supported.
 
 When a schema change is needed, add a new migration function, increment
 `DB_SCHEMA_VERSION`, and cover both fresh databases and upgraded databases in

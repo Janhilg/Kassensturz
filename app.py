@@ -185,6 +185,14 @@ class KassensturzWebApp:
     def initialize_storage(self):
         self.storage.ensure_db_file()
         self.storage.seed_default_cash_accounts()
+        bootstrap_result = self.cash_service.bootstrap_remote_import_if_empty()
+        if not bootstrap_result.skipped:
+            self.logger.info(
+                "Production remote bootstrap imported data | counts=%s movements=%s source=%s",
+                bootstrap_result.imported_counts,
+                bootstrap_result.imported_movements,
+                bootstrap_result.source_format,
+            )
         self.logger.info(
             "App startup | mode=%s db=%s",
             self.config.MODE,

@@ -102,6 +102,24 @@ The draft compose file:
 
 The app data path inside the container is `/app/data`.
 
+On first production startup with an empty database, the app attempts to download
+the configured remote Excel file and import it before users start entering new
+counts. This supports both the current Kassensturz workbook and the old
+production cash-count workbook with these columns:
+
+```text
+Date
+Timestamp
+Event name
+Counted by
+Cash sum
+Event status
+Comment
+```
+
+Legacy rows are imported as counts for `Bar Cash Box`, because the old workbook
+does not contain an account column.
+
 Server-side example:
 
 ```yaml

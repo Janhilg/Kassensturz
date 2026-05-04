@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.4] - 2026-05-04
+
+### Added
+
+- Added production-only remote bootstrap import for empty databases.
+- Added legacy Excel import support for cash-count workbooks with columns:
+  `Date`, `Timestamp`, `Event name`, `Counted by`, `Cash sum`, `Event status`,
+  and `Comment`.
+- Added tests for legacy workbook parsing and production bootstrap import.
+
 ## [0.2.3] - 2026-05-04
 
 ### Added

@@ -171,6 +171,21 @@ Current schema version:
 - `1`: baseline cash accounts, contexts, movements, counts, denominations, and
   append-only sync columns
 
+Production bootstrap:
+
+- When `Config.MODE == "production"` and the database has no counts or
+  movements, startup attempts to download the configured remote Excel file.
+- The importer accepts both the current Kassensturz multi-sheet workbook and the
+  old production cash-count workbook.
+- Legacy columns map as follows:
+  `Event name` -> `context_label`, `Counted by` -> `counted_by`,
+  `Cash sum` -> `total_cents`, `Event status` -> `count_type`,
+  `Comment` -> `note`, and `Date`/`Timestamp` -> `counted_at`.
+- Legacy rows are imported against `acc_bar_cash_box` because the old format had
+  no account column.
+- Legacy import IDs are deterministic, so re-importing the same remote rows does
+  not create duplicates.
+
 Migration rules:
 
 - New DBs must end up at `DB_SCHEMA_VERSION`.

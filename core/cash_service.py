@@ -86,6 +86,24 @@ class CashMovementResult:
         }
 
 
+@dataclass(frozen=True)
+class RemoteBootstrapResult:
+    imported_counts: int
+    imported_movements: int
+    source_format: str
+    skipped: bool
+    reason: str = ""
+
+    def to_dict(self) -> dict:
+        return {
+            "imported_counts": self.imported_counts,
+            "imported_movements": self.imported_movements,
+            "source_format": self.source_format,
+            "skipped": self.skipped,
+            "reason": self.reason,
+        }
+
+
 class CashService:
     def __init__(
         self,
@@ -301,6 +319,129 @@ class CashService:
             uploaded=upload_result,
             backup=str(backup_file),
             duration_seconds=duration,
+        )
+
+    def _cash_activity_count(self, sync_context: CashSyncContext) -> int:
+        return self._storage_call(
+            "get_row_count",
+            sync_context,
+            table_name="cash_counts",
+        ) + self._storage_call(
+            "get_row_count",
+            sync_context,
+            table_name="cash_movements",
+        )
+
+    def _set_balances_from_latest_counts(self, sync_context: CashSyncContext):
+        latest_counts_by_account = {}
+        for count in self._storage_call("fetch_all_cash_counts", sync_context):
+            account_id = count.get("cash_account_id")
+            if account_id:
+                latest_counts_by_account[account_id] = count
+
+        for account_id, count in latest_counts_by_account.items():
+            self._storage_call(
+                "set_cash_account_balance_cents",
+                sync_context,
+                account_id=account_id,
+                balance_cents=int(count["total_cents"]),
+            )
+
+    def bootstrap_remote_import_if_empty(
+        self,
+        sync_context: CashSyncContext | None = None,
+    ) -> RemoteBootstrapResult:
+        sync_context = self._context(sync_context)
+        if getattr(sync_context.config, "MODE", "") != "production":
+            return RemoteBootstrapResult(
+                imported_counts=0,
+                imported_movements=0,
+                source_format="",
+                skipped=True,
+                reason="not_production",
+            )
+
+        if self._cash_activity_count(sync_context) > 0:
+            return RemoteBootstrapResult(
+                imported_counts=0,
+                imported_movements=0,
+                source_format="",
+                skipped=True,
+                reason="database_not_empty",
+            )
+
+        remote_exists = self.nextcloud_client.download_remote_excel_if_exists(
+            local_excel_path=sync_context.excel_path,
+            config=sync_context.config,
+        )
+        if not remote_exists:
+            return RemoteBootstrapResult(
+                imported_counts=0,
+                imported_movements=0,
+                source_format="",
+                skipped=True,
+                reason="remote_missing",
+            )
+
+        remote_data = self.export_service.import_all_from_excel(sync_context.excel_path)
+        source_format = str(remote_data.get("source_format") or "")
+
+        accounts_result = self._storage_call(
+            "merge_imported_cash_accounts_append_only",
+            sync_context,
+            imported_accounts=remote_data.get("cash_accounts", []),
+        )
+        contexts_result = self._storage_call(
+            "merge_imported_cash_contexts_append_only",
+            sync_context,
+            imported_contexts=remote_data.get("cash_contexts", []),
+        )
+        counts_result = self._storage_call(
+            "merge_imported_cash_counts_append_only",
+            sync_context,
+            imported_counts=remote_data.get("cash_counts", []),
+        )
+        movements_result = self._storage_call(
+            "merge_imported_cash_movements_append_only",
+            sync_context,
+            imported_movements=remote_data.get("cash_movements", []),
+        )
+
+        imported_counts = counts_result["imported"]
+        imported_movements = movements_result["imported"]
+
+        if imported_counts and not remote_data.get("cash_movements"):
+            self._set_balances_from_latest_counts(sync_context)
+
+        self.export_service.export_all(
+            db_path=sync_context.db_path,
+            excel_path=sync_context.excel_path,
+            text_path=sync_context.text_path,
+        )
+        self.sync_state_store.update_sync_state(
+            sync_context.sync_state_file,
+            {
+                "bootstrap_imported_counts": imported_counts,
+                "bootstrap_imported_movements": imported_movements,
+                "bootstrap_source_format": source_format,
+            },
+        )
+
+        self.logger.info(
+            "Remote bootstrap import finished | source=%s accounts=%s contexts=%s "
+            "counts=%s movements=%s",
+            source_format,
+            accounts_result["imported"],
+            contexts_result["imported"],
+            imported_counts,
+            imported_movements,
+        )
+
+        return RemoteBootstrapResult(
+            imported_counts=imported_counts,
+            imported_movements=imported_movements,
+            source_format=source_format,
+            skipped=False,
         )
 
     def record_count(
