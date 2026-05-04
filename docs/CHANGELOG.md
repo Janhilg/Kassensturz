@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.12] - 2026-05-04
+
+### Added
+
+- Added an allowlist-based import-path test to prevent new compatibility facade
+  imports from creeping into implementation files.
+
 ## [0.2.11] - 2026-05-04
 
 ### Changed
