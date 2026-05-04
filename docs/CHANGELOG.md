@@ -29,8 +29,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Flask routes now build request objects and call app-level service wrappers instead of passing path/config keyword arguments through each route.
-- `CashService` now owns a `CashSyncContext` and returns typed result objects, while compatibility wrappers still return dictionaries for older call sites.
+- Flask routes now build request objects and call app-level service methods instead of passing path/config keyword arguments through each route.
+- `CashService` now owns a `CashSyncContext` and returns typed result objects.
+- Removed the old path-heavy cash service compatibility wrappers after moving routes and tests to request/context-based calls.
 - `config.py` is tracked again and contains only structure plus safe defaults.
 - Docker/server deployments are documented as environment-driven, while PyInstaller is documented as a trusted-user portable workaround.
 

@@ -1,7 +1,12 @@
 import pytest
 
 from core.admin_service import AdminMaintenanceService
-from core.cash_service import CashCountRequest, CashService, CashSyncContext
+from core.cash_service import (
+    CashCountRequest,
+    CashMovementRequest,
+    CashService,
+    CashSyncContext,
+)
 from core.export_utils import CashExportService
 from core.nextcloud_sync import NextcloudClient
 from core.storage import CashStorage
@@ -140,6 +145,24 @@ class AdminRecordingStorage:
         self.calls.append(("restore_backup", kwargs["backup_file"], kwargs["db_path"]))
 
 
+def _cash_sync_context(
+    db_path,
+    excel_path,
+    text_path,
+    backup_dir,
+    sync_state_file,
+    config,
+):
+    return CashSyncContext(
+        db_path=db_path,
+        excel_path=excel_path,
+        text_path=text_path,
+        backup_dir=backup_dir,
+        sync_state_file=sync_state_file,
+        config=config,
+    )
+
+
 def test_cash_storage_object_seeds_default_accounts(db_path):
     storage = CashStorage()
 
@@ -174,30 +197,35 @@ def test_cash_service_object_records_count(
     storage.ensure_db_file(db_path)
     storage.seed_default_cash_accounts(db_path)
     account = storage.fetch_cash_account_by_name(db_path, "Bar Cash Box")
+    sync_context = _cash_sync_context(
+        db_path,
+        excel_path,
+        text_path,
+        backup_dir,
+        sync_state_file,
+        config_stub,
+    )
 
     service = CashService(
         storage_repo=storage,
         export_service=CashExportService(),
         nextcloud_client=NoopNextcloudClient(),
         sync_state_store=SyncStateStore(),
+        sync_context=sync_context,
     )
 
-    result = service.record_cash_count_and_sync(
-        db_path=db_path,
-        excel_path=excel_path,
-        text_path=text_path,
-        backup_dir=backup_dir,
-        sync_state_file=sync_state_file,
-        config=config_stub,
-        cash_account_id=account["id"],
-        counted_by="Jan",
-        total_cents=12345,
-        count_type="opening",
-        context_label="Friday Bar",
-        denominations=None,
+    result = service.record_count(
+        CashCountRequest(
+            cash_account_id=account["id"],
+            counted_by="Jan",
+            total_cents=12345,
+            count_type="opening",
+            context_label="Friday Bar",
+            denominations=None,
+        )
     )
 
-    assert result["count_id"]
+    assert result.count_id
     assert (
         storage.fetch_cash_account_by_id(db_path, account["id"])["current_balance_cents"] == 12345
     )
@@ -255,29 +283,34 @@ def test_cash_service_count_uses_dependencies_in_order(
     config_stub,
 ):
     calls = []
+    sync_context = _cash_sync_context(
+        db_path,
+        excel_path,
+        text_path,
+        backup_dir,
+        sync_state_file,
+        config_stub,
+    )
     service = CashService(
         storage_repo=RecordingStorage(calls),
         export_service=RecordingExportService(calls),
         nextcloud_client=RecordingNextcloudClient(calls),
         sync_state_store=RecordingSyncStateStore(calls),
+        sync_context=sync_context,
     )
 
-    result = service.record_cash_count_and_sync(
-        db_path=db_path,
-        excel_path=excel_path,
-        text_path=text_path,
-        backup_dir=backup_dir,
-        sync_state_file=sync_state_file,
-        config=config_stub,
-        cash_account_id="acc_bar_cash_box",
-        counted_by="Jan",
-        total_cents=12345,
-        count_type="opening",
-        context_label="Friday Bar",
-        denominations=None,
+    result = service.record_count(
+        CashCountRequest(
+            cash_account_id="acc_bar_cash_box",
+            counted_by="Jan",
+            total_cents=12345,
+            count_type="opening",
+            context_label="Friday Bar",
+            denominations=None,
+        )
     )
 
-    assert result["count_id"] == "count-1"
+    assert result.count_id == "count-1"
     assert [call[0] for call in calls] == [
         "create_cash_count",
         "set_balance",
@@ -316,6 +349,14 @@ def test_cash_service_remote_sync_imports_before_second_export(
             return {"imported": 1, "skipped": 0}
 
     calls = []
+    sync_context = _cash_sync_context(
+        db_path,
+        excel_path,
+        text_path,
+        backup_dir,
+        sync_state_file,
+        config_stub,
+    )
     service = CashService(
         storage_repo=RemoteStorage(calls),
         export_service=RecordingExportService(
@@ -329,19 +370,13 @@ def test_cash_service_remote_sync_imports_before_second_export(
         ),
         nextcloud_client=RecordingNextcloudClient(calls, remote_exists=True),
         sync_state_store=RecordingSyncStateStore(calls),
+        sync_context=sync_context,
     )
 
-    result = service.rebuild_exports_and_sync(
-        db_path=db_path,
-        excel_path=excel_path,
-        text_path=text_path,
-        backup_dir=backup_dir,
-        sync_state_file=sync_state_file,
-        config=config_stub,
-    )
+    result = service.rebuild_exports()
 
-    assert result["imported_counts"] == 1
-    assert result["imported_movements"] == 1
+    assert result.imported_counts == 1
+    assert result.imported_movements == 1
     assert [call[0] for call in calls] == [
         "create_backup",
         "export_all",
@@ -365,39 +400,45 @@ def test_cash_service_validation_edges(
     sync_state_file,
     config_stub,
 ):
-    service = CashService(storage_repo=RecordingStorage([]))
-    common = {
-        "db_path": db_path,
-        "excel_path": excel_path,
-        "text_path": text_path,
-        "backup_dir": backup_dir,
-        "sync_state_file": sync_state_file,
-        "config": config_stub,
-    }
+    sync_context = _cash_sync_context(
+        db_path,
+        excel_path,
+        text_path,
+        backup_dir,
+        sync_state_file,
+        config_stub,
+    )
+    service = CashService(
+        storage_repo=RecordingStorage([]),
+        sync_context=sync_context,
+    )
 
     with pytest.raises(ValueError, match="Amount must be > 0"):
-        service.record_cash_movement_and_sync(
-            **common,
-            from_account_id="source",
-            to_account_id="target",
-            amount_cents=0,
+        service.record_movement(
+            CashMovementRequest(
+                from_account_id="source",
+                to_account_id="target",
+                amount_cents=0,
+            )
         )
 
     with pytest.raises(ValueError, match="same"):
-        service.record_cash_movement_and_sync(
-            **common,
-            from_account_id="same",
-            to_account_id="same",
-            amount_cents=1,
+        service.record_movement(
+            CashMovementRequest(
+                from_account_id="same",
+                to_account_id="same",
+                amount_cents=1,
+            )
         )
 
     with pytest.raises(ValueError, match="negative"):
-        service.record_cash_count_and_sync(
-            **common,
-            cash_account_id="account",
-            counted_by="Jan",
-            total_cents=-1,
-            count_type="opening",
+        service.record_count(
+            CashCountRequest(
+                cash_account_id="account",
+                counted_by="Jan",
+                total_cents=-1,
+                count_type="opening",
+            )
         )
 
 

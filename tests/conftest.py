@@ -4,6 +4,18 @@ import pytest
 
 import app as app_module
 from core import storage
+from core.cash_service import CashService, CashSyncContext
+from core.export_utils import CashExportService
+from core.storage import CashStorage
+from core.sync_state import SyncStateStore
+
+
+class NoopNextcloudClient:
+    def download_remote_excel_if_exists(self, *, local_excel_path, config):
+        return False
+
+    def upload_files(self, *, excel_path, text_path, config):
+        return {"uploaded": False}
 
 
 @pytest.fixture
@@ -80,6 +92,36 @@ def config_stub():
         ADMIN_PASSWORD = "admin"
 
     return ConfigStub
+
+
+@pytest.fixture
+def cash_sync_context(
+    seeded_db: Path,
+    excel_path: Path,
+    text_path: Path,
+    backup_dir: Path,
+    sync_state_file: Path,
+    config_stub,
+) -> CashSyncContext:
+    return CashSyncContext(
+        db_path=seeded_db,
+        excel_path=excel_path,
+        text_path=text_path,
+        backup_dir=backup_dir,
+        sync_state_file=sync_state_file,
+        config=config_stub,
+    )
+
+
+@pytest.fixture
+def cash_service_instance(cash_sync_context: CashSyncContext) -> CashService:
+    return CashService(
+        storage_repo=CashStorage(cash_sync_context.db_path),
+        export_service=CashExportService(),
+        nextcloud_client=NoopNextcloudClient(),
+        sync_state_store=SyncStateStore(),
+        sync_context=cash_sync_context,
+    )
 
 
 @pytest.fixture

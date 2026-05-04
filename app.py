@@ -120,10 +120,6 @@ class KassensturzWebApp:
             sync_context=self._sync_context(),
         )
 
-        self.record_cash_count_and_sync = self.cash_service.record_cash_count_and_sync
-        self.record_cash_movement_and_sync = self.cash_service.record_cash_movement_and_sync
-        self.rebuild_exports_and_sync = self.cash_service.rebuild_exports_and_sync
-
     def _create_flask_app(self) -> Flask:
         flask_app = Flask(__name__)
         flask_app.config.from_object(self.config)

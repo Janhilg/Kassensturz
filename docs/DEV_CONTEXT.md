@@ -79,22 +79,15 @@ entry-based sync code is called.
 - template context helpers
 - path configuration through `AppPaths`
 - service wiring
-- app-level wrapper methods used by tests
+- thin app-level methods used by routes and route tests
 
-Routes should build request objects and call app-level wrappers:
+Routes should build request objects and call app-level methods:
 
 - `record_cash_count(CashCountRequest)`
 - `record_cash_movement(CashMovementRequest)`
 - `rebuild_exports()`
 
-The older compatibility methods still exist because some code and tests exercise
-them:
-
-- `record_cash_count_and_sync(...)`
-- `record_cash_movement_and_sync(...)`
-- `rebuild_exports_and_sync(...)`
-
-When adding or changing routes, prefer testing against the app-level wrapper
+When adding or changing routes, prefer testing against the app-level
 methods. That keeps route tests focused on request parsing and response behavior.
 
 ## Service Layer
@@ -125,8 +118,8 @@ New application code should call:
 - `CashService.record_movement(request)`
 - `CashService.rebuild_exports()`
 
-Compatibility wrappers return dictionaries for older call sites. The typed result
-objects expose `to_dict()` for route flash messages and compatibility tests.
+The old path-heavy compatibility wrappers were removed. Typed result objects
+expose `to_dict()` for route flash messages and any adapter-style test doubles.
 
 ## Storage Layer
 
@@ -323,7 +316,7 @@ For a new cash workflow:
 1. Add or extend a request dataclass in `cash_service.py`.
 2. Implement validation and business behavior in `CashService`.
 3. Use bound storage repositories where possible.
-4. Add app-level wrapper methods if routes need to call it.
+4. Add app-level methods if routes need to call it.
 5. Test service behavior with fake dependencies.
 6. Test route parsing separately from service internals.
 
@@ -348,7 +341,8 @@ For config changes:
 - Do not reintroduce secrets into `config.py`.
 - Do not make the PyInstaller bundled config sound cryptographically secure.
 - Do not move route parsing assertions into service tests; keep layers separate.
-- Preserve compatibility wrappers until all old call sites are intentionally gone.
+- Do not reintroduce path-heavy service wrappers; pass request objects and a
+  `CashSyncContext` instead.
 
 ## Useful Docs
 
