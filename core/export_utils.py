@@ -326,3 +326,10 @@ def import_all_from_excel(excel_path: Path) -> dict:
         "cash_movements": imported_movements,
         "cash_counts": imported_counts,
     }
+
+
+class CashExportService:
+    export_excel = staticmethod(export_excel)
+    export_text = staticmethod(export_text)
+    export_all = staticmethod(export_all)
+    import_all_from_excel = staticmethod(import_all_from_excel)

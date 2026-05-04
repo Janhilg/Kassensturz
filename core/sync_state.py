@@ -30,3 +30,9 @@ def update_sync_state(sync_state_file: Path, updates: dict):
     state.update(updates)
     save_sync_state(sync_state_file, state)
     logger.info("Sync state updated | updates=%s", updates)
+
+
+class SyncStateStore:
+    load_sync_state = staticmethod(load_sync_state)
+    save_sync_state = staticmethod(save_sync_state)
+    update_sync_state = staticmethod(update_sync_state)

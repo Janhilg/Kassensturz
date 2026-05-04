@@ -29,3 +29,83 @@ def test_cash_movement_renders_account_translation_keys_for_both_selects(client)
     body = response.get_data(as_text=True)
 
     assert body.count('data-i18n="account_runner_float"') == 2
+
+
+def test_index_post_uses_web_app_count_service(client, monkeypatch):
+    account = app_module.storage.fetch_cash_account_by_name(
+        app_module.LOCAL_DB_FILE,
+        "Bar Cash Box",
+    )
+    calls = []
+
+    def fake_record_cash_count(**kwargs):
+        calls.append(kwargs)
+        return {"imported_counts": 0, "imported_movements": 0, "count_id": "count-2"}
+
+    monkeypatch.setattr(
+        app_module.web_app,
+        "record_cash_count_and_sync",
+        fake_record_cash_count,
+    )
+
+    response = client.post(
+        "/",
+        data={
+            "cash_account_id": account["id"],
+            "counted_by": "Jan",
+            "count_type": "opening",
+            "context_label": "Friday Bar",
+            "note": "Opening count",
+            "total_eur": "123.45",
+        },
+    )
+
+    assert response.status_code == 302
+    assert calls[0]["db_path"] == app_module.web_app.paths.db_file
+    assert calls[0]["cash_account_id"] == account["id"]
+    assert calls[0]["total_cents"] == 12345
+
+
+def test_cash_movement_post_uses_web_app_movement_service(client, monkeypatch):
+    from_account = app_module.storage.fetch_cash_account_by_name(
+        app_module.LOCAL_DB_FILE,
+        "Bar Cash Box",
+    )
+    to_account = app_module.storage.fetch_cash_account_by_name(
+        app_module.LOCAL_DB_FILE,
+        "Runner Float",
+    )
+    calls = []
+
+    def fake_record_cash_movement(**kwargs):
+        calls.append(kwargs)
+        return {
+            "imported_counts": 0,
+            "imported_movements": 0,
+            "movement_id": "movement-2",
+        }
+
+    monkeypatch.setattr(
+        app_module.web_app,
+        "record_cash_movement_and_sync",
+        fake_record_cash_movement,
+    )
+
+    response = client.post(
+        "/cash/movement",
+        data={
+            "from_account_id": from_account["id"],
+            "to_account_id": to_account["id"],
+            "amount_eur": "50.00",
+            "context_label": "Friday Bar",
+            "actor": "Jan",
+            "reference": "REF-1",
+            "note": "Float transfer",
+        },
+    )
+
+    assert response.status_code == 302
+    assert calls[0]["db_path"] == app_module.web_app.paths.db_file
+    assert calls[0]["from_account_id"] == from_account["id"]
+    assert calls[0]["to_account_id"] == to_account["id"]
+    assert calls[0]["amount_cents"] == 5000

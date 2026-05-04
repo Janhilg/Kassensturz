@@ -35,6 +35,36 @@ def test_seed_default_cash_accounts_repairs_translation_key_names(db_path):
     assert account["name"] == "Bar Cash Box"
 
 
+def test_merge_imported_cash_accounts_skips_duplicate_ids_and_names(seeded_db):
+    imported = [
+        {
+            "id": "acc_bar_cash_box",
+            "name": "Bar Cash Box",
+            "account_type": config.Config.ACCOUNT_TYPE_CASH_BOX,
+            "current_balance_cents": 99999,
+            "is_active": 1,
+            "sort_order": 20,
+            "created_at": "2026-05-04T08:00:00",
+        },
+        {
+            "id": "remote-bar-copy",
+            "name": "Bar Cash Box",
+            "account_type": config.Config.ACCOUNT_TYPE_CASH_BOX,
+            "current_balance_cents": 99999,
+            "is_active": 1,
+            "sort_order": 21,
+            "created_at": "2026-05-04T08:01:00",
+        },
+    ]
+
+    result = storage.merge_imported_cash_accounts_append_only(seeded_db, imported)
+
+    assert result["imported"] == 0
+    assert result["skipped"] == 2
+    assert result["matched_by_name"] == 1
+    assert storage.fetch_cash_account_by_id(seeded_db, "remote-bar-copy") is None
+
+
 def test_set_cash_account_balance_cents(seeded_db, bar_account_id):
     storage.set_cash_account_balance_cents(seeded_db, bar_account_id, 12345)
 

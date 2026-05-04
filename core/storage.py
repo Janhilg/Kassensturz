@@ -1572,3 +1572,86 @@ def restore_backup(db_path: Path, backup_file: Path):
 
     logger.info("Database restored from backup | backup=%s db=%s", backup_file, db_path)
 
+
+class CashStorage:
+    DENOM_FIELDS = DENOM_FIELDS
+    DENOM_VALUE_CENTS = DENOM_VALUE_CENTS
+    CASH_ACCOUNT_COLUMNS = CASH_ACCOUNT_COLUMNS
+    CASH_CONTEXT_COLUMNS = CASH_CONTEXT_COLUMNS
+    CASH_MOVEMENT_COLUMNS = CASH_MOVEMENT_COLUMNS
+    CASH_COUNT_COLUMNS = CASH_COUNT_COLUMNS
+
+    now_iso = staticmethod(now_iso)
+    new_id = staticmethod(new_id)
+    get_connection = staticmethod(get_connection)
+    ensure_db_file = staticmethod(ensure_db_file)
+    dicts_from_rows = staticmethod(dicts_from_rows)
+    parse_optional_int = staticmethod(parse_optional_int)
+    normalize_optional_text = staticmethod(normalize_optional_text)
+    normalize_context_label = staticmethod(normalize_context_label)
+    cents_to_eur = staticmethod(cents_to_eur)
+    eur_to_cents = staticmethod(eur_to_cents)
+    row_values = staticmethod(row_values)
+
+    require_cash_account_by_name = staticmethod(require_cash_account_by_name)
+    fetch_cash_accounts_by_type = staticmethod(fetch_cash_accounts_by_type)
+    insert_cash_account = staticmethod(insert_cash_account)
+    fetch_all_cash_accounts = staticmethod(fetch_all_cash_accounts)
+    fetch_cash_account_by_id = staticmethod(fetch_cash_account_by_id)
+    fetch_cash_account_by_name = staticmethod(fetch_cash_account_by_name)
+    update_cash_account_active_state = staticmethod(update_cash_account_active_state)
+    seed_default_cash_accounts = staticmethod(seed_default_cash_accounts)
+
+    get_denomination_values_from_form = staticmethod(get_denomination_values_from_form)
+    calculate_total_cents_from_denominations = staticmethod(
+        calculate_total_cents_from_denominations
+    )
+    denominations_match_total_cents = staticmethod(denominations_match_total_cents)
+
+    insert_cash_context = staticmethod(insert_cash_context)
+    fetch_cash_context_by_id = staticmethod(fetch_cash_context_by_id)
+    fetch_recent_cash_contexts = staticmethod(fetch_recent_cash_contexts)
+    find_latest_cash_context_by_label = staticmethod(find_latest_cash_context_by_label)
+    touch_cash_context = staticmethod(touch_cash_context)
+    get_or_create_cash_context = staticmethod(get_or_create_cash_context)
+    get_latest_cash_context_label = staticmethod(get_latest_cash_context_label)
+
+    build_cash_movement_record = staticmethod(build_cash_movement_record)
+    insert_cash_movement = staticmethod(insert_cash_movement)
+    create_cash_movement = staticmethod(create_cash_movement)
+    fetch_all_cash_movements = staticmethod(fetch_all_cash_movements)
+    fetch_cash_movements_by_context_id = staticmethod(fetch_cash_movements_by_context_id)
+    fetch_recent_cash_movements = staticmethod(fetch_recent_cash_movements)
+    merge_imported_cash_movements_append_only = staticmethod(
+        merge_imported_cash_movements_append_only
+    )
+
+    merge_imported_cash_contexts_append_only = staticmethod(
+        merge_imported_cash_contexts_append_only
+    )
+    merge_imported_cash_accounts_append_only = staticmethod(
+        merge_imported_cash_accounts_append_only
+    )
+    merge_imported_cash_counts_append_only = staticmethod(
+        merge_imported_cash_counts_append_only
+    )
+
+    build_cash_count_record = staticmethod(build_cash_count_record)
+    insert_cash_count = staticmethod(insert_cash_count)
+    create_cash_count = staticmethod(create_cash_count)
+    fetch_all_cash_counts = staticmethod(fetch_all_cash_counts)
+    fetch_cash_counts_by_context_id = staticmethod(fetch_cash_counts_by_context_id)
+    fetch_recent_cash_counts = staticmethod(fetch_recent_cash_counts)
+
+    set_cash_account_balance_cents = staticmethod(set_cash_account_balance_cents)
+    adjust_cash_account_balance_cents = staticmethod(adjust_cash_account_balance_cents)
+    get_cash_account_balance_cents = staticmethod(get_cash_account_balance_cents)
+    fetch_cash_account_balances = staticmethod(fetch_cash_account_balances)
+    fetch_latest_cash_count_for_account = staticmethod(fetch_latest_cash_count_for_account)
+    fetch_cash_account_statement = staticmethod(fetch_cash_account_statement)
+
+    get_row_count = staticmethod(get_row_count)
+    create_backup = staticmethod(create_backup)
+    list_backups = staticmethod(list_backups)
+    restore_backup = staticmethod(restore_backup)
+

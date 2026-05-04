@@ -284,3 +284,16 @@ def upload_files(excel_path: Path, text_path: Path, config):
 
     logger.info("Upload summary | %s", combined)
     return combined
+
+
+class NextcloudClient:
+    get_verify_setting = staticmethod(get_verify_setting)
+    nextcloud_configured = staticmethod(nextcloud_configured)
+    build_webdav_url = staticmethod(build_webdav_url)
+    ensure_nextcloud_folder = staticmethod(ensure_nextcloud_folder)
+    download_remote_excel_to_temp = staticmethod(download_remote_excel_to_temp)
+    download_remote_excel_if_exists = staticmethod(download_remote_excel_if_exists)
+    upload_file_to_nextcloud = staticmethod(upload_file_to_nextcloud)
+    upload_excel_file_to_nextcloud = staticmethod(upload_excel_file_to_nextcloud)
+    upload_text_file_to_nextcloud = staticmethod(upload_text_file_to_nextcloud)
+    upload_files = staticmethod(upload_files)
