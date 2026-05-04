@@ -1,7 +1,7 @@
 import logging
 import time
 
-from core import export_utils, nextcloud_sync, storage, sync_state
+from core import export_utils, nextcloud_sync, sync_state
 from core.cash.cash_count_request import CashCountRequest
 from core.cash.cash_count_result import CashCountResult
 from core.cash.cash_movement_request import CashMovementRequest
@@ -9,6 +9,8 @@ from core.cash.cash_movement_result import CashMovementResult
 from core.cash.cash_sync_context import CashSyncContext
 from core.cash.remote_bootstrap_result import RemoteBootstrapResult
 from core.cash.sync_result import SyncResult
+from core.storage_connection import now_iso
+from core.storage_objects.cash_storage import CashStorage
 
 logger = logging.getLogger(__name__)
 
@@ -17,13 +19,13 @@ class CashService:
     def __init__(
         self,
         *,
-        storage_repo=storage,
+        storage_repo=None,
         export_service=export_utils,
         nextcloud_client=nextcloud_sync,
         sync_state_store=sync_state,
         sync_context: CashSyncContext | None = None,
     ):
-        self.storage = storage_repo
+        self.storage = storage_repo if storage_repo is not None else CashStorage()
         self.export_service = export_service
         self.nextcloud_client = nextcloud_client
         self.sync_state_store = sync_state_store
@@ -264,7 +266,7 @@ class CashService:
         payload = {
             **result.to_dict(),
             "status": "skipped" if result.skipped else "imported",
-            "checked_at": storage.now_iso(),
+            "checked_at": now_iso(),
             "mode": getattr(sync_context.config, "MODE", ""),
         }
         updates = {"bootstrap_last_check": payload}

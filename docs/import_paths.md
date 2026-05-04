@@ -61,6 +61,10 @@ from core.cash import CashCountRequest
 Use facades when preserving old code is the goal. Use direct modules when adding
 or changing implementation code.
 
+Implementation files are guarded by `tests/test_import_paths.py` and should not
+import `core.storage` or other compatibility facades. Keep facade coverage in
+small compatibility tests only.
+
 ## Migration Rule
 
 When touching an internal file or test that already uses a facade, prefer moving
@@ -73,8 +77,7 @@ Good cleanup targets:
   such as `from core.storage_counts import create_cash_count`
 - service or web code should import request/result/service classes from their
   one-class modules
-- repository classes should move away from `from core import storage` as their
-  implementation modules settle
+- storage adapters should import focused storage functions directly
 
 Keep compatibility-path tests intentionally small. They should prove old imports
 still resolve, not encourage new code to use them.

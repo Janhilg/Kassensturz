@@ -16,12 +16,7 @@ COMPATIBILITY_IMPORTS = {
     "core.storage_objects",
 }
 
-COMPATIBILITY_IMPORT_ALLOWLIST = {
-    Path("app.py"): {"core.storage"},
-    Path("core/cash/cash_service.py"): {"core.storage"},
-    Path("core/storage_objects/cash_storage.py"): {"core.storage"},
-    Path("web/kassensturz_web_app.py"): {"core.storage"},
-}
+COMPATIBILITY_IMPORT_ALLOWLIST = {}
 
 
 def _implementation_files() -> list[Path]:

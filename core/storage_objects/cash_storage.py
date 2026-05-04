@@ -1,5 +1,68 @@
 from pathlib import Path
 
+from core.storage_accounts import (
+    adjust_cash_account_balance_cents,
+    fetch_all_cash_accounts,
+    fetch_cash_account_balances,
+    fetch_cash_account_by_id,
+    fetch_cash_account_by_name,
+    fetch_cash_account_statement,
+    fetch_cash_accounts_by_type,
+    get_cash_account_balance_cents,
+    insert_cash_account,
+    merge_imported_cash_accounts_append_only,
+    require_cash_account_by_name,
+    seed_default_cash_accounts,
+    set_cash_account_balance_cents,
+    update_cash_account_active_state,
+)
+from core.storage_backups import create_backup, list_backups, restore_backup
+from core.storage_connection import (
+    calculate_total_cents_from_denominations,
+    cents_to_eur,
+    denominations_match_total_cents,
+    dicts_from_rows,
+    eur_to_cents,
+    get_connection,
+    get_denomination_values_from_form,
+    get_row_count,
+    new_id,
+    normalize_context_label,
+    normalize_optional_text,
+    now_iso,
+    parse_optional_int,
+    row_values,
+)
+from core.storage_contexts import (
+    fetch_cash_context_by_id,
+    fetch_recent_cash_contexts,
+    find_latest_cash_context_by_label,
+    get_latest_cash_context_label,
+    get_or_create_cash_context,
+    insert_cash_context,
+    merge_imported_cash_contexts_append_only,
+    touch_cash_context,
+)
+from core.storage_counts import (
+    build_cash_count_record,
+    create_cash_count,
+    fetch_all_cash_counts,
+    fetch_cash_counts_by_context_id,
+    fetch_latest_cash_count_for_account,
+    fetch_recent_cash_counts,
+    insert_cash_count,
+    merge_imported_cash_counts_append_only,
+)
+from core.storage_migrations import ensure_db_file, get_schema_version, migrate_database
+from core.storage_movements import (
+    build_cash_movement_record,
+    create_cash_movement,
+    fetch_all_cash_movements,
+    fetch_cash_movements_by_context_id,
+    fetch_recent_cash_movements,
+    insert_cash_movement,
+    merge_imported_cash_movements_append_only,
+)
 from core.storage_objects.cash_account_repository import CashAccountRepository
 from core.storage_objects.cash_backup_repository import CashBackupRepository
 from core.storage_objects.cash_context_repository import CashContextRepository
@@ -16,82 +79,6 @@ from core.storage_schema import (
 from core.version import DB_SCHEMA_VERSION
 
 SCHEMA_VERSION = DB_SCHEMA_VERSION
-
-
-def _storage_function(name: str):
-    def wrapper(*args, **kwargs):
-        from core import storage
-
-        return getattr(storage, name)(*args, **kwargs)
-
-    return wrapper
-
-
-now_iso = _storage_function("now_iso")
-new_id = _storage_function("new_id")
-get_connection = _storage_function("get_connection")
-dicts_from_rows = _storage_function("dicts_from_rows")
-parse_optional_int = _storage_function("parse_optional_int")
-normalize_optional_text = _storage_function("normalize_optional_text")
-normalize_context_label = _storage_function("normalize_context_label")
-cents_to_eur = _storage_function("cents_to_eur")
-eur_to_cents = _storage_function("eur_to_cents")
-row_values = _storage_function("row_values")
-get_denomination_values_from_form = _storage_function("get_denomination_values_from_form")
-calculate_total_cents_from_denominations = _storage_function(
-    "calculate_total_cents_from_denominations"
-)
-denominations_match_total_cents = _storage_function("denominations_match_total_cents")
-build_cash_movement_record = _storage_function("build_cash_movement_record")
-build_cash_count_record = _storage_function("build_cash_count_record")
-get_schema_version = _storage_function("get_schema_version")
-migrate_database = _storage_function("migrate_database")
-ensure_db_file = _storage_function("ensure_db_file")
-insert_cash_account = _storage_function("insert_cash_account")
-fetch_all_cash_accounts = _storage_function("fetch_all_cash_accounts")
-fetch_cash_accounts_by_type = _storage_function("fetch_cash_accounts_by_type")
-fetch_cash_account_by_id = _storage_function("fetch_cash_account_by_id")
-fetch_cash_account_by_name = _storage_function("fetch_cash_account_by_name")
-require_cash_account_by_name = _storage_function("require_cash_account_by_name")
-update_cash_account_active_state = _storage_function("update_cash_account_active_state")
-seed_default_cash_accounts = _storage_function("seed_default_cash_accounts")
-insert_cash_context = _storage_function("insert_cash_context")
-fetch_cash_context_by_id = _storage_function("fetch_cash_context_by_id")
-fetch_recent_cash_contexts = _storage_function("fetch_recent_cash_contexts")
-find_latest_cash_context_by_label = _storage_function("find_latest_cash_context_by_label")
-touch_cash_context = _storage_function("touch_cash_context")
-get_or_create_cash_context = _storage_function("get_or_create_cash_context")
-get_latest_cash_context_label = _storage_function("get_latest_cash_context_label")
-insert_cash_movement = _storage_function("insert_cash_movement")
-create_cash_movement = _storage_function("create_cash_movement")
-fetch_all_cash_movements = _storage_function("fetch_all_cash_movements")
-fetch_cash_movements_by_context_id = _storage_function("fetch_cash_movements_by_context_id")
-fetch_recent_cash_movements = _storage_function("fetch_recent_cash_movements")
-merge_imported_cash_movements_append_only = _storage_function(
-    "merge_imported_cash_movements_append_only"
-)
-merge_imported_cash_contexts_append_only = _storage_function(
-    "merge_imported_cash_contexts_append_only"
-)
-merge_imported_cash_accounts_append_only = _storage_function(
-    "merge_imported_cash_accounts_append_only"
-)
-merge_imported_cash_counts_append_only = _storage_function("merge_imported_cash_counts_append_only")
-insert_cash_count = _storage_function("insert_cash_count")
-create_cash_count = _storage_function("create_cash_count")
-fetch_all_cash_counts = _storage_function("fetch_all_cash_counts")
-fetch_cash_counts_by_context_id = _storage_function("fetch_cash_counts_by_context_id")
-fetch_recent_cash_counts = _storage_function("fetch_recent_cash_counts")
-set_cash_account_balance_cents = _storage_function("set_cash_account_balance_cents")
-adjust_cash_account_balance_cents = _storage_function("adjust_cash_account_balance_cents")
-get_cash_account_balance_cents = _storage_function("get_cash_account_balance_cents")
-fetch_cash_account_balances = _storage_function("fetch_cash_account_balances")
-fetch_latest_cash_count_for_account = _storage_function("fetch_latest_cash_count_for_account")
-fetch_cash_account_statement = _storage_function("fetch_cash_account_statement")
-get_row_count = _storage_function("get_row_count")
-create_backup = _storage_function("create_backup")
-list_backups = _storage_function("list_backups")
-restore_backup = _storage_function("restore_backup")
 
 
 class CashStorage:

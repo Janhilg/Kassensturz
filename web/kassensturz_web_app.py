@@ -4,7 +4,6 @@ from pathlib import Path
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
 from config import Config
-from core import storage
 from core.cash.cash_count_request import CashCountRequest
 from core.cash.cash_movement_request import CashMovementRequest
 from core.cash.cash_service import CashService
@@ -12,6 +11,7 @@ from core.cash.cash_sync_context import CashSyncContext
 from core.cash_export_service import CashExportService
 from core.logging_config import setup_logging
 from core.nextcloud_client import NextcloudClient
+from core.storage_objects.cash_storage import CashStorage
 from core.sync_state_store import SyncStateStore
 from core.version import APP_VERSION, DB_SCHEMA_VERSION
 from web.app_paths import AppPaths, bundled_resource_base_dir, default_base_dir
@@ -54,7 +54,7 @@ class KassensturzWebApp:
         )
 
     def _configure_services(self):
-        self.storage = storage.CashStorage(self.paths.db_file)
+        self.storage = CashStorage(self.paths.db_file)
         self.sync_state = SyncStateStore()
         self.export_service = CashExportService()
         self.nextcloud_client = NextcloudClient()

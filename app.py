@@ -4,11 +4,13 @@ from pathlib import Path
 from flask import Flask
 
 from config import Config
-from core import storage
+from core.storage_objects.cash_storage import CashStorage
 from web.app_paths import AppPaths
 from web.kassensturz_web_app import KassensturzWebApp
 
 mimetypes.add_type("application/javascript", ".js")
+
+storage = CashStorage()
 
 __all__ = [
     "AppPaths",

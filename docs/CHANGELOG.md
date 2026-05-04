@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.16] - 2026-05-04
+
+### Changed
+
+- Removed the remaining internal `core.storage` compatibility imports from the
+  app, web app, cash service, and `CashStorage` adapter.
+- Tightened the implementation import-path guard so no `core.storage`
+  compatibility imports are allowlisted anymore.
+
 ## [0.2.15] - 2026-05-04
 
 ### Fixed
