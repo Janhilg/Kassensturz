@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.8] - 2026-05-04
+
+### Added
+
+- Added a sanitized legacy Excel workbook fixture covering spreadsheet-specific
+  date, time, currency, and status quirks.
+
+### Changed
+
+- Legacy cash-count import now handles Excel serial dates/times, German
+  two-digit date text, dotted time text, non-breaking currency spaces, and
+  common German status labels.
+
 ## [0.2.7] - 2026-05-04
 
 ### Changed

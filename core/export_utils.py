@@ -1,10 +1,11 @@
 import logging
 import uuid
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.utils.datetime import from_excel
 
 from core import storage
 
@@ -93,12 +94,29 @@ def _parse_legacy_date(value):
         return value.date()
     if isinstance(value, date):
         return value
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        try:
+            excel_date = from_excel(value)
+        except (TypeError, ValueError):
+            excel_date = None
+        if isinstance(excel_date, datetime):
+            return excel_date.date()
+        if isinstance(excel_date, date):
+            return excel_date
 
     text = _safe_str(value).strip()
     if not text:
         return None
 
-    for date_format in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%m/%d/%Y"):
+    for date_format in (
+        "%Y-%m-%d",
+        "%d.%m.%Y",
+        "%d.%m.%y",
+        "%d/%m/%Y",
+        "%d/%m/%y",
+        "%m/%d/%Y",
+        "%m/%d/%y",
+    ):
         try:
             return datetime.strptime(text, date_format).date()
         except ValueError:
@@ -115,12 +133,25 @@ def _parse_legacy_time(value):
         return value.time().replace(microsecond=0)
     if isinstance(value, time):
         return value.replace(microsecond=0)
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        if 0 <= value < 1:
+            seconds = round(value * 24 * 60 * 60)
+            return (datetime.min + timedelta(seconds=seconds)).time()
+
+        try:
+            excel_datetime = from_excel(value)
+        except (TypeError, ValueError):
+            excel_datetime = None
+        if isinstance(excel_datetime, datetime):
+            return excel_datetime.time().replace(microsecond=0)
+        if isinstance(excel_datetime, time):
+            return excel_datetime.replace(microsecond=0)
 
     text = _safe_str(value).strip()
     if not text:
         return None
 
-    for time_format in ("%H:%M:%S", "%H:%M"):
+    for time_format in ("%H:%M:%S", "%H:%M", "%H.%M.%S", "%H.%M"):
         try:
             return datetime.strptime(text, time_format).time()
         except ValueError:
@@ -133,11 +164,13 @@ def _parse_legacy_time(value):
 
 
 def _legacy_counted_at(raw_date, raw_timestamp) -> str:
-    if isinstance(raw_timestamp, datetime):
-        return raw_timestamp.isoformat(timespec="seconds")
-
     parsed_date = _parse_legacy_date(raw_date)
     parsed_time = _parse_legacy_time(raw_timestamp)
+
+    if isinstance(raw_timestamp, datetime) and (
+        not parsed_date or raw_timestamp.date().year > 1900
+    ):
+        return raw_timestamp.isoformat(timespec="seconds")
 
     if parsed_date and parsed_time:
         return datetime.combine(parsed_date, parsed_time).isoformat(timespec="seconds")
@@ -156,7 +189,10 @@ def _parse_legacy_cash_sum(value) -> int:
         if not text:
             raise ValueError("Legacy cash sum is empty")
 
-        text = text.replace("EUR", "").replace("€", "").replace(" ", "")
+        for currency_marker in ("EUR", "eur", "€"):
+            text = text.replace(currency_marker, "")
+        for separator in (" ", "\u00a0", "\u202f", "'"):
+            text = text.replace(separator, "")
         if "," in text and "." in text:
             if text.rfind(",") > text.rfind("."):
                 text = text.replace(".", "").replace(",", ".")
@@ -187,16 +223,26 @@ def _normalize_legacy_count_type(value) -> str:
         "open": "opening",
         "opening": "opening",
         "opened": "opening",
+        "offen": "opening",
+        "eroeffnet": "opening",
+        "er\u00f6ffnet": "opening",
+        "geoeffnet": "opening",
+        "ge\u00f6ffnet": "opening",
         "start": "opening",
         "closed": "closing",
         "close": "closing",
         "closing": "closing",
+        "geschlossen": "closing",
+        "abgeschlossen": "closing",
+        "ende": "closing",
         "end": "closing",
         "spot": "spot_check",
         "spot_check": "spot_check",
         "spotcheck": "spot_check",
+        "zwischenstand": "spot_check",
         "reconcile": "reconciliation",
         "reconciliation": "reconciliation",
+        "abgleich": "reconciliation",
     }
     return count_type_map.get(key, key)
 

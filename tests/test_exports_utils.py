@@ -1,8 +1,11 @@
 from datetime import date, time
+from pathlib import Path
 
 from openpyxl import Workbook
 
 from core import export_utils, storage
+
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
 def test_export_and_import_roundtrip(
@@ -105,3 +108,37 @@ def test_import_legacy_cash_count_workbook(tmp_path):
     assert count["total_cents"] == 123456
     assert count["count_type"] == "closing"
     assert count["note"] == "legacy closing count"
+
+
+def test_import_anonymized_legacy_cash_count_workbook_fixture():
+    imported = export_utils.import_all_from_excel(
+        FIXTURES_DIR / "legacy_cash_counts_anonymized.xlsx"
+    )
+
+    assert imported["source_format"] == "legacy_cash_counts"
+    assert len(imported["cash_contexts"]) == 2
+    assert len(imported["cash_counts"]) == 3
+
+    contexts = {context["label"]: context for context in imported["cash_contexts"]}
+    assert contexts["Event Alpha"]["last_used_at"] == "2026-05-02T18:30:15"
+    assert contexts["Event Beta"]["last_used_at"] == "2026-05-01T01:15:00"
+
+    first_count, second_count, third_count = imported["cash_counts"]
+
+    assert first_count["counted_at"] == "2026-04-30T23:45:00"
+    assert first_count["counted_by"] == "Person A"
+    assert first_count["context_label"] == "Event Alpha"
+    assert first_count["total_cents"] == 123456
+    assert first_count["count_type"] == "closing"
+
+    assert second_count["counted_at"] == "2026-05-01T01:15:00"
+    assert second_count["counted_by"] == "Person B"
+    assert second_count["context_label"] == "Event Beta"
+    assert second_count["total_cents"] == 98765
+    assert second_count["count_type"] == "opening"
+
+    assert third_count["counted_at"] == "2026-05-02T18:30:15"
+    assert third_count["counted_by"] == "Person C"
+    assert third_count["context_label"] == "Event Alpha"
+    assert third_count["total_cents"] == 111110
+    assert third_count["count_type"] == "spot_check"

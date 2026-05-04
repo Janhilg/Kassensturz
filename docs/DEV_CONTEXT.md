@@ -200,6 +200,8 @@ Production bootstrap:
   no account column.
 - Legacy import IDs are deterministic, so re-importing the same remote rows does
   not create duplicates.
+- A sanitized fixture workbook in `tests/fixtures/` covers legacy spreadsheet
+  date, time, currency, and status quirks.
 - Production bootstrap checks write `bootstrap_last_check` to sync state. A
   successful import also writes `bootstrap_last_import` and the legacy flat
   bootstrap counters for older diagnostics.
