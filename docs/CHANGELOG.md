@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.20] - 2026-05-04
+
+### Changed
+
+- Split backup/export/import/upload orchestration from `CashService` into the
+  dedicated `CashSyncService`.
+- Kept `CashService` focused on cash count and cash movement business behavior,
+  while preserving delegate methods for existing web-app call sites.
+
 ## [0.2.19] - 2026-05-04
 
 ### Added

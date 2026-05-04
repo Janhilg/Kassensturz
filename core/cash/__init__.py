@@ -5,6 +5,7 @@ _EXPORTS = {
     "CashMovementResult": ("core.cash.cash_movement_result", "CashMovementResult"),
     "CashService": ("core.cash.cash_service", "CashService"),
     "CashSyncContext": ("core.cash.cash_sync_context", "CashSyncContext"),
+    "CashSyncService": ("core.cash.cash_sync_service", "CashSyncService"),
     "RemoteBootstrapResult": (
         "core.cash.remote_bootstrap_result",
         "RemoteBootstrapResult",
@@ -29,6 +30,7 @@ __all__ = [
     "CashMovementResult",
     "CashService",
     "CashSyncContext",
+    "CashSyncService",
     "RemoteBootstrapResult",
     "SyncResult",
 ]

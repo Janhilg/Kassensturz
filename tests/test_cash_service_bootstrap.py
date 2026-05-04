@@ -3,8 +3,8 @@ from datetime import date, time
 from openpyxl import Workbook
 
 from core import sync_state
-from core.cash.cash_service import CashService
 from core.cash.cash_sync_context import CashSyncContext
+from core.cash.cash_sync_service import CashSyncService
 from core.cash_export_service import CashExportService
 from core.storage_accounts import fetch_cash_account_by_name
 from core.storage_counts import fetch_all_cash_counts
@@ -79,7 +79,7 @@ def test_production_bootstrap_imports_legacy_remote_counts(
         sync_state_file=sync_state_file,
         config=ProductionConfig,
     )
-    service = CashService(
+    service = CashSyncService(
         storage_repo=CashStorage(seeded_db),
         export_service=CashExportService(),
         nextcloud_client=CopyingNextcloudClient(remote_excel_path),
@@ -126,7 +126,7 @@ def test_production_bootstrap_records_missing_remote_status(
         sync_state_file=sync_state_file,
         config=ProductionConfig,
     )
-    service = CashService(
+    service = CashSyncService(
         storage_repo=CashStorage(seeded_db),
         export_service=CashExportService(),
         nextcloud_client=MissingNextcloudClient(),

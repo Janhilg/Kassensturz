@@ -15,6 +15,7 @@ from core.cash.cash_count_request import CashCountRequest
 from core.cash.cash_movement_request import CashMovementRequest
 from core.cash.cash_service import CashService
 from core.cash.cash_sync_context import CashSyncContext
+from core.cash.cash_sync_service import CashSyncService
 
 from core.storage_objects.cash_storage import CashStorage
 from core.storage_objects.cash_account_repository import CashAccountRepository

@@ -8,6 +8,7 @@ from core.cash.cash_count_request import CashCountRequest
 from core.cash.cash_movement_request import CashMovementRequest
 from core.cash.cash_service import CashService
 from core.cash.cash_sync_context import CashSyncContext
+from core.cash.cash_sync_service import CashSyncService
 from core.cash_export_service import CashExportService
 from core.logging_config import setup_logging
 from core.nextcloud_client import NextcloudClient
@@ -58,12 +59,18 @@ class KassensturzWebApp:
         self.sync_state = SyncStateStore()
         self.export_service = CashExportService()
         self.nextcloud_client = NextcloudClient()
-        self.cash_service = CashService(
+        sync_context = self._sync_context()
+        self.sync_service = CashSyncService(
             storage_repo=self.storage,
             export_service=self.export_service,
             nextcloud_client=self.nextcloud_client,
             sync_state_store=self.sync_state,
-            sync_context=self._sync_context(),
+            sync_context=sync_context,
+        )
+        self.cash_service = CashService(
+            storage_repo=self.storage,
+            sync_service=self.sync_service,
+            sync_context=sync_context,
         )
 
     def _create_flask_app(self) -> Flask:
@@ -134,7 +141,7 @@ class KassensturzWebApp:
     def initialize_storage(self):
         self.storage.ensure_db_file()
         self.storage.seed_default_cash_accounts()
-        bootstrap_result = self.cash_service.bootstrap_remote_import_if_empty()
+        bootstrap_result = self.sync_service.bootstrap_remote_import_if_empty()
         if not bootstrap_result.skipped:
             self.logger.info(
                 "Production remote bootstrap imported data | counts=%s movements=%s source=%s",
@@ -163,7 +170,7 @@ class KassensturzWebApp:
         return self.cash_service.record_movement(movement_request)
 
     def rebuild_exports(self):
-        return self.cash_service.rebuild_exports()
+        return self.sync_service.rebuild_exports()
 
     def _result_dict(self, result) -> dict:
         if hasattr(result, "to_dict"):

@@ -7,6 +7,7 @@ from core.cash.cash_count_request import CashCountRequest
 from core.cash.cash_movement_request import CashMovementRequest
 from core.cash.cash_service import CashService
 from core.cash.cash_sync_context import CashSyncContext
+from core.cash.cash_sync_service import CashSyncService
 from core.cash_export_service import CashExportService
 from core.nextcloud_client import NextcloudClient
 from core.storage_objects.cash_storage import CashStorage
@@ -327,7 +328,7 @@ def test_cash_service_count_uses_dependencies_in_order(
     ]
 
 
-def test_cash_service_remote_sync_imports_before_second_export(
+def test_cash_sync_service_remote_sync_imports_before_second_export(
     db_path,
     excel_path,
     text_path,
@@ -361,7 +362,7 @@ def test_cash_service_remote_sync_imports_before_second_export(
         sync_state_file,
         config_stub,
     )
-    service = CashService(
+    service = CashSyncService(
         storage_repo=RemoteStorage(calls),
         export_service=RecordingExportService(
             calls,

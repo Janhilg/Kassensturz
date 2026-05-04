@@ -4,6 +4,7 @@ from core.cash.cash_movement_request import CashMovementRequest
 from core.cash.cash_movement_result import CashMovementResult
 from core.cash.cash_service import CashService
 from core.cash.cash_sync_context import CashSyncContext
+from core.cash.cash_sync_service import CashSyncService
 from core.cash.remote_bootstrap_result import RemoteBootstrapResult
 from core.cash.sync_result import SyncResult
 
@@ -14,6 +15,7 @@ __all__ = [
     "CashMovementResult",
     "CashService",
     "CashSyncContext",
+    "CashSyncService",
     "RemoteBootstrapResult",
     "SyncResult",
 ]

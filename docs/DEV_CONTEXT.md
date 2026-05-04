@@ -62,6 +62,8 @@ web/
 core/
   cash/
     cash_service.py
+    cash_sync_service.py
+    cash_service_storage.py
     cash_count_request.py
     cash_movement_request.py
     cash_sync_context.py
@@ -114,7 +116,9 @@ methods. That keeps route tests focused on request parsing and response behavior
 
 ## Service Layer
 
-`CashService` owns business workflows and the full sync pipeline.
+`CashService` owns cash count and cash movement business behavior.
+`CashSyncService` owns backup/export/import/upload orchestration and production
+bootstrap imports.
 
 Main data objects in `core/cash/`:
 
@@ -122,6 +126,7 @@ Main data objects in `core/cash/`:
 - `CashCountRequest`
 - `CashMovementRequest`
 - `CashServiceStorage`
+- `CashSyncService`
 - `SyncResult`
 - `CashCountResult`
 - `CashMovementResult`
@@ -139,7 +144,7 @@ New application code should call:
 
 - `CashService.record_count(request)`
 - `CashService.record_movement(request)`
-- `CashService.rebuild_exports()`
+- `CashSyncService.rebuild_exports()`
 
 The old path-heavy compatibility wrappers were removed. Typed result objects
 expose `to_dict()` for route flash messages and any adapter-style test doubles.
