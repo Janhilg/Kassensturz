@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Added Ruff configuration in `pyproject.toml`.
 - Added `requirements-dev.txt` for pytest, Ruff, and PyInstaller tooling.
 - Added `tools/check.ps1` to run tests, linting, and format checks locally.
+- Added Docker draft setup with `Dockerfile`, tracked `.dockerignore`, `docker-compose.yml`, and `docker.env.example`.
 - Extended tests for object-oriented services, bound storage, config loading, and bundled config generation.
 
 ### Changed

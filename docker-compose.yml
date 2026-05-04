@@ -1,0 +1,26 @@
+services:
+  kassensturz:
+    build:
+      context: .
+    image: kassensturz:local
+    restart: unless-stopped
+    env_file:
+      - docker.env
+    environment:
+      KASSENSTURZ_MODE: production
+      KASSENSTURZ_PRODUCTION_MODE: "true"
+    ports:
+      - "5000:5000"
+    volumes:
+      - kassensturz-data:/app/data
+      - kassensturz-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  kassensturz-data:
+  kassensturz-logs:

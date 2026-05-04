@@ -240,6 +240,13 @@ obscurity for trusted users, not a security boundary against reverse engineering
 For the intended Docker/server deployment, inject secrets through environment
 variables or the server platform's secret management.
 
+Docker draft files:
+
+- `Dockerfile`: runtime image with Gunicorn
+- `.dockerignore`: excludes local data, build outputs, caches, and secrets
+- `docker-compose.yml`: local container run with named volumes
+- `docker.env.example`: placeholder env file to copy to ignored `docker.env`
+
 Full details live in [configuration.md](configuration.md).
 
 ## Frontend Notes

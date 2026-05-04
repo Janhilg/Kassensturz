@@ -21,12 +21,14 @@ These files are safe to commit:
 
 - `config.py`: structure and safe defaults only
 - `.env.example`: names of supported settings and placeholder values
+- `docker.env.example`: Docker-oriented placeholder settings
 - `kassensturz_secrets.example.py`: example bundled config module with placeholder values
 - `tools/create_bundled_config.py`: generator for local PyInstaller builds
 
 These files must not be committed:
 
 - `.env`
+- `docker.env`
 - `kassensturz.env`
 - `kassensturz_secrets.py`
 - any file containing real Nextcloud credentials, admin passwords, or Flask secret keys
@@ -82,7 +84,25 @@ For Docker, do not use bundled PyInstaller config.
 
 Inject settings through the container environment, an `env_file`, or the server platform's secret management.
 
-Example:
+Local draft setup:
+
+```powershell
+Copy-Item docker.env.example docker.env
+docker compose up --build
+```
+
+The draft compose file:
+
+- builds the local image from `Dockerfile`
+- runs Gunicorn on port `5000`
+- reads secrets and environment-specific values from ignored `docker.env`
+- stores SQLite data and exports in the `kassensturz-data` named volume
+- stores logs in the `kassensturz-logs` named volume
+- exposes `http://127.0.0.1:5000/`
+
+The app data path inside the container is `/app/data`.
+
+Server-side example:
 
 ```yaml
 services:

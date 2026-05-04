@@ -1,0 +1,54 @@
+# Git and local tooling
+.git/
+.gitignore
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.vscode/
+.idea/
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+
+# Build artifacts
+build/
+dist/
+*.spec
+!Kassensturz.spec
+
+# Runtime data
+data/
+data_debug/
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+*.xlsx
+*.xls
+*.csv
+
+# Secrets and local config
+.env
+.env.*
+*.env
+kassensturz.env
+docker.env
+kassensturz_secrets.py
+*.pem
+*.crt
+*.key
+*.p12
+*.pfx
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

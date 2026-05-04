@@ -192,6 +192,19 @@ The preferred deployment path is a server-hosted Docker container. In that setup
 secrets should be configured during container setup and should not be shipped to
 desktop users.
 
+Local Docker draft:
+
+```powershell
+Copy-Item docker.env.example docker.env
+docker compose up --build
+```
+
+The compose setup publishes the app on `http://127.0.0.1:5000/` and stores
+runtime data in named Docker volumes:
+
+- `kassensturz-data`
+- `kassensturz-logs`
+
 Until then, the PyInstaller build can bundle a generated, ignored config module
 so trusted users can run the app without handling credentials directly.
 
