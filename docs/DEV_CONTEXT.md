@@ -200,6 +200,11 @@ Production bootstrap:
   no account column.
 - Legacy import IDs are deterministic, so re-importing the same remote rows does
   not create duplicates.
+- Production bootstrap checks write `bootstrap_last_check` to sync state. A
+  successful import also writes `bootstrap_last_import` and the legacy flat
+  bootstrap counters for older diagnostics.
+- The admin dashboard shows a dry-run status plus the latest recorded check and
+  import metadata without contacting Nextcloud.
 
 Migration rules:
 

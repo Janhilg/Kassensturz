@@ -86,3 +86,17 @@ def test_admin_login_and_admin_page(client):
 
     response = client.get("/admin")
     assert response.status_code == 200
+
+
+def test_admin_page_shows_bootstrap_status(client):
+    client.post(
+        "/admin/login",
+        data={"password": app_module.Config.ADMIN_PASSWORD},
+        follow_redirects=True,
+    )
+
+    response = client.get("/admin")
+    body = response.get_data(as_text=True)
+
+    assert "Production Bootstrap" in body
+    assert "App is not running in production mode" in body

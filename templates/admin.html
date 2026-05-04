@@ -67,6 +67,51 @@
         </div>
     </div>
     <div class="card">
+        <h2 id="admin_bootstrap_status_title">Production Bootstrap</h2>
+
+        <div class="admin-data-list">
+            <div class="admin-data-card">
+                <strong>Dry run</strong>
+                <div>{{ bootstrap_status.dry_run_status }}</div>
+                <small>{{ bootstrap_status.dry_run_reason_label }}</small>
+            </div>
+
+            {% if bootstrap_status.last_check %}
+                <div class="admin-data-card">
+                    <strong>Last check</strong>
+                    <div>{{ bootstrap_status.last_check.status }}</div>
+                    <small>{{ bootstrap_status.last_check.reason_label }}</small>
+                </div>
+
+                <div class="admin-data-card">
+                    <strong>Checked at</strong>
+                    <div>{{ bootstrap_status.last_check.checked_at }}</div>
+                </div>
+            {% else %}
+                <div class="admin-data-card">
+                    <strong>Last check</strong>
+                    <div>not recorded</div>
+                </div>
+            {% endif %}
+
+            {% if bootstrap_status.last_import %}
+                <div class="admin-data-card">
+                    <strong>Last import</strong>
+                    <div>
+                        {{ bootstrap_status.last_import.imported_counts }} counts /
+                        {{ bootstrap_status.last_import.imported_movements }} movements
+                    </div>
+                    <small>{{ bootstrap_status.last_import.source_format }}</small>
+                </div>
+            {% else %}
+                <div class="admin-data-card">
+                    <strong>Last import</strong>
+                    <div>none</div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card">
         <h2 id="admin_sync_state_title">Sync State</h2>
 
         {% if sync_state_data %}

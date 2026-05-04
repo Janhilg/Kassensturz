@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.6] - 2026-05-04
+
+### Added
+
+- Added admin dashboard status for the production bootstrap import path.
+- Bootstrap checks now record skipped/imported status, reason, timestamp, mode,
+  and latest successful import metadata in sync state.
+
 ## [0.2.5] - 2026-05-04
 
 ### Changed

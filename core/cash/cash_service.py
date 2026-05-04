@@ -256,6 +256,30 @@ class CashService:
                 balance_cents=int(count["total_cents"]),
             )
 
+    def _record_bootstrap_check(
+        self,
+        sync_context: CashSyncContext,
+        result: RemoteBootstrapResult,
+    ):
+        payload = {
+            **result.to_dict(),
+            "status": "skipped" if result.skipped else "imported",
+            "checked_at": storage.now_iso(),
+            "mode": getattr(sync_context.config, "MODE", ""),
+        }
+        updates = {"bootstrap_last_check": payload}
+        if not result.skipped:
+            updates["bootstrap_last_import"] = payload
+            updates.update(
+                {
+                    "bootstrap_imported_counts": result.imported_counts,
+                    "bootstrap_imported_movements": result.imported_movements,
+                    "bootstrap_source_format": result.source_format,
+                }
+            )
+
+        self.sync_state_store.update_sync_state(sync_context.sync_state_file, updates)
+
     def bootstrap_remote_import_if_empty(
         self,
         sync_context: CashSyncContext | None = None,
@@ -271,26 +295,30 @@ class CashService:
             )
 
         if self._cash_activity_count(sync_context) > 0:
-            return RemoteBootstrapResult(
+            result = RemoteBootstrapResult(
                 imported_counts=0,
                 imported_movements=0,
                 source_format="",
                 skipped=True,
                 reason="database_not_empty",
             )
+            self._record_bootstrap_check(sync_context, result)
+            return result
 
         remote_exists = self.nextcloud_client.download_remote_excel_if_exists(
             local_excel_path=sync_context.excel_path,
             config=sync_context.config,
         )
         if not remote_exists:
-            return RemoteBootstrapResult(
+            result = RemoteBootstrapResult(
                 imported_counts=0,
                 imported_movements=0,
                 source_format="",
                 skipped=True,
                 reason="remote_missing",
             )
+            self._record_bootstrap_check(sync_context, result)
+            return result
 
         remote_data = self.export_service.import_all_from_excel(sync_context.excel_path)
         source_format = str(remote_data.get("source_format") or "")
@@ -327,14 +355,6 @@ class CashService:
             excel_path=sync_context.excel_path,
             text_path=sync_context.text_path,
         )
-        self.sync_state_store.update_sync_state(
-            sync_context.sync_state_file,
-            {
-                "bootstrap_imported_counts": imported_counts,
-                "bootstrap_imported_movements": imported_movements,
-                "bootstrap_source_format": source_format,
-            },
-        )
 
         self.logger.info(
             "Remote bootstrap import finished | source=%s accounts=%s contexts=%s "
@@ -346,12 +366,14 @@ class CashService:
             imported_movements,
         )
 
-        return RemoteBootstrapResult(
+        result = RemoteBootstrapResult(
             imported_counts=imported_counts,
             imported_movements=imported_movements,
             source_format=source_format,
             skipped=False,
         )
+        self._record_bootstrap_check(sync_context, result)
+        return result
 
     def record_count(
         self,

@@ -20,6 +20,15 @@ class CopyingNextcloudClient:
         return True
 
 
+class MissingNextcloudClient:
+    def download_remote_excel_if_exists(self, *, local_excel_path, config):
+        return False
+
+
+class ProductionConfig:
+    MODE = "production"
+
+
 def _write_legacy_workbook(excel_path):
     workbook = Workbook()
     worksheet = workbook.active
@@ -57,9 +66,6 @@ def test_production_bootstrap_imports_legacy_remote_counts(
     backup_dir,
     sync_state_file,
 ):
-    class ProductionConfig:
-        MODE = "production"
-
     remote_excel_path = tmp_path / "remote-legacy.xlsx"
     _write_legacy_workbook(remote_excel_path)
 
@@ -99,3 +105,39 @@ def test_production_bootstrap_imports_legacy_remote_counts(
     state = sync_state.load_sync_state(sync_state_file)
     assert state["bootstrap_imported_counts"] == 1
     assert state["bootstrap_source_format"] == "legacy_cash_counts"
+    assert state["bootstrap_last_check"]["status"] == "imported"
+    assert state["bootstrap_last_import"]["source_format"] == "legacy_cash_counts"
+
+
+def test_production_bootstrap_records_missing_remote_status(
+    seeded_db,
+    excel_path,
+    text_path,
+    backup_dir,
+    sync_state_file,
+):
+    sync_context = CashSyncContext(
+        db_path=seeded_db,
+        excel_path=excel_path,
+        text_path=text_path,
+        backup_dir=backup_dir,
+        sync_state_file=sync_state_file,
+        config=ProductionConfig,
+    )
+    service = CashService(
+        storage_repo=CashStorage(seeded_db),
+        export_service=CashExportService(),
+        nextcloud_client=MissingNextcloudClient(),
+        sync_state_store=SyncStateStore(),
+        sync_context=sync_context,
+    )
+
+    result = service.bootstrap_remote_import_if_empty()
+
+    assert result.skipped is True
+    assert result.reason == "remote_missing"
+
+    state = sync_state.load_sync_state(sync_state_file)
+    assert state["bootstrap_last_check"]["status"] == "skipped"
+    assert state["bootstrap_last_check"]["reason"] == "remote_missing"
+    assert "bootstrap_last_import" not in state

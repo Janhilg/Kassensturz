@@ -211,6 +211,49 @@ class KassensturzWebApp:
             for account in accounts
         ]
 
+    def _bootstrap_reason_label(self, reason: str) -> str:
+        labels = {
+            "database_not_empty": "Database already contains cash activity",
+            "empty_database": "Database has no counts or movements",
+            "not_production": "App is not running in production mode",
+            "remote_missing": "Remote workbook was not found",
+        }
+        return labels.get(reason or "", reason or "No reason recorded")
+
+    def _bootstrap_status_context(
+        self,
+        *,
+        row_counts: dict,
+        sync_state_data: dict,
+    ) -> dict:
+        activity_count = int(row_counts["cash_counts"]) + int(row_counts["cash_movements"])
+
+        if self.config.MODE != "production":
+            dry_run_status = "inactive"
+            dry_run_reason = "not_production"
+        elif activity_count > 0:
+            dry_run_status = "blocked"
+            dry_run_reason = "database_not_empty"
+        else:
+            dry_run_status = "ready"
+            dry_run_reason = "empty_database"
+
+        last_check = sync_state_data.get("bootstrap_last_check") or {}
+        last_import = sync_state_data.get("bootstrap_last_import") or {}
+
+        return {
+            "dry_run_status": dry_run_status,
+            "dry_run_reason": dry_run_reason,
+            "dry_run_reason_label": self._bootstrap_reason_label(dry_run_reason),
+            "last_check": {
+                **last_check,
+                "reason_label": self._bootstrap_reason_label(last_check.get("reason", "")),
+            }
+            if last_check
+            else None,
+            "last_import": last_import or None,
+        }
+
     def _group_accounts_for_select(self, accounts: list[dict]) -> list[dict]:
         groups = {
             self.config.ACCOUNT_TYPE_CASH_BOX: [],
@@ -429,27 +472,33 @@ class KassensturzWebApp:
         if redirect_response:
             return redirect_response
 
+        sync_state_data = self.sync_state.load_sync_state(self.paths.sync_state_file)
+        row_counts = {
+            "cash_accounts": self.storage.get_row_count(
+                "cash_accounts",
+            ),
+            "cash_contexts": self.storage.get_row_count(
+                "cash_contexts",
+            ),
+            "cash_movements": self.storage.get_row_count(
+                "cash_movements",
+            ),
+            "cash_counts": self.storage.get_row_count(
+                "cash_counts",
+            ),
+        }
         context = {
             **self._common_template_context(),
             "available_backups": self.storage.list_backups(self.paths.backup_dir),
-            "sync_state_data": self.sync_state.load_sync_state(self.paths.sync_state_file),
+            "sync_state_data": sync_state_data,
             "app_version": APP_VERSION,
             "db_schema_version": self.storage.get_schema_version(self.paths.db_file),
             "supported_db_schema_version": DB_SCHEMA_VERSION,
-            "row_counts": {
-                "cash_accounts": self.storage.get_row_count(
-                    "cash_accounts",
-                ),
-                "cash_contexts": self.storage.get_row_count(
-                    "cash_contexts",
-                ),
-                "cash_movements": self.storage.get_row_count(
-                    "cash_movements",
-                ),
-                "cash_counts": self.storage.get_row_count(
-                    "cash_counts",
-                ),
-            },
+            "row_counts": row_counts,
+            "bootstrap_status": self._bootstrap_status_context(
+                row_counts=row_counts,
+                sync_state_data=sync_state_data,
+            ),
         }
         return render_template("admin.html", **context)
 
