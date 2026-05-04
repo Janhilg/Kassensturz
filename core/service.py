@@ -1,3 +1,6 @@
+"""Compatibility guard for the removed legacy entry workflow."""
+
+
 class LegacyEntrySyncService:
     def append_and_sync(self, **kwargs):
         raise RuntimeError(

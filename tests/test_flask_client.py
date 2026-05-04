@@ -26,18 +26,26 @@ def client(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         app_module.web_app,
-        "record_cash_count_and_sync",
-        lambda **kwargs: {"imported_counts": 0, "imported_movements": 0, "count_id": "count-1"},
+        "record_cash_count",
+        lambda request: {
+            "imported_counts": 0,
+            "imported_movements": 0,
+            "count_id": "count-1",
+        },
     )
     monkeypatch.setattr(
         app_module.web_app,
-        "record_cash_movement_and_sync",
-        lambda **kwargs: {"imported_counts": 0, "imported_movements": 0, "movement_id": "mov-1"},
+        "record_cash_movement",
+        lambda request: {
+            "imported_counts": 0,
+            "imported_movements": 0,
+            "movement_id": "mov-1",
+        },
     )
     monkeypatch.setattr(
         app_module.web_app,
-        "rebuild_exports_and_sync",
-        lambda **kwargs: {"imported_counts": 0, "imported_movements": 0},
+        "rebuild_exports",
+        lambda: {"imported_counts": 0, "imported_movements": 0},
     )
 
     monkeypatch.setitem(app_module.app.config, "TESTING", True)

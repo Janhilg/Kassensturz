@@ -1,7 +1,7 @@
 import pytest
 
 from core.admin_service import AdminMaintenanceService
-from core.cash_service import CashService
+from core.cash_service import CashCountRequest, CashService, CashSyncContext
 from core.export_utils import CashExportService
 from core.nextcloud_sync import NextcloudClient
 from core.storage import CashStorage
@@ -152,6 +152,20 @@ def test_cash_storage_object_seeds_default_accounts(db_path):
     assert account["id"] == "acc_bar_cash_box"
 
 
+def test_cash_storage_bound_repositories_hide_db_path(db_path):
+    storage = CashStorage(db_path)
+
+    storage.ensure_db_file()
+    storage.accounts.seed_defaults()
+    account = storage.accounts.by_name("Bar Cash Box")
+    storage.accounts.set_balance_cents(account["id"], 12345)
+
+    assert storage.fetch_cash_account_by_id(account["id"])[
+        "current_balance_cents"
+    ] == 12345
+    assert storage.accounts.balances()[0]["balance_eur"] >= 0
+
+
 def test_cash_service_object_records_count(
     db_path,
     backup_dir,
@@ -191,6 +205,51 @@ def test_cash_service_object_records_count(
     assert storage.fetch_cash_account_by_id(db_path, account["id"])[
         "current_balance_cents"
     ] == 12345
+
+
+def test_cash_service_record_count_uses_bound_sync_context(
+    db_path,
+    backup_dir,
+    excel_path,
+    text_path,
+    sync_state_file,
+    config_stub,
+):
+    storage = CashStorage(db_path)
+    storage.ensure_db_file()
+    storage.seed_default_cash_accounts()
+    account = storage.fetch_cash_account_by_name("Bar Cash Box")
+    sync_context = CashSyncContext(
+        db_path=db_path,
+        excel_path=excel_path,
+        text_path=text_path,
+        backup_dir=backup_dir,
+        sync_state_file=sync_state_file,
+        config=config_stub,
+    )
+    service = CashService(
+        storage_repo=storage,
+        export_service=CashExportService(),
+        nextcloud_client=NoopNextcloudClient(),
+        sync_state_store=SyncStateStore(),
+        sync_context=sync_context,
+    )
+
+    result = service.record_count(
+        CashCountRequest(
+            cash_account_id=account["id"],
+            counted_by="Jan",
+            total_cents=4321,
+            count_type="opening",
+            context_label="Saturday Bar",
+        )
+    )
+
+    assert result.count_id
+    assert result.to_dict()["imported_counts"] == 0
+    assert storage.fetch_cash_account_by_id(account["id"])[
+        "current_balance_cents"
+    ] == 4321
 
 
 def test_cash_service_count_uses_dependencies_in_order(

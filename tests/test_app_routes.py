@@ -38,13 +38,13 @@ def test_index_post_uses_web_app_count_service(client, monkeypatch):
     )
     calls = []
 
-    def fake_record_cash_count(**kwargs):
-        calls.append(kwargs)
+    def fake_record_cash_count(count_request):
+        calls.append(count_request)
         return {"imported_counts": 0, "imported_movements": 0, "count_id": "count-2"}
 
     monkeypatch.setattr(
         app_module.web_app,
-        "record_cash_count_and_sync",
+        "record_cash_count",
         fake_record_cash_count,
     )
 
@@ -61,9 +61,9 @@ def test_index_post_uses_web_app_count_service(client, monkeypatch):
     )
 
     assert response.status_code == 302
-    assert calls[0]["db_path"] == app_module.web_app.paths.db_file
-    assert calls[0]["cash_account_id"] == account["id"]
-    assert calls[0]["total_cents"] == 12345
+    assert calls[0].cash_account_id == account["id"]
+    assert calls[0].total_cents == 12345
+    assert calls[0].context_label == "Friday Bar"
 
 
 def test_cash_movement_post_uses_web_app_movement_service(client, monkeypatch):
@@ -77,8 +77,8 @@ def test_cash_movement_post_uses_web_app_movement_service(client, monkeypatch):
     )
     calls = []
 
-    def fake_record_cash_movement(**kwargs):
-        calls.append(kwargs)
+    def fake_record_cash_movement(movement_request):
+        calls.append(movement_request)
         return {
             "imported_counts": 0,
             "imported_movements": 0,
@@ -87,7 +87,7 @@ def test_cash_movement_post_uses_web_app_movement_service(client, monkeypatch):
 
     monkeypatch.setattr(
         app_module.web_app,
-        "record_cash_movement_and_sync",
+        "record_cash_movement",
         fake_record_cash_movement,
     )
 
@@ -105,7 +105,7 @@ def test_cash_movement_post_uses_web_app_movement_service(client, monkeypatch):
     )
 
     assert response.status_code == 302
-    assert calls[0]["db_path"] == app_module.web_app.paths.db_file
-    assert calls[0]["from_account_id"] == from_account["id"]
-    assert calls[0]["to_account_id"] == to_account["id"]
-    assert calls[0]["amount_cents"] == 5000
+    assert calls[0].from_account_id == from_account["id"]
+    assert calls[0].to_account_id == to_account["id"]
+    assert calls[0].amount_cents == 5000
+    assert calls[0].context_label == "Friday Bar"

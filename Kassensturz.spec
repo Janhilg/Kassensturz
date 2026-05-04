@@ -1,12 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+
+
+hiddenimports = []
+if Path("kassensturz_secrets.py").exists():
+    hiddenimports.append("kassensturz_secrets")
+
 
 a = Analysis(
     ['app.py'],
     pathex=[],
     binaries=[],
     datas=[('templates', 'templates'), ('static', 'static')],
-    hiddenimports=[],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

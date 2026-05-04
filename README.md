@@ -131,17 +131,50 @@ Movement: Bar → Runner (50€)
 
 ---
 
+## Configuration
+
+Configuration is read in this order:
+
+1. Real environment variables
+2. `KASSENSTURZ_ENV_FILE`, if set, source/dev runs only
+3. `kassensturz.env` in the project root, source/dev runs only
+4. `.env` in the project root, source/dev runs only
+5. Bundled PyInstaller config from `kassensturz_secrets.py`, frozen builds only
+6. Safe defaults from `config.py`
+
+For local development, copy `.env.example` to `kassensturz.env` and fill in the
+real values.
+
+For Docker, set the same `KASSENSTURZ_*` values through the container environment,
+an `env_file`, or the server's secret management. Container environment variables
+override any local env file.
+
+For the temporary PyInstaller build, create an ignored bundled config module from
+your local env file before building:
+
+```
+python tools/create_bundled_config.py kassensturz.env
+pyinstaller Kassensturz.spec
+```
+
+When `kassensturz_secrets.py` exists, `Kassensturz.spec` includes it in the app
+bundle. The generated module is ignored by Git and stores values base64-encoded,
+so the portable app works out of the box without shipping a visible config file.
+
+Do not put real secrets in `config.py`, `.env.example`, `Kassensturz.spec`, or
+any tracked file. Bundled PyInstaller config is practical obscurity for trusted
+users, not a cryptographic security boundary. The Docker/server deployment should
+still inject secrets through the environment or secret management.
+
+---
+
 ## 🖥️ Build (portable / onedir)
 
 ### Windows
 
 ```
-pyinstaller --onedir --name Kassensturz \
-  --icon=assets/cash.ico \
-  --add-data "templates:templates" \
-  --add-data "static:static" \
-  --noconfirm \
-  app.py
+python tools/create_bundled_config.py kassensturz.env
+pyinstaller Kassensturz.spec
 ```
 
 Output:

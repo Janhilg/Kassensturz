@@ -1573,6 +1573,174 @@ def restore_backup(db_path: Path, backup_file: Path):
     logger.info("Database restored from backup | backup=%s db=%s", backup_file, db_path)
 
 
+class _BoundRepository:
+    def __init__(self, db_path: Path):
+        self.db_path = Path(db_path)
+
+
+class CashAccountRepository(_BoundRepository):
+    def insert(
+        self,
+        *,
+        name: str,
+        account_type: str,
+        current_balance_cents: int = 0,
+        is_active: int = 1,
+        sort_order: int = 0,
+        account_id: str | None = None,
+    ) -> str:
+        return insert_cash_account(
+            db_path=self.db_path,
+            name=name,
+            account_type=account_type,
+            current_balance_cents=current_balance_cents,
+            is_active=is_active,
+            sort_order=sort_order,
+            account_id=account_id,
+        )
+
+    def all(self, *, active_only: bool = False) -> list[dict]:
+        return fetch_all_cash_accounts(self.db_path, active_only=active_only)
+
+    def by_type(self, account_type: str, *, active_only: bool = True) -> list[dict]:
+        return fetch_cash_accounts_by_type(
+            self.db_path,
+            account_type,
+            active_only=active_only,
+        )
+
+    def by_id(self, account_id: str) -> dict | None:
+        return fetch_cash_account_by_id(self.db_path, account_id)
+
+    def by_name(self, name: str) -> dict | None:
+        return fetch_cash_account_by_name(self.db_path, name)
+
+    def require_by_name(self, name: str) -> dict:
+        return require_cash_account_by_name(self.db_path, name)
+
+    def update_active_state(self, account_id: str, is_active: bool):
+        return update_cash_account_active_state(self.db_path, account_id, is_active)
+
+    def seed_defaults(self):
+        return seed_default_cash_accounts(self.db_path)
+
+    def set_balance_cents(self, account_id: str, balance_cents: int):
+        return set_cash_account_balance_cents(self.db_path, account_id, balance_cents)
+
+    def adjust_balance_cents(self, account_id: str, delta_cents: int):
+        return adjust_cash_account_balance_cents(self.db_path, account_id, delta_cents)
+
+    def balance_cents(self, account_id: str) -> int:
+        return get_cash_account_balance_cents(self.db_path, account_id)
+
+    def balances(self) -> list[dict]:
+        return fetch_cash_account_balances(self.db_path)
+
+    def latest_count(self, account_id: str) -> dict | None:
+        return fetch_latest_cash_count_for_account(self.db_path, account_id)
+
+    def statement(self, account_id: str) -> dict:
+        return fetch_cash_account_statement(self.db_path, account_id)
+
+    def merge_imported_append_only(self, imported_accounts: list[dict]):
+        return merge_imported_cash_accounts_append_only(
+            db_path=self.db_path,
+            imported_accounts=imported_accounts,
+        )
+
+
+class CashContextRepository(_BoundRepository):
+    def insert(self, label: str, context_id: str | None = None) -> str:
+        return insert_cash_context(self.db_path, label, context_id=context_id)
+
+    def by_id(self, context_id: str) -> dict | None:
+        return fetch_cash_context_by_id(self.db_path, context_id)
+
+    def recent(self, *, limit: int = 20) -> list[dict]:
+        return fetch_recent_cash_contexts(self.db_path, limit=limit)
+
+    def latest_by_label(self, label: str) -> dict | None:
+        return find_latest_cash_context_by_label(self.db_path, label)
+
+    def touch(self, context_id: str, used_at: str | None = None):
+        return touch_cash_context(self.db_path, context_id, used_at=used_at)
+
+    def get_or_create(self, label: str) -> tuple[str | None, str]:
+        return get_or_create_cash_context(self.db_path, label)
+
+    def latest_label(self) -> str:
+        return get_latest_cash_context_label(self.db_path)
+
+    def merge_imported_append_only(self, imported_contexts: list[dict]):
+        return merge_imported_cash_contexts_append_only(
+            db_path=self.db_path,
+            imported_contexts=imported_contexts,
+        )
+
+
+class CashMovementRepository(_BoundRepository):
+    def build(self, **kwargs) -> dict:
+        return build_cash_movement_record(**kwargs)
+
+    def insert(self, movement: dict) -> str:
+        return insert_cash_movement(self.db_path, movement)
+
+    def create(self, **kwargs) -> str:
+        return create_cash_movement(self.db_path, **kwargs)
+
+    def all(self) -> list[dict]:
+        return fetch_all_cash_movements(self.db_path)
+
+    def by_context_id(self, context_id: str) -> list[dict]:
+        return fetch_cash_movements_by_context_id(self.db_path, context_id)
+
+    def recent(self, *, limit: int = 50) -> list[dict]:
+        return fetch_recent_cash_movements(self.db_path, limit=limit)
+
+    def merge_imported_append_only(self, imported_movements: list[dict]):
+        return merge_imported_cash_movements_append_only(
+            db_path=self.db_path,
+            imported_movements=imported_movements,
+        )
+
+
+class CashCountRepository(_BoundRepository):
+    def build(self, **kwargs) -> dict:
+        return build_cash_count_record(**kwargs)
+
+    def insert(self, count_record: dict) -> str:
+        return insert_cash_count(self.db_path, count_record)
+
+    def create(self, **kwargs) -> str:
+        return create_cash_count(self.db_path, **kwargs)
+
+    def all(self) -> list[dict]:
+        return fetch_all_cash_counts(self.db_path)
+
+    def by_context_id(self, context_id: str) -> list[dict]:
+        return fetch_cash_counts_by_context_id(self.db_path, context_id)
+
+    def recent(self, *, limit: int = 50) -> list[dict]:
+        return fetch_recent_cash_counts(self.db_path, limit=limit)
+
+    def merge_imported_append_only(self, imported_counts: list[dict]):
+        return merge_imported_cash_counts_append_only(
+            db_path=self.db_path,
+            imported_counts=imported_counts,
+        )
+
+
+class CashBackupRepository(_BoundRepository):
+    def create(self, backup_dir: Path, *, max_backups: int = 25):
+        return create_backup(self.db_path, backup_dir, max_backups=max_backups)
+
+    def list(self, backup_dir: Path) -> list[Path]:
+        return list_backups(backup_dir)
+
+    def restore(self, backup_file: Path):
+        return restore_backup(self.db_path, backup_file)
+
+
 class CashStorage:
     DENOM_FIELDS = DENOM_FIELDS
     DENOM_VALUE_CENTS = DENOM_VALUE_CENTS
@@ -1584,7 +1752,6 @@ class CashStorage:
     now_iso = staticmethod(now_iso)
     new_id = staticmethod(new_id)
     get_connection = staticmethod(get_connection)
-    ensure_db_file = staticmethod(ensure_db_file)
     dicts_from_rows = staticmethod(dicts_from_rows)
     parse_optional_int = staticmethod(parse_optional_int)
     normalize_optional_text = staticmethod(normalize_optional_text)
@@ -1593,65 +1760,394 @@ class CashStorage:
     eur_to_cents = staticmethod(eur_to_cents)
     row_values = staticmethod(row_values)
 
-    require_cash_account_by_name = staticmethod(require_cash_account_by_name)
-    fetch_cash_accounts_by_type = staticmethod(fetch_cash_accounts_by_type)
-    insert_cash_account = staticmethod(insert_cash_account)
-    fetch_all_cash_accounts = staticmethod(fetch_all_cash_accounts)
-    fetch_cash_account_by_id = staticmethod(fetch_cash_account_by_id)
-    fetch_cash_account_by_name = staticmethod(fetch_cash_account_by_name)
-    update_cash_account_active_state = staticmethod(update_cash_account_active_state)
-    seed_default_cash_accounts = staticmethod(seed_default_cash_accounts)
-
     get_denomination_values_from_form = staticmethod(get_denomination_values_from_form)
     calculate_total_cents_from_denominations = staticmethod(
         calculate_total_cents_from_denominations
     )
     denominations_match_total_cents = staticmethod(denominations_match_total_cents)
 
-    insert_cash_context = staticmethod(insert_cash_context)
-    fetch_cash_context_by_id = staticmethod(fetch_cash_context_by_id)
-    fetch_recent_cash_contexts = staticmethod(fetch_recent_cash_contexts)
-    find_latest_cash_context_by_label = staticmethod(find_latest_cash_context_by_label)
-    touch_cash_context = staticmethod(touch_cash_context)
-    get_or_create_cash_context = staticmethod(get_or_create_cash_context)
-    get_latest_cash_context_label = staticmethod(get_latest_cash_context_label)
-
     build_cash_movement_record = staticmethod(build_cash_movement_record)
-    insert_cash_movement = staticmethod(insert_cash_movement)
-    create_cash_movement = staticmethod(create_cash_movement)
-    fetch_all_cash_movements = staticmethod(fetch_all_cash_movements)
-    fetch_cash_movements_by_context_id = staticmethod(fetch_cash_movements_by_context_id)
-    fetch_recent_cash_movements = staticmethod(fetch_recent_cash_movements)
-    merge_imported_cash_movements_append_only = staticmethod(
-        merge_imported_cash_movements_append_only
-    )
-
-    merge_imported_cash_contexts_append_only = staticmethod(
-        merge_imported_cash_contexts_append_only
-    )
-    merge_imported_cash_accounts_append_only = staticmethod(
-        merge_imported_cash_accounts_append_only
-    )
-    merge_imported_cash_counts_append_only = staticmethod(
-        merge_imported_cash_counts_append_only
-    )
-
     build_cash_count_record = staticmethod(build_cash_count_record)
-    insert_cash_count = staticmethod(insert_cash_count)
-    create_cash_count = staticmethod(create_cash_count)
-    fetch_all_cash_counts = staticmethod(fetch_all_cash_counts)
-    fetch_cash_counts_by_context_id = staticmethod(fetch_cash_counts_by_context_id)
-    fetch_recent_cash_counts = staticmethod(fetch_recent_cash_counts)
 
-    set_cash_account_balance_cents = staticmethod(set_cash_account_balance_cents)
-    adjust_cash_account_balance_cents = staticmethod(adjust_cash_account_balance_cents)
-    get_cash_account_balance_cents = staticmethod(get_cash_account_balance_cents)
-    fetch_cash_account_balances = staticmethod(fetch_cash_account_balances)
-    fetch_latest_cash_count_for_account = staticmethod(fetch_latest_cash_count_for_account)
-    fetch_cash_account_statement = staticmethod(fetch_cash_account_statement)
+    def __init__(self, db_path: Path | None = None):
+        self.db_path: Path | None = None
+        self.accounts: CashAccountRepository | None = None
+        self.contexts: CashContextRepository | None = None
+        self.movements: CashMovementRepository | None = None
+        self.counts: CashCountRepository | None = None
+        self.backups: CashBackupRepository | None = None
 
-    get_row_count = staticmethod(get_row_count)
-    create_backup = staticmethod(create_backup)
-    list_backups = staticmethod(list_backups)
-    restore_backup = staticmethod(restore_backup)
+        if db_path is not None:
+            self.configure(db_path)
+
+    def configure(self, db_path: Path):
+        self.db_path = Path(db_path)
+        self.accounts = CashAccountRepository(self.db_path)
+        self.contexts = CashContextRepository(self.db_path)
+        self.movements = CashMovementRepository(self.db_path)
+        self.counts = CashCountRepository(self.db_path)
+        self.backups = CashBackupRepository(self.db_path)
+
+    def bind(self, db_path: Path) -> "CashStorage":
+        return CashStorage(db_path)
+
+    @property
+    def is_bound(self) -> bool:
+        return self.db_path is not None
+
+    def _path(self, db_path: Path | None = None) -> Path:
+        resolved = db_path or self.db_path
+        if resolved is None:
+            raise ValueError("db_path is required for unbound CashStorage")
+        return Path(resolved)
+
+    def ensure_db_file(self, db_path: Path | None = None):
+        return ensure_db_file(self._path(db_path))
+
+    def insert_cash_account(self, db_path: Path | None = None, **kwargs) -> str:
+        return insert_cash_account(self._path(db_path), **kwargs)
+
+    def fetch_all_cash_accounts(
+        self,
+        db_path: Path | None = None,
+        active_only: bool = False,
+    ) -> list[dict]:
+        return fetch_all_cash_accounts(self._path(db_path), active_only=active_only)
+
+    def fetch_cash_accounts_by_type(
+        self,
+        db_path: Path | str | None = None,
+        account_type: str | None = None,
+        active_only: bool = True,
+    ) -> list[dict]:
+        if account_type is None:
+            account_type = str(db_path)
+            db_path = None
+
+        return fetch_cash_accounts_by_type(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            account_type,
+            active_only=active_only,
+        )
+
+    def fetch_cash_account_by_id(
+        self,
+        db_path: Path | str | None = None,
+        account_id: str | None = None,
+    ) -> dict | None:
+        if account_id is None:
+            account_id = str(db_path)
+            db_path = None
+
+        return fetch_cash_account_by_id(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            account_id,
+        )
+
+    def fetch_cash_account_by_name(
+        self,
+        db_path: Path | str | None = None,
+        name: str | None = None,
+    ) -> dict | None:
+        if name is None:
+            name = str(db_path)
+            db_path = None
+
+        return fetch_cash_account_by_name(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            name,
+        )
+
+    def require_cash_account_by_name(
+        self,
+        db_path: Path | str | None = None,
+        name: str | None = None,
+    ) -> dict:
+        if name is None:
+            name = str(db_path)
+            db_path = None
+
+        return require_cash_account_by_name(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            name,
+        )
+
+    def update_cash_account_active_state(
+        self,
+        db_path: Path | None = None,
+        **kwargs,
+    ):
+        return update_cash_account_active_state(self._path(db_path), **kwargs)
+
+    def seed_default_cash_accounts(self, db_path: Path | None = None):
+        return seed_default_cash_accounts(self._path(db_path))
+
+    def insert_cash_context(self, db_path: Path | None = None, **kwargs) -> str:
+        return insert_cash_context(self._path(db_path), **kwargs)
+
+    def fetch_cash_context_by_id(
+        self,
+        db_path: Path | str | None = None,
+        context_id: str | None = None,
+    ) -> dict | None:
+        if context_id is None:
+            context_id = str(db_path)
+            db_path = None
+
+        return fetch_cash_context_by_id(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            context_id,
+        )
+
+    def fetch_recent_cash_contexts(
+        self,
+        db_path: Path | None = None,
+        limit: int = 20,
+    ) -> list[dict]:
+        return fetch_recent_cash_contexts(self._path(db_path), limit=limit)
+
+    def find_latest_cash_context_by_label(
+        self,
+        db_path: Path | str | None = None,
+        label: str | None = None,
+    ) -> dict | None:
+        if label is None:
+            label = str(db_path)
+            db_path = None
+
+        return find_latest_cash_context_by_label(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            label,
+        )
+
+    def touch_cash_context(self, db_path: Path | None = None, **kwargs):
+        return touch_cash_context(self._path(db_path), **kwargs)
+
+    def get_or_create_cash_context(
+        self,
+        db_path: Path | str | None = None,
+        label: str | None = None,
+    ) -> tuple[str | None, str]:
+        if label is None:
+            label = str(db_path)
+            db_path = None
+
+        return get_or_create_cash_context(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            label,
+        )
+
+    def get_latest_cash_context_label(self, db_path: Path | None = None) -> str:
+        return get_latest_cash_context_label(self._path(db_path))
+
+    def insert_cash_movement(self, db_path: Path | None = None, **kwargs) -> str:
+        return insert_cash_movement(self._path(db_path), **kwargs)
+
+    def create_cash_movement(self, db_path: Path | None = None, **kwargs) -> str:
+        return create_cash_movement(self._path(db_path), **kwargs)
+
+    def fetch_all_cash_movements(self, db_path: Path | None = None) -> list[dict]:
+        return fetch_all_cash_movements(self._path(db_path))
+
+    def fetch_cash_movements_by_context_id(
+        self,
+        db_path: Path | str | None = None,
+        context_id: str | None = None,
+    ) -> list[dict]:
+        if context_id is None:
+            context_id = str(db_path)
+            db_path = None
+
+        return fetch_cash_movements_by_context_id(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            context_id,
+        )
+
+    def fetch_recent_cash_movements(
+        self,
+        db_path: Path | None = None,
+        limit: int = 50,
+    ) -> list[dict]:
+        return fetch_recent_cash_movements(self._path(db_path), limit=limit)
+
+    def merge_imported_cash_movements_append_only(
+        self,
+        db_path: Path | None = None,
+        **kwargs,
+    ):
+        return merge_imported_cash_movements_append_only(self._path(db_path), **kwargs)
+
+    def merge_imported_cash_contexts_append_only(
+        self,
+        db_path: Path | None = None,
+        **kwargs,
+    ):
+        return merge_imported_cash_contexts_append_only(self._path(db_path), **kwargs)
+
+    def merge_imported_cash_accounts_append_only(
+        self,
+        db_path: Path | None = None,
+        **kwargs,
+    ):
+        return merge_imported_cash_accounts_append_only(self._path(db_path), **kwargs)
+
+    def merge_imported_cash_counts_append_only(
+        self,
+        db_path: Path | None = None,
+        **kwargs,
+    ):
+        return merge_imported_cash_counts_append_only(self._path(db_path), **kwargs)
+
+    def insert_cash_count(self, db_path: Path | None = None, **kwargs) -> str:
+        return insert_cash_count(self._path(db_path), **kwargs)
+
+    def create_cash_count(self, db_path: Path | None = None, **kwargs) -> str:
+        return create_cash_count(self._path(db_path), **kwargs)
+
+    def fetch_all_cash_counts(self, db_path: Path | None = None) -> list[dict]:
+        return fetch_all_cash_counts(self._path(db_path))
+
+    def fetch_cash_counts_by_context_id(
+        self,
+        db_path: Path | str | None = None,
+        context_id: str | None = None,
+    ) -> list[dict]:
+        if context_id is None:
+            context_id = str(db_path)
+            db_path = None
+
+        return fetch_cash_counts_by_context_id(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            context_id,
+        )
+
+    def fetch_recent_cash_counts(
+        self,
+        db_path: Path | None = None,
+        limit: int = 50,
+    ) -> list[dict]:
+        return fetch_recent_cash_counts(self._path(db_path), limit=limit)
+
+    def set_cash_account_balance_cents(
+        self,
+        db_path: Path | str | None = None,
+        account_id: str | None = None,
+        balance_cents: int | None = None,
+    ):
+        if balance_cents is None:
+            balance_cents = int(account_id)
+            account_id = str(db_path)
+            db_path = None
+
+        return set_cash_account_balance_cents(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            account_id,
+            int(balance_cents),
+        )
+
+    def adjust_cash_account_balance_cents(
+        self,
+        db_path: Path | str | None = None,
+        account_id: str | None = None,
+        delta_cents: int | None = None,
+    ):
+        if delta_cents is None:
+            delta_cents = int(account_id)
+            account_id = str(db_path)
+            db_path = None
+
+        return adjust_cash_account_balance_cents(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            account_id,
+            int(delta_cents),
+        )
+
+    def get_cash_account_balance_cents(
+        self,
+        db_path: Path | str | None = None,
+        account_id: str | None = None,
+    ) -> int:
+        if account_id is None:
+            account_id = str(db_path)
+            db_path = None
+
+        return get_cash_account_balance_cents(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            account_id,
+        )
+
+    def fetch_cash_account_balances(self, db_path: Path | None = None) -> list[dict]:
+        return fetch_cash_account_balances(self._path(db_path))
+
+    def fetch_latest_cash_count_for_account(
+        self,
+        db_path: Path | str | None = None,
+        cash_account_id: str | None = None,
+    ) -> dict | None:
+        if cash_account_id is None:
+            cash_account_id = str(db_path)
+            db_path = None
+
+        return fetch_latest_cash_count_for_account(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            cash_account_id,
+        )
+
+    def fetch_cash_account_statement(
+        self,
+        db_path: Path | str | None = None,
+        account_id: str | None = None,
+    ) -> dict:
+        if account_id is None:
+            account_id = str(db_path)
+            db_path = None
+
+        return fetch_cash_account_statement(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            account_id,
+        )
+
+    def get_row_count(
+        self,
+        db_path: Path | str | None = None,
+        table_name: str | None = None,
+    ) -> int:
+        if table_name is None:
+            table_name = str(db_path)
+            db_path = None
+
+        return get_row_count(
+            self._path(db_path if isinstance(db_path, Path) else None),
+            table_name,
+        )
+
+    def create_backup(
+        self,
+        db_path: Path | None = None,
+        backup_dir: Path | None = None,
+        max_backups: int = 25,
+    ):
+        if backup_dir is None:
+            backup_dir = Path(db_path)
+            db_path = None
+
+        return create_backup(
+            self._path(db_path),
+            Path(backup_dir),
+            max_backups=max_backups,
+        )
+
+    def list_backups(self, backup_dir: Path) -> list[Path]:
+        return list_backups(backup_dir)
+
+    def restore_backup(
+        self,
+        db_path: Path | None = None,
+        backup_file: Path | None = None,
+    ):
+        if backup_file is None:
+            backup_file = Path(db_path)
+            db_path = None
+
+        return restore_backup(self._path(db_path), Path(backup_file))
 

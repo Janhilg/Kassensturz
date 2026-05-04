@@ -8,7 +8,12 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 from config import Config
 from core import storage
 from core import sync_state
-from core.cash_service import CashService
+from core.cash_service import (
+    CashCountRequest,
+    CashMovementRequest,
+    CashService,
+    CashSyncContext,
+)
 from core.export_utils import CashExportService
 from core.logging_config import setup_logging
 from core.nextcloud_sync import NextcloudClient
@@ -65,13 +70,39 @@ class AppPaths:
 
 
 class KassensturzWebApp:
-    def __init__(self, *, config=Config, base_dir: Path | None = None):
+    def __init__(
+        self,
+        *,
+        config=Config,
+        base_dir: Path | None = None,
+        paths: AppPaths | None = None,
+    ):
         self.config = config
-        self.paths = AppPaths.from_config(
+        self.paths = paths or AppPaths.from_config(
             config=config,
             base_dir=base_dir or Path(__file__).resolve().parent,
         )
-        self.storage = storage.CashStorage()
+        self._configure_services()
+
+        setup_logging(self.paths.base_dir, debug=(self.config.MODE == "debug"))
+        self.logger = logging.getLogger(__name__)
+
+        self.flask_app = self._create_flask_app()
+        self._register_routes()
+        self.initialize_storage()
+
+    def _sync_context(self) -> CashSyncContext:
+        return CashSyncContext(
+            db_path=self.paths.db_file,
+            excel_path=self.paths.excel_export_file,
+            text_path=self.paths.text_export_file,
+            backup_dir=self.paths.backup_dir,
+            sync_state_file=self.paths.sync_state_file,
+            config=self.config,
+        )
+
+    def _configure_services(self):
+        self.storage = storage.CashStorage(self.paths.db_file)
         self.sync_state = sync_state.SyncStateStore()
         self.export_service = CashExportService()
         self.nextcloud_client = NextcloudClient()
@@ -80,19 +111,14 @@ class KassensturzWebApp:
             export_service=self.export_service,
             nextcloud_client=self.nextcloud_client,
             sync_state_store=self.sync_state,
+            sync_context=self._sync_context(),
         )
+
         self.record_cash_count_and_sync = self.cash_service.record_cash_count_and_sync
         self.record_cash_movement_and_sync = (
             self.cash_service.record_cash_movement_and_sync
         )
         self.rebuild_exports_and_sync = self.cash_service.rebuild_exports_and_sync
-
-        setup_logging(self.paths.base_dir, debug=(self.config.MODE == "debug"))
-        self.logger = logging.getLogger(__name__)
-
-        self.flask_app = self._create_flask_app()
-        self._register_routes()
-        self.initialize_storage()
 
     def _create_flask_app(self) -> Flask:
         flask_app = Flask(__name__)
@@ -156,8 +182,8 @@ class KassensturzWebApp:
         )
 
     def initialize_storage(self):
-        self.storage.ensure_db_file(self.paths.db_file)
-        self.storage.seed_default_cash_accounts(self.paths.db_file)
+        self.storage.ensure_db_file()
+        self.storage.seed_default_cash_accounts()
         self.logger.info(
             "App startup | mode=%s db=%s",
             self.config.MODE,
@@ -167,8 +193,24 @@ class KassensturzWebApp:
     def configure_paths(self, paths: AppPaths, *, initialize: bool = True):
         self.paths = paths
         _sync_legacy_path_globals(paths)
+        self._configure_services()
         if initialize:
             self.initialize_storage()
+
+    def record_cash_count(self, count_request: CashCountRequest):
+        return self.cash_service.record_count(count_request)
+
+    def record_cash_movement(self, movement_request: CashMovementRequest):
+        return self.cash_service.record_movement(movement_request)
+
+    def rebuild_exports(self):
+        return self.cash_service.rebuild_exports()
+
+    def _result_dict(self, result) -> dict:
+        if hasattr(result, "to_dict"):
+            return result.to_dict()
+
+        return dict(result)
 
     def inject_global_template_vars(self):
         return {
@@ -247,13 +289,11 @@ class KassensturzWebApp:
     def _common_template_context(self):
         cash_accounts = self._with_account_translation_keys(
             self.storage.fetch_all_cash_accounts(
-                self.paths.db_file,
                 active_only=True,
             )
         )
         cash_box_accounts = self._with_account_translation_keys(
             self.storage.fetch_cash_accounts_by_type(
-                self.paths.db_file,
                 self.config.ACCOUNT_TYPE_CASH_BOX,
                 active_only=True,
             )
@@ -264,12 +304,9 @@ class KassensturzWebApp:
             "cash_box_accounts": cash_box_accounts,
             "grouped_cash_accounts": self._group_accounts_for_select(cash_accounts),
             "recent_contexts": self.storage.fetch_recent_cash_contexts(
-                self.paths.db_file,
                 limit=20,
             ),
-            "latest_context_label": self.storage.get_latest_cash_context_label(
-                self.paths.db_file
-            ),
+            "latest_context_label": self.storage.get_latest_cash_context_label(),
             "count_types": self.config.COUNT_TYPES,
             "denom_fields": self.storage.DENOM_FIELDS,
             "mode": self.config.MODE,
@@ -302,20 +339,18 @@ class KassensturzWebApp:
                     context_label,
                 )
 
-                result = self.record_cash_count_and_sync(
-                    db_path=self.paths.db_file,
-                    excel_path=self.paths.excel_export_file,
-                    text_path=self.paths.text_export_file,
-                    backup_dir=self.paths.backup_dir,
-                    sync_state_file=self.paths.sync_state_file,
-                    config=self.config,
-                    cash_account_id=cash_account_id,
-                    counted_by=counted_by,
-                    total_cents=total_cents,
-                    count_type=count_type,
-                    context_label=context_label,
-                    note=note,
-                    denominations=denominations,
+                result = self._result_dict(
+                    self.record_cash_count(
+                        CashCountRequest(
+                            cash_account_id=cash_account_id,
+                            counted_by=counted_by,
+                            total_cents=total_cents,
+                            count_type=count_type,
+                            context_label=context_label,
+                            note=note,
+                            denominations=denominations,
+                        )
+                    )
                 )
 
                 flash(
@@ -334,7 +369,6 @@ class KassensturzWebApp:
 
         context = self._common_template_context()
         context["recent_counts"] = self.storage.fetch_recent_cash_counts(
-            self.paths.db_file,
             limit=20,
         )
         return render_template("index.html", **context)
@@ -361,21 +395,19 @@ class KassensturzWebApp:
                 )
                 denominations = self._get_denominations_from_request_form()
 
-                result = self.record_cash_movement_and_sync(
-                    db_path=self.paths.db_file,
-                    excel_path=self.paths.excel_export_file,
-                    text_path=self.paths.text_export_file,
-                    backup_dir=self.paths.backup_dir,
-                    sync_state_file=self.paths.sync_state_file,
-                    config=self.config,
-                    amount_cents=amount_cents,
-                    from_account_id=from_account_id,
-                    to_account_id=to_account_id,
-                    context_label=context_label,
-                    actor=actor,
-                    reference=reference,
-                    note=note,
-                    denominations=denominations,
+                result = self._result_dict(
+                    self.record_cash_movement(
+                        CashMovementRequest(
+                            amount_cents=amount_cents,
+                            from_account_id=from_account_id,
+                            to_account_id=to_account_id,
+                            context_label=context_label,
+                            actor=actor,
+                            reference=reference,
+                            note=note,
+                            denominations=denominations,
+                        )
+                    )
                 )
 
                 message = (
@@ -397,7 +429,6 @@ class KassensturzWebApp:
 
         context = self._common_template_context()
         context["recent_movements"] = self.storage.fetch_recent_cash_movements(
-            self.paths.db_file,
             limit=20,
         )
         return render_template("cash_movement.html", **context)
@@ -405,13 +436,11 @@ class KassensturzWebApp:
     def balances(self):
         context = {
             **self._common_template_context(),
-            "balances": self.storage.fetch_cash_account_balances(self.paths.db_file),
+            "balances": self.storage.fetch_cash_account_balances(),
             "recent_counts": self.storage.fetch_recent_cash_counts(
-                self.paths.db_file,
                 limit=4,
             ),
             "recent_movements": self.storage.fetch_recent_cash_movements(
-                self.paths.db_file,
                 limit=4,
             ),
         }
@@ -447,19 +476,15 @@ class KassensturzWebApp:
             ),
             "row_counts": {
                 "cash_accounts": self.storage.get_row_count(
-                    self.paths.db_file,
                     "cash_accounts",
                 ),
                 "cash_contexts": self.storage.get_row_count(
-                    self.paths.db_file,
                     "cash_contexts",
                 ),
                 "cash_movements": self.storage.get_row_count(
-                    self.paths.db_file,
                     "cash_movements",
                 ),
                 "cash_counts": self.storage.get_row_count(
-                    self.paths.db_file,
                     "cash_counts",
                 ),
             },
@@ -479,18 +504,10 @@ class KassensturzWebApp:
             backup_file = self.paths.backup_dir / backup_name
 
             self.storage.restore_backup(
-                db_path=self.paths.db_file,
                 backup_file=backup_file,
             )
 
-            self.rebuild_exports_and_sync(
-                db_path=self.paths.db_file,
-                excel_path=self.paths.excel_export_file,
-                text_path=self.paths.text_export_file,
-                backup_dir=self.paths.backup_dir,
-                sync_state_file=self.paths.sync_state_file,
-                config=self.config,
-            )
+            self.rebuild_exports()
 
             flash(f"Backup restored: {backup_name}", "admin_success")
 
@@ -506,14 +523,7 @@ class KassensturzWebApp:
             return redirect_response
 
         try:
-            result = self.rebuild_exports_and_sync(
-                db_path=self.paths.db_file,
-                excel_path=self.paths.excel_export_file,
-                text_path=self.paths.text_export_file,
-                backup_dir=self.paths.backup_dir,
-                sync_state_file=self.paths.sync_state_file,
-                config=self.config,
-            )
+            result = self._result_dict(self.rebuild_exports())
             flash(
                 (
                     f"Rebuild + sync complete. "
@@ -534,14 +544,7 @@ class KassensturzWebApp:
             return redirect_response
 
         try:
-            result = self.rebuild_exports_and_sync(
-                db_path=self.paths.db_file,
-                excel_path=self.paths.excel_export_file,
-                text_path=self.paths.text_export_file,
-                backup_dir=self.paths.backup_dir,
-                sync_state_file=self.paths.sync_state_file,
-                config=self.config,
-            )
+            result = self._result_dict(self.rebuild_exports())
             flash(
                 (
                     f"Sync complete. "
@@ -567,7 +570,25 @@ def _sync_legacy_path_globals(paths: AppPaths):
     globals()["SYNC_STATE_FILE"] = paths.sync_state_file
 
 
-web_app = KassensturzWebApp()
+def create_web_app(
+    *,
+    config=Config,
+    base_dir: Path | None = None,
+    paths: AppPaths | None = None,
+) -> KassensturzWebApp:
+    return KassensturzWebApp(config=config, base_dir=base_dir, paths=paths)
+
+
+def create_app(
+    *,
+    config=Config,
+    base_dir: Path | None = None,
+    paths: AppPaths | None = None,
+) -> Flask:
+    return create_web_app(config=config, base_dir=base_dir, paths=paths).flask_app
+
+
+web_app = create_web_app()
 app = web_app.flask_app
 _sync_legacy_path_globals(web_app.paths)
 
