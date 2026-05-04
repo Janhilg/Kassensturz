@@ -52,13 +52,27 @@ The application is object-oriented at the app, service, and storage boundaries.
 
 ```text
 app.py
-  AppPaths
-  KassensturzWebApp
   create_web_app()
   create_app()
 
+web/
+  app_paths.py
+  kassensturz_web_app.py
+
 core/
-  cash_service.py
+  cash/
+    cash_service.py
+    cash_count_request.py
+    cash_movement_request.py
+    cash_sync_context.py
+    result dataclasses
+  storage_objects/
+    cash_storage.py
+    one repository class per file
+  admin_maintenance_service.py
+  cash_export_service.py
+  nextcloud_client.py
+  sync_state_store.py
   storage.py
   export_utils.py
   nextcloud_sync.py
@@ -73,7 +87,7 @@ entry-based sync code is called.
 
 ## App Layer
 
-`KassensturzWebApp` owns:
+`web/kassensturz_web_app.py` owns `KassensturzWebApp`:
 
 - Flask app construction
 - route registration
@@ -95,7 +109,7 @@ methods. That keeps route tests focused on request parsing and response behavior
 
 `CashService` owns business workflows and the full sync pipeline.
 
-Main data objects in `core/cash_service.py`:
+Main data objects in `core/cash/`:
 
 - `CashSyncContext`
 - `CashCountRequest`
@@ -124,10 +138,11 @@ expose `to_dict()` for route flash messages and any adapter-style test doubles.
 
 ## Storage Layer
 
-`core/storage.py` contains two APIs:
+Storage is split between function modules and one-class modules:
 
-- module-level functions kept for compatibility and focused tests
-- bound object/repository API for new object-oriented usage
+- `core/storage.py`: module-level SQLite functions and compatibility exports
+- `core/storage_objects/`: bound object/repository API for new
+  object-oriented usage, one class per file
 
 Prefer this style in new code:
 
@@ -353,8 +368,8 @@ Tooling files:
 
 For a new cash workflow:
 
-1. Add or extend a request dataclass in `cash_service.py`.
-2. Implement validation and business behavior in `CashService`.
+1. Add or extend a request dataclass in `core/cash/`.
+2. Implement validation and business behavior in `core/cash/cash_service.py`.
 3. Use bound storage repositories where possible.
 4. Add app-level methods if routes need to call it.
 5. Test service behavior with fake dependencies.

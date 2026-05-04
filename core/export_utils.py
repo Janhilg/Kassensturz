@@ -556,8 +556,18 @@ def import_all_from_excel(excel_path: Path) -> dict:
     }
 
 
-class CashExportService:
-    export_excel = staticmethod(export_excel)
-    export_text = staticmethod(export_text)
-    export_all = staticmethod(export_all)
-    import_all_from_excel = staticmethod(import_all_from_excel)
+def __getattr__(name: str):
+    if name == "CashExportService":
+        from core.cash_export_service import CashExportService
+
+        return CashExportService
+
+    raise AttributeError(name)
+
+
+__all__ = [
+    "export_all",
+    "export_excel",
+    "export_text",
+    "import_all_from_excel",
+]

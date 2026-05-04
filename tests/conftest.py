@@ -4,10 +4,11 @@ import pytest
 
 import app as app_module
 from core import storage
-from core.cash_service import CashService, CashSyncContext
-from core.export_utils import CashExportService
-from core.storage import CashStorage
-from core.sync_state import SyncStateStore
+from core.cash.cash_service import CashService
+from core.cash.cash_sync_context import CashSyncContext
+from core.cash_export_service import CashExportService
+from core.storage_objects.cash_storage import CashStorage
+from core.sync_state_store import SyncStateStore
 
 
 class NoopNextcloudClient:

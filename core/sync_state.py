@@ -32,7 +32,17 @@ def update_sync_state(sync_state_file: Path, updates: dict):
     logger.info("Sync state updated | updates=%s", updates)
 
 
-class SyncStateStore:
-    load_sync_state = staticmethod(load_sync_state)
-    save_sync_state = staticmethod(save_sync_state)
-    update_sync_state = staticmethod(update_sync_state)
+def __getattr__(name: str):
+    if name == "SyncStateStore":
+        from core.sync_state_store import SyncStateStore
+
+        return SyncStateStore
+
+    raise AttributeError(name)
+
+
+__all__ = [
+    "load_sync_state",
+    "save_sync_state",
+    "update_sync_state",
+]

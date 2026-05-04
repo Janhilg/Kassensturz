@@ -284,14 +284,24 @@ def upload_files(excel_path: Path, text_path: Path, config):
     return combined
 
 
-class NextcloudClient:
-    get_verify_setting = staticmethod(get_verify_setting)
-    nextcloud_configured = staticmethod(nextcloud_configured)
-    build_webdav_url = staticmethod(build_webdav_url)
-    ensure_nextcloud_folder = staticmethod(ensure_nextcloud_folder)
-    download_remote_excel_to_temp = staticmethod(download_remote_excel_to_temp)
-    download_remote_excel_if_exists = staticmethod(download_remote_excel_if_exists)
-    upload_file_to_nextcloud = staticmethod(upload_file_to_nextcloud)
-    upload_excel_file_to_nextcloud = staticmethod(upload_excel_file_to_nextcloud)
-    upload_text_file_to_nextcloud = staticmethod(upload_text_file_to_nextcloud)
-    upload_files = staticmethod(upload_files)
+def __getattr__(name: str):
+    if name == "NextcloudClient":
+        from core.nextcloud_client import NextcloudClient
+
+        return NextcloudClient
+
+    raise AttributeError(name)
+
+
+__all__ = [
+    "build_webdav_url",
+    "download_remote_excel_if_exists",
+    "download_remote_excel_to_temp",
+    "ensure_nextcloud_folder",
+    "get_verify_setting",
+    "nextcloud_configured",
+    "upload_excel_file_to_nextcloud",
+    "upload_file_to_nextcloud",
+    "upload_files",
+    "upload_text_file_to_nextcloud",
+]

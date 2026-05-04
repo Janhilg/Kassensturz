@@ -1,6 +1,6 @@
 # Kassensturz
 
-![Version](https://img.shields.io/badge/version-v0.2.4-blue)
+![Version](https://img.shields.io/badge/version-v0.2.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
@@ -48,17 +48,23 @@ boundaries.
 
 ```text
 app.py
-  KassensturzWebApp
-  AppPaths
   create_app()
 
+web/
+  app_paths.py              AppPaths
+  kassensturz_web_app.py    KassensturzWebApp
+
 core/
-  cash_service.py      business workflows and sync orchestration
-  storage.py           SQLite functions plus bound repositories
+  cash/                cash workflow request/result/service classes
+  storage_objects/     bound storage and repository classes
+  cash_export_service.py
+  nextcloud_client.py
+  sync_state_store.py
+  storage.py           SQLite functions and compatibility exports
   export_utils.py      Excel and text import/export
-  nextcloud_sync.py    WebDAV transport
-  sync_state.py        sync metadata
-  admin_service.py     admin maintenance helpers
+  nextcloud_sync.py    WebDAV functions
+  sync_state.py        sync metadata functions
+  admin_maintenance_service.py
 ```
 
 Routes create request objects such as `CashCountRequest` and

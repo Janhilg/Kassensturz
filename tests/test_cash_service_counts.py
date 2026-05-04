@@ -1,5 +1,5 @@
 from core import storage, sync_state
-from core.cash_service import CashCountRequest
+from core.cash.cash_count_request import CashCountRequest
 
 
 def test_record_cash_count_sets_account_balance(

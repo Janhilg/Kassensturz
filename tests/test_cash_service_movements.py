@@ -1,7 +1,7 @@
 import pytest
 
 from core import storage
-from core.cash_service import CashMovementRequest
+from core.cash.cash_movement_request import CashMovementRequest
 
 
 def _record_movement(cash_service_instance, **kwargs):

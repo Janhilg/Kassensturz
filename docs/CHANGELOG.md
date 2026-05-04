@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.5] - 2026-05-04
+
+### Changed
+
+- Reworked the app/core file structure toward one Python file per class.
+- Moved Flask app classes into `web/app_paths.py` and
+  `web/kassensturz_web_app.py`, leaving `app.py` as the entrypoint.
+- Moved cash workflow classes into `core/cash/`.
+- Moved storage object/repository classes into `core/storage_objects/`.
+- Kept compatibility modules such as `core.cash_service`, `core.storage`,
+  `core.export_utils`, `core.nextcloud_sync`, and `core.sync_state`.
+
 ## [0.2.4] - 2026-05-04
 
 ### Added

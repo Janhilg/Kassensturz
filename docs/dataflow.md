@@ -2,7 +2,7 @@
 
 ```mermaid
 flowchart TD
-    A[User opens app] --> B[KassensturzWebApp in app.py]
+    A[User opens app] --> B[KassensturzWebApp in web/kassensturz_web_app.py]
 
     B --> C1[Cash count route]
     B --> C2[Cash movement route]
