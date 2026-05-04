@@ -19,8 +19,8 @@ instance/
 # =========================
 # Secrets / Config
 # =========================
-config.py
 *.env
+kassensturz_secrets.py
 
 # =========================
 # Data files (app runtime)
