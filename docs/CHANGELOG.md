@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.23] - 2026-05-04
+
+### Added
+
+- Added dedicated `CashSyncService` tests for direct sync pipeline and
+  production bootstrap behavior, separate from `CashService` coverage.
+
 ## [0.2.22] - 2026-05-04
 
 ### Changed

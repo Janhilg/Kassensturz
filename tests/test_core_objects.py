@@ -7,7 +7,6 @@ from core.cash.cash_count_request import CashCountRequest
 from core.cash.cash_movement_request import CashMovementRequest
 from core.cash.cash_service import CashService
 from core.cash.cash_sync_context import CashSyncContext
-from core.cash.cash_sync_service import CashSyncService
 from core.cash_export_service import CashExportService
 from core.nextcloud_client import NextcloudClient
 from core.storage_objects.cash_storage import CashStorage
@@ -322,75 +321,6 @@ def test_cash_service_count_uses_dependencies_in_order(
         "create_backup",
         "export_all",
         "download_remote",
-        "export_all",
-        "upload_files",
-        "update_sync_state",
-    ]
-
-
-def test_cash_sync_service_remote_sync_imports_before_second_export(
-    db_path,
-    excel_path,
-    text_path,
-    backup_dir,
-    sync_state_file,
-    config_stub,
-):
-    class RemoteStorage(RecordingStorage):
-        def merge_imported_cash_accounts_append_only(self, **kwargs):
-            self.calls.append(("merge_accounts", kwargs["imported_accounts"]))
-            return {"imported": 1, "skipped": 0}
-
-        def merge_imported_cash_contexts_append_only(self, **kwargs):
-            self.calls.append(("merge_contexts", kwargs["imported_contexts"]))
-            return {"imported": 1, "skipped": 0}
-
-        def merge_imported_cash_counts_append_only(self, **kwargs):
-            self.calls.append(("merge_counts", kwargs["imported_counts"]))
-            return {"imported": 1, "skipped": 0}
-
-        def merge_imported_cash_movements_append_only(self, **kwargs):
-            self.calls.append(("merge_movements", kwargs["imported_movements"]))
-            return {"imported": 1, "skipped": 0}
-
-    calls = []
-    sync_context = _cash_sync_context(
-        db_path,
-        excel_path,
-        text_path,
-        backup_dir,
-        sync_state_file,
-        config_stub,
-    )
-    service = CashSyncService(
-        storage_repo=RemoteStorage(calls),
-        export_service=RecordingExportService(
-            calls,
-            imported_data={
-                "cash_accounts": [{"id": "remote-account"}],
-                "cash_contexts": [{"id": "remote-context"}],
-                "cash_counts": [{"id": "remote-count"}],
-                "cash_movements": [{"id": "remote-movement"}],
-            },
-        ),
-        nextcloud_client=RecordingNextcloudClient(calls, remote_exists=True),
-        sync_state_store=RecordingSyncStateStore(calls),
-        sync_context=sync_context,
-    )
-
-    result = service.rebuild_exports()
-
-    assert result.imported_counts == 1
-    assert result.imported_movements == 1
-    assert [call[0] for call in calls] == [
-        "create_backup",
-        "export_all",
-        "download_remote",
-        "import_all_from_excel",
-        "merge_accounts",
-        "merge_contexts",
-        "merge_counts",
-        "merge_movements",
         "export_all",
         "upload_files",
         "update_sync_state",
