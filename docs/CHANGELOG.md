@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.21] - 2026-05-04
+
+### Changed
+
+- Removed the legacy `app.storage` export now that tests and internal scripts
+  use direct storage imports instead.
+
 ## [0.2.20] - 2026-05-04
 
 ### Changed

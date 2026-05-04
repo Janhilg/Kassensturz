@@ -587,6 +587,14 @@ def test_cash_service_uses_explicit_storage_adapter():
     assert "getattr(self.storage" not in source
 
 
+def test_app_entrypoint_does_not_export_legacy_storage():
+    app_file = Path(__file__).resolve().parents[1] / "app.py"
+    source = app_file.read_text(encoding="utf-8")
+
+    assert "storage = CashStorage()" not in source
+    assert '"storage"' not in source
+
+
 def test_legacy_append_and_sync_raises_clear_error():
     import core.service
 
