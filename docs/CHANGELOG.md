@@ -40,7 +40,7 @@ All notable changes to this project will be documented in this file.
 ## [0.2.1] - 2026-04-30
 
 
-### ✨ Added
+### Added
 - Automation/Business logic
 When you record a movement:
 
@@ -58,7 +58,7 @@ for the remaining amount
 
 That resets the runner float back to zero.
 
-### 🔄 Changed
+### Changed
 
 - Cash counter UX improvements
 
@@ -66,7 +66,7 @@ That resets the runner float back to zero.
 
 ## [0.2.0] - 2026-04-30
 
-### ✨ Added
+### Added
 
 - Local-first cash tracking model
 - Cash count functionality with:
@@ -95,7 +95,7 @@ That resets the runner float back to zero.
 
 ---
 
-### 🔄 Changed
+### Changed
 
 - Refactored data model:
   - replaced old `entries` system with:
@@ -131,7 +131,7 @@ That resets the runner float back to zero.
 
 ---
 
-### 🧪 Tests
+### Tests
 
 - Rebuilt test suite from scratch
 - Added coverage for:
@@ -144,7 +144,7 @@ That resets the runner float back to zero.
 
 ---
 
-### 🧠 Notes
+### Notes
 
 - This is the first stable version of Kassensturz
 - The system now uses a simple and explicit model:

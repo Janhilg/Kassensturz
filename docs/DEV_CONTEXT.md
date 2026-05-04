@@ -1,37 +1,54 @@
 # Kassensturz Development Context
 
-This document is for developers and AI assistants working on the project.
+This file is a handoff note for developers and AI assistants. It describes the
+current shape of the project, the decisions that should stay stable, and the
+places where future changes are most likely to fit.
 
-## Purpose
+## Product Purpose
 
-Kassensturz is a local-first cash tracking system built with Flask.
+Kassensturz is a local-first cash tracking app for small event or venue cash
+operations.
 
-It tracks:
+It records:
 
-- physical cash counts as ground truth
-- cash movements as money flow
-- current balances per cash account
-- local exports and optional Nextcloud sync
+- physical cash counts
+- cash movements between accounts
+- live balances per account
+- exports and optional Nextcloud sync state
 
-## Core Business Logic
+The app should stay simple, explicit, and reliable. Avoid clever hidden behavior
+around money movement.
 
-Cash counts set reality. Cash movements apply deltas.
+## Domain Rules
 
-Example:
+Cash counts define reality. Cash movements define flow.
 
 ```text
-Bar Cash Box = 200 EUR
-Bar Cash Box -> Runner Float = 50 EUR
+Count:    Bar Cash Box = 200.00 EUR
+Movement: Bar Cash Box -> Runner Float = 50.00 EUR
 
-Bar Cash Box = 150 EUR
-Runner Float = 50 EUR
+Result:   Bar Cash Box = 150.00 EUR
+          Runner Float = 50.00 EUR
 ```
 
-The current live balance is stored in `cash_accounts.current_balance_cents`.
+Important rules:
 
-## Architecture
+- `cash_accounts.current_balance_cents` stores the live balance.
+- A count sets an account balance to the counted total.
+- A movement subtracts from the source account and adds to the target account.
+- A movement must have at least a source or a target account.
+- A movement cannot use the same account as both source and target.
+- Fixed account IDs must remain stable for multi-device sync.
+- Account names shown in the UI should be translated through stable IDs/i18n keys.
 
-The current app is object-oriented at the application and service boundaries.
+Special current rule:
+
+- A movement from `Runner Float` to `Supplier / Drinks Purchase` automatically
+  returns remaining runner float balance to `Bar Cash Box`.
+
+## Architecture Overview
+
+The application is object-oriented at the app, service, and storage boundaries.
 
 ```text
 app.py
@@ -47,34 +64,44 @@ core/
   nextcloud_sync.py
   sync_state.py
   admin_service.py
+  service.py
 ```
 
-### App Layer
+`core/service.py` is a legacy guard module. It exists to fail loudly if older
+entry-based sync code is called.
 
-`KassensturzWebApp` owns Flask route registration, path setup, service wiring, and app-level helpers.
+## App Layer
 
-The route handlers build request objects:
+`KassensturzWebApp` owns:
 
-- `CashCountRequest`
-- `CashMovementRequest`
+- Flask app construction
+- route registration
+- template context helpers
+- path configuration through `AppPaths`
+- service wiring
+- app-level wrapper methods used by tests
 
-They call:
+Routes should build request objects and call app-level wrappers:
 
-- `record_cash_count()`
-- `record_cash_movement()`
+- `record_cash_count(CashCountRequest)`
+- `record_cash_movement(CashMovementRequest)`
 - `rebuild_exports()`
 
-Compatibility wrappers still exist for older call sites:
+The older compatibility methods still exist because some code and tests exercise
+them:
 
-- `record_cash_count_and_sync()`
-- `record_cash_movement_and_sync()`
-- `rebuild_exports_and_sync()`
+- `record_cash_count_and_sync(...)`
+- `record_cash_movement_and_sync(...)`
+- `rebuild_exports_and_sync(...)`
 
-### Service Layer
+When adding or changing routes, prefer testing against the app-level wrapper
+methods. That keeps route tests focused on request parsing and response behavior.
 
-`CashService` owns business rules and the sync pipeline.
+## Service Layer
 
-Important service data objects:
+`CashService` owns business workflows and the full sync pipeline.
+
+Main data objects in `core/cash_service.py`:
 
 - `CashSyncContext`
 - `CashCountRequest`
@@ -83,28 +110,45 @@ Important service data objects:
 - `CashCountResult`
 - `CashMovementResult`
 
-`CashSyncContext` carries:
+`CashSyncContext` carries runtime infrastructure:
 
-- SQLite database path
+- SQLite DB path
 - Excel export path
 - text export path
 - backup directory
 - sync state file
-- runtime config
+- config object
 
-### Storage Layer
+New application code should call:
 
-`core/storage.py` still exposes module-level functions for compatibility and focused tests.
+- `CashService.record_count(request)`
+- `CashService.record_movement(request)`
+- `CashService.rebuild_exports()`
 
-New object-oriented usage should prefer:
+Compatibility wrappers return dictionaries for older call sites. The typed result
+objects expose `to_dict()` for route flash messages and compatibility tests.
+
+## Storage Layer
+
+`core/storage.py` contains two APIs:
+
+- module-level functions kept for compatibility and focused tests
+- bound object/repository API for new object-oriented usage
+
+Prefer this style in new code:
 
 ```python
 storage = CashStorage(db_path)
 storage.ensure_db_file()
 storage.accounts.seed_defaults()
-storage.accounts.by_name("Bar Cash Box")
-storage.counts.create(...)
-storage.movements.create(...)
+
+account = storage.accounts.by_name("Bar Cash Box")
+storage.counts.create(
+    cash_account_id=account["id"],
+    counted_by="Jan",
+    total_cents=12345,
+    count_type="opening",
+)
 ```
 
 Bound repositories:
@@ -115,32 +159,54 @@ Bound repositories:
 - `CashCountRepository`
 - `CashBackupRepository`
 
-### Export and Sync
+Do not remove the module-level functions casually. They are still useful for
+tests and for preserving older call sites while the refactor settles.
 
-`CashExportService` exports and imports Excel/TXT data.
+## Export and Sync
 
-`NextcloudClient` is transport only. It should not own business logic.
+The local SQLite DB is the source of truth. Excel and text files are derived
+exports.
 
-`SyncStateStore` reads and writes sync metadata.
+Sync pipeline:
+
+1. Create a database backup.
+2. Export local DB to Excel and text.
+3. Download remote Excel if Nextcloud is configured and the remote file exists.
+4. Import remote workbook data.
+5. Merge accounts, contexts, counts, and movements append-only.
+6. Re-export the full dataset.
+7. Upload Excel and text exports.
+8. Write sync state.
+
+Responsibilities:
+
+- `CashService`: workflow orchestration and business rules
+- `CashExportService`: Excel/text import and export
+- `NextcloudClient`: WebDAV transport only
+- `SyncStateStore`: sync metadata persistence
+
+Do not put business rules in `nextcloud_sync.py`.
 
 ## Data Model
 
-- `cash_accounts`: cash boxes, floats, sinks, bank, live balance
-- `cash_counts`: physical cash counts
-- `cash_movements`: money flow between accounts
-- `cash_contexts`: free-text grouping labels
+Tables:
 
-Important design decisions:
+- `cash_accounts`: stable accounts and live balance
+- `cash_contexts`: reusable/free-text event labels
+- `cash_counts`: physical count records
+- `cash_movements`: money flow records
 
-- fixed account IDs are required for multi-device sync
-- account display labels are translated from stable IDs/i18n keys
-- no `movement_type`; movement meaning is derived from source and target accounts
-- sync import is append-only
-- exports are derived artifacts, not source of truth
+Design decisions:
 
-## Configuration
+- no `movement_type`; meaning is derived from accounts
+- sync imports are append-only
+- stable IDs are more important than display names
+- exports are replaceable artifacts
+- local backups are created before sync/export work
 
-`config.py` is tracked and must contain structure only, not real secrets.
+## Configuration and Secrets
+
+`config.py` is tracked. It must contain structure and safe defaults only.
 
 Runtime configuration priority:
 
@@ -151,7 +217,15 @@ Runtime configuration priority:
 5. bundled PyInstaller config from `kassensturz_secrets.py`, frozen builds only
 6. safe defaults from `config.py`
 
-For Docker, inject `KASSENSTURZ_*` values through the container environment or secret management.
+Never commit:
+
+- `kassensturz.env`
+- `.env`
+- `kassensturz_secrets.py`
+- real Nextcloud credentials
+- real Flask or admin secrets
+
+For source development, use `kassensturz.env`.
 
 For the temporary PyInstaller build, generate an ignored bundled config module:
 
@@ -160,26 +234,34 @@ python tools/create_bundled_config.py kassensturz.env
 pyinstaller Kassensturz.spec
 ```
 
-This avoids shipping a visible config file with the portable app. It is practical obscurity for trusted users, not cryptographic protection.
+This hides secrets from casual viewing and keeps them out of Git. It is practical
+obscurity for trusted users, not a security boundary against reverse engineering.
 
-Never commit:
+For the intended Docker/server deployment, inject secrets through environment
+variables or the server platform's secret management.
 
-- `kassensturz.env`
-- `.env`
-- `kassensturz_secrets.py`
-- real Nextcloud credentials
-- real Flask/admin secrets
+Full details live in [configuration.md](configuration.md).
 
-## Sync Flow
+## Frontend Notes
 
-1. Create a database backup.
-2. Export local DB to Excel and text.
-3. Download remote Excel if configured and present.
-4. Import remote data.
-5. Merge accounts, contexts, counts, and movements append-only.
-6. Re-export the full dataset.
-7. Upload Excel and text exports.
-8. Save sync state.
+The frontend is server-rendered HTML with vanilla JavaScript.
+
+Current UI pieces:
+
+- shared base template
+- cash count page
+- cash movement page
+- balances page
+- admin page
+- shared calculator/cash-counter partial
+- English/German translations
+- dark/light theme
+
+When changing account labels, keep the translation-key behavior in mind:
+
+- default accounts use stable IDs such as `acc_bar_cash_box`
+- templates should use generated `account_*` i18n keys
+- visible account names should not be the only translation source
 
 ## Tests
 
@@ -189,29 +271,58 @@ Run the full suite:
 .\venv\Scripts\python.exe -m pytest tests
 ```
 
-Current test focus:
+Current coverage focus:
 
-- storage functions and bound repositories
-- service request/result objects
-- sync pipeline behavior with fake dependencies
-- Flask route wiring
-- config loading and bundled config generation
+- storage functions
+- bound storage repositories
+- service request/result workflows
+- sync pipeline dependency ordering
+- Flask route parsing and wrapper calls
 - export/import roundtrip
+- config loading
+- bundled PyInstaller config generation
+- legacy guard behavior
+
+Ruff config exists in `pyproject.toml`, but Ruff may not be installed in the
+local virtual environment yet.
+
+## Common Change Patterns
+
+For a new cash workflow:
+
+1. Add or extend a request dataclass in `cash_service.py`.
+2. Implement validation and business behavior in `CashService`.
+3. Use bound storage repositories where possible.
+4. Add app-level wrapper methods if routes need to call it.
+5. Test service behavior with fake dependencies.
+6. Test route parsing separately from service internals.
+
+For a storage change:
+
+1. Keep module-level functions working.
+2. Add or update the relevant bound repository method.
+3. Cover both persistence behavior and any merge/import edge cases.
+
+For config changes:
+
+1. Keep `config.py` safe to commit.
+2. Update `.env.example`.
+3. Update `docs/configuration.md`.
+4. Add or update tests in `tests/test_config_env.py`.
 
 ## Known Pitfalls
 
-- Foreign key errors usually mean account IDs were changed or remote data references accounts that do not exist locally.
-- Schema changes may require a DB migration or a local dev DB reset.
-- Do not move business logic into `nextcloud_sync.py`; keep it in `CashService`.
-- Do not add new secrets to tracked files.
-- When changing routes, keep tests patched against app-level wrapper methods rather than lower-level service internals.
+- Foreign key errors usually mean account IDs changed or remote data references
+  accounts that do not exist locally.
+- Schema changes need a migration plan or a deliberate dev DB reset.
+- Do not reintroduce secrets into `config.py`.
+- Do not make the PyInstaller bundled config sound cryptographically secure.
+- Do not move route parsing assertions into service tests; keep layers separate.
+- Preserve compatibility wrappers until all old call sites are intentionally gone.
 
-## Summary
+## Useful Docs
 
-Kassensturz should stay:
-
-- local-first
-- explicit
-- append-only for sync imports
-- object-oriented at app/service/storage boundaries
-- conservative about secrets in Git and portable builds
+- [Data flow](dataflow.md)
+- [Configuration and deployment](configuration.md)
+- [Changelog](CHANGELOG.md)
+- [License](LICENSE)

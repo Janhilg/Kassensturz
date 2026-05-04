@@ -1,197 +1,180 @@
 # Kassensturz
+
 ![Version](https://img.shields.io/badge/version-v0.2.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
-Kassensturz is a local-first Flask web application for managing cash balances across multiple cash boxes.
+Kassensturz is a local-first Flask app for tracking cash counts, cash movements,
+and current balances across multiple cash accounts.
 
-It is designed for simple, reliable tracking of:
-- cash counts (physical reality)
-- cash movements (money flow)
-- current balances per cash box
+It is built for small event or venue cash workflows where the important question
+is simple: how much cash should be in each box right now, and why?
 
----
+## Core Model
 
-[Changelog](docs/CHANGELOG.md)
+Kassensturz separates physical truth from money flow.
 
----
+- A cash count sets the current balance of an account.
+- A cash movement moves money between accounts and updates both balances.
+- The SQLite database is the local source of truth.
+- Excel and text files are exports for sync, inspection, and backup workflows.
 
-## 🧠 Core Concept
+Example:
 
-Kassensturz follows a simple model:
+```text
+Count:    Bar Cash Box = 200.00 EUR
+Movement: Bar Cash Box -> Runner Float = 50.00 EUR
 
-- **Cash count** → sets the current balance of a cash box  
-- **Cash movement** → moves money between accounts and updates balances  
+Result:   Bar Cash Box = 150.00 EUR
+          Runner Float = 50.00 EUR
+```
 
-Count: Bar Cash Box = 200€
-Movement: Bar → Runner (50€)
-→ Bar = 150€, Runner = +50€
+## Features
 
----
+- Record opening, closing, spot-check, and reconciliation counts.
+- Track movements between cash boxes, floats, suppliers, handouts, and bank.
+- Use denomination inputs for bills, coins, and coin rolls.
+- View live balances with recent counts and movements.
+- Group records by free-text context, such as an event name.
+- Export the full dataset to Excel and plain text.
+- Optionally sync through Nextcloud WebDAV with append-only remote imports.
+- Restore local SQLite backups through the admin view.
+- Use English or German UI text with dark and light themes.
 
-## 🔧 Features
+## App Structure
 
-### 💰 Cash Count (main page)
-- Record cash counts per cash box
-- Free-text context (e.g. event name)
-- Optional denomination breakdown (bills, coins, rolls)
-- Live calculator and cash counter integrated
+The app is organized around explicit objects at the app, service, and storage
+boundaries.
 
----
+```text
+app.py
+  KassensturzWebApp
+  AppPaths
+  create_app()
 
-### 🔄 Cash Movements
-- Move cash between accounts (e.g. bar → entrance)
-- Record payments (e.g. bar → supplier)
-- Optional denomination tracking
-- Shared cash counter for fast input
+core/
+  cash_service.py      business workflows and sync orchestration
+  storage.py           SQLite functions plus bound repositories
+  export_utils.py      Excel and text import/export
+  nextcloud_sync.py    WebDAV transport
+  sync_state.py        sync metadata
+  admin_service.py     admin maintenance helpers
+```
 
----
+Routes create request objects such as `CashCountRequest` and
+`CashMovementRequest`. `CashService` applies business rules and runs the sync
+pipeline. `CashStorage(db_path)` exposes bound repositories for accounts,
+contexts, counts, movements, and backups.
 
-### 🧾 Balances Page
-- Current balance per cash account
-- Based on:
-  - latest count (anchor)
-  - movements (updates)
-- Shows recent:
-  - counts
-  - movements
+More detail:
 
----
-
-### ⚙️ Admin Page
-- System status overview
-- Manual sync trigger
-- Rebuild exports
-- Restore database backups
-- Sync state visibility (import/upload info)
-
----
-
-### 🧮 Live Calculator & Cash Counter
-- Two modes:
-  - Calculator (add/subtract)
-  - Cash counter (denominations + rolls)
-- Cash counter is default
-- Supports:
-  - bills
-  - coins
-  - roll values (e.g. 2€ roll = 50€)
-- Can apply results directly to forms
-
----
-
-### 💾 Storage & Backup
-- SQLite database (local source of truth)
-- Automatic rotating backups
-- Manual restore via admin page
-
----
-
-### 📤 Export & Sync
-- Full export to:
-  - Excel (.xlsx)
-  - Text (.txt)
-- Optional Nextcloud sync via WebDAV
-- Append-only merge logic:
-  - remote data is imported without overwriting
-- Multi-device sync support
-
----
-
-### 🌐 Localization & UI
-- English / German language switching
-- Dark / Light theme
-- Consistent layout across all pages
-- Mobile-friendly
-
----
-
-## 📦 Architecture
-
-### Local-first model
-- SQLite database is the single source of truth
-- Exports are generated from DB
-- Sync merges remote data into local DB
-
-### Data model
-- cash_accounts → cash boxes + live balance
-- cash_counts → physical counts
-- cash_movements → money flow
-- cash_contexts → grouping (free text)
-
----
-
-## 🔄 Sync behavior
-
-- Import remote Excel (if exists)
-- Merge new rows (append-only)
-- Rebuild full export
-- Upload to Nextcloud
-- Track sync state
-
----
+- [Developer context](docs/DEV_CONTEXT.md)
+- [Data flow](docs/dataflow.md)
+- [Configuration and deployment](docs/configuration.md)
+- [Changelog](docs/CHANGELOG.md)
 
 ## Configuration
 
-Configuration is read in this order:
+`config.py` is tracked and should contain structure plus safe defaults only. Real
+secrets must come from environment variables, local ignored files, or the
+temporary PyInstaller bundled config workflow.
+
+Configuration priority:
 
 1. Real environment variables
-2. `KASSENSTURZ_ENV_FILE`, if set, source/dev runs only
-3. `kassensturz.env` in the project root, source/dev runs only
-4. `.env` in the project root, source/dev runs only
+2. `KASSENSTURZ_ENV_FILE`, source/dev runs only
+3. `kassensturz.env`, source/dev runs only
+4. `.env`, source/dev runs only
 5. Bundled PyInstaller config from `kassensturz_secrets.py`, frozen builds only
 6. Safe defaults from `config.py`
 
 For local development, copy `.env.example` to `kassensturz.env` and fill in the
 real values.
 
-For Docker, set the same `KASSENSTURZ_*` values through the container environment,
-an `env_file`, or the server's secret management. Container environment variables
-override any local env file.
+For Docker, inject the same `KASSENSTURZ_*` values through the container
+environment or the server platform's secret management.
 
-For the temporary PyInstaller build, create an ignored bundled config module from
-your local env file before building:
+For the temporary PyInstaller build, generate an ignored bundled config module
+before building. This lets the portable app run without a visible config file:
 
-```
+```powershell
 python tools/create_bundled_config.py kassensturz.env
 pyinstaller Kassensturz.spec
 ```
 
-When `kassensturz_secrets.py` exists, `Kassensturz.spec` includes it in the app
-bundle. The generated module is ignored by Git and stores values base64-encoded,
-so the portable app works out of the box without shipping a visible config file.
+Bundled config is practical obscurity for trusted users, not cryptographic
+protection. The long-term server deployment should keep shared secrets on the
+server side.
 
-Do not put real secrets in `config.py`, `.env.example`, `Kassensturz.spec`, or
-any tracked file. Bundled PyInstaller config is practical obscurity for trusted
-users, not a cryptographic security boundary. The Docker/server deployment should
-still inject secrets through the environment or secret management.
+See [configuration.md](docs/configuration.md) for the full setup notes.
 
----
+## Local Development
 
-## 🖥️ Build (portable / onedir)
+Create and activate a virtual environment, then install dependencies:
 
-### Windows
-
+```powershell
+python -m venv venv
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
+
+Create local configuration:
+
+```powershell
+Copy-Item .env.example kassensturz.env
+```
+
+Run the app:
+
+```powershell
+.\venv\Scripts\python.exe app.py
+```
+
+By default, development data is stored under `data/debug/`.
+
+## Tests
+
+Run the full test suite:
+
+```powershell
+.\venv\Scripts\python.exe -m pytest tests
+```
+
+The suite covers storage behavior, service workflows, route wiring, export/import
+roundtrips, config loading, and bundled PyInstaller config generation.
+
+## Portable Build
+
+The current portable build is a temporary workaround until the app can run in the
+target Docker/server environment.
+
+Build on Windows:
+
+```powershell
 python tools/create_bundled_config.py kassensturz.env
 pyinstaller Kassensturz.spec
 ```
 
 Output:
-```
+
+```text
 dist/Kassensturz/
 ```
+
 Run:
 
+```text
 Kassensturz.exe
+```
 
----
+## Docker Direction
 
+The preferred deployment path is a server-hosted Docker container. In that setup,
+secrets should be configured during container setup and should not be shipped to
+desktop users.
 
-## 📄 License
+Until then, the PyInstaller build can bundle a generated, ignored config module
+so trusted users can run the app without handling credentials directly.
 
-MIT License
+## License
 
-MIT License – free to use, modify and distribute.
-
-Copyright (c) 2026
+MIT License. See [docs/LICENSE](docs/LICENSE).
