@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.26] - 2026-05-04
+
+### Added
+
+- Added direct `AdminMaintenanceService` tests for human-readable sizes,
+  manual export sync with and without Nextcloud, and restore-with-upload
+  orchestration.
+
 ## [0.2.25] - 2026-05-04
 
 ### Added
