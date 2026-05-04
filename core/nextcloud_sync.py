@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 from urllib.parse import quote
 
@@ -8,6 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 def _default_base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+
     return Path(__file__).resolve().parent.parent
 
 

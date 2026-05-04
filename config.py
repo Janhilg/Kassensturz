@@ -100,7 +100,7 @@ def load_bundled_config() -> dict[str, str]:
 
     try:
         module = importlib.import_module("kassensturz_secrets")
-    except ImportError:
+    except Exception:
         return {}
 
     bundled_config = getattr(module, "BUNDLED_CONFIG", None)

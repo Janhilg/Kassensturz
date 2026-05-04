@@ -1,8 +1,13 @@
 from base64 import b64decode
+from binascii import Error as BinasciiError
 
 
 def _d(*chunks: str) -> str:
-    return b64decode("".join(chunks)).decode("utf-8")
+    value = "".join(chunks)
+    try:
+        return b64decode(value).decode("utf-8")
+    except (BinasciiError, UnicodeDecodeError):
+        return value
 
 
 BUNDLED_CONFIG = {

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import logging
 import mimetypes
+import sys
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
@@ -22,6 +23,13 @@ from core.nextcloud_sync import NextcloudClient
 mimetypes.add_type("application/javascript", ".js")
 
 logger = logging.getLogger(__name__)
+
+
+def _default_base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+
+    return Path(__file__).resolve().parent
 
 
 @dataclass
@@ -80,7 +88,7 @@ class KassensturzWebApp:
         self.config = config
         self.paths = paths or AppPaths.from_config(
             config=config,
-            base_dir=base_dir or Path(__file__).resolve().parent,
+            base_dir=base_dir or _default_base_dir(),
         )
         self._configure_services()
 
@@ -594,4 +602,9 @@ _sync_legacy_path_globals(web_app.paths)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    debug = web_app.config.MODE == "debug" and not getattr(
+        web_app.config,
+        "IS_FROZEN",
+        False,
+    )
+    app.run(debug=debug, use_reloader=debug)
